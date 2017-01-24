@@ -1,7 +1,7 @@
 {
   "name": "botframework-directlinejs",
   "version": "0.6.0",
-  "description": "client library for the Microsoft Bot Framework Direct Line protocol",
+  "description": "client library for the Microsoft Bot Framework Direct Line 3.0 protocol",
   "main": "built/directLine.js",
   "types": "directLine.d.ts",
   "scripts": {

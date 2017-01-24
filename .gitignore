@@ -1,4 +1,5 @@
 node_modules
 built
 .vscode
-/directLine.*
+/directLine.js
+/directLine.js.map
