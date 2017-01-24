@@ -1,0 +1,16 @@
+{
+    "compilerOptions": {
+        "lib": [
+            "dom",
+            "es2017"
+        ],
+        "module": "commonjs",
+        "noImplicitAny": false,
+        "outDir": "./built/",
+        "target": "es5",
+        "sourceMap": true
+    },
+    "files": [
+        "src/directLine.ts"
+    ]
+}
