@@ -171,7 +171,7 @@ export interface IActivity {
     channelId?: string,
     conversation?: { id: string },
     eTag?: string,
-    from?: User,
+    from: User,
     id?: string,
     timestamp?: string
 }
@@ -193,7 +193,7 @@ export interface Typing extends IActivity {
 }
 
 export interface EventActivity extends IActivity {
-    type: 'event',
+    type: "event",
     name: string,
     value: any
 }

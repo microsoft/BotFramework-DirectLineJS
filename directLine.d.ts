@@ -161,7 +161,7 @@ export interface IActivity {
         id: string;
     };
     eTag?: string;
-    from?: User;
+    from: User;
     id?: string;
     timestamp?: string;
 }
@@ -179,6 +179,7 @@ export interface Typing extends IActivity {
     type: "typing";
 }
 export interface EventActivity extends IActivity {
+    type: "event",
     name: string,
     value: any
 }
