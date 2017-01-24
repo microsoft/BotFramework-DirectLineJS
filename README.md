@@ -1,6 +1,6 @@
 # Microsoft Bot Framework Direct Line library for JavaScript
 
-Client ibrary for the [Microsoft Bot Framework](http://www.botframework.com) [DirectLine](https://docs.botframework.com/en-us/restapi/directline3/) protocol.
+Client library for the [Microsoft Bot Framework](http://www.botframework.com) [DirectLine](https://docs.botframework.com/en-us/restapi/directline3/) protocol.
 
 Used by [WebChat](https://github.com/Microsoft/BotFramework-WebChat) and thus (by extension) [Emulator](https://github.com/Microsoft/BotFramework-Emulator), WebChat channel, and [Azure Bot Service](https://azure.microsoft.com/en-us/services/bot-service/).
 
@@ -8,11 +8,11 @@ Used by [WebChat](https://github.com/Microsoft/BotFramework-WebChat) and thus (b
 
 ### *Who is this for?*
 
-Anyone who is building a Bot Framework JavaScript client who does not want to use [WebChat](https://github.com/Microsoft/BotFramework-WebChat). 
+Anyone who is building a Bot Framework JavaScript client who does not want to use [WebChat](https://github.com/Microsoft/BotFramework-WebChat). (WebChat already includes DirectLine so there is no reason to include this package too).
 
 ### *What is Rx?*
 
-**R**eactive E**x**tensions are a set of libraries for different languages implementing Reactive Functional Programming a.k.a. the Observable pattern. This library uses [RxJS](http://reactivex.io/rxjs/).
+**R**eactive E**x**tensions are a set of libraries for different languages implementing Reactive Functional Programming a.k.a. the Observable pattern. This library uses [RxJS](https://github.com/reactivex/rxjs/).
 
 ### *Can I use [TypeScript](http://www.typescriptlang.com)?*
 
@@ -20,7 +20,9 @@ You bet.
 
 ### How ready for prime time is this library?
 
-This library is an official Microsoft-supported library, and is considered largely complete. Future changes (aside from supporting future updates to the Direct Line protocol) will likely be limited to performance improvements, tutorials, and samples. The big missing piece here is unit tests. 
+This is an official Microsoft-supported library, and is considered largely complete. Future changes (aside from supporting future updates to the Direct Line protocol) will likely be limited to bug fixes, performance improvements, tutorials, and samples. The big missing piece here is unit tests.
+
+That said, the public API is still subject to change.
 
 ## How to build from source
 
