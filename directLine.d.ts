@@ -178,7 +178,14 @@ export interface Message extends IActivity {
 export interface Typing extends IActivity {
     type: "typing";
 }
-export declare type Activity = Message | Typing;
+export interface EventActivity extends IActivity {
+    name: string,
+    value: any
+}
+export type Activity = Message | Typing | EventActivity;
+
+// These types are specific to this client library, not to Direct Line 3.0
+
 export declare enum ConnectionStatus {
     Uninitialized = 0,
     Connecting = 1,

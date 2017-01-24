@@ -192,7 +192,13 @@ export interface Typing extends IActivity {
     type: "typing"
 }
 
-export type Activity = Message | Typing;
+export interface EventActivity extends IActivity {
+    type: 'event',
+    name: string,
+    value: any
+}
+
+export type Activity = Message | Typing | EventActivity;
 
 interface ActivityGroup {
     activities: Activity[],
