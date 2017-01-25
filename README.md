@@ -8,11 +8,13 @@ Used by [WebChat](https://github.com/Microsoft/BotFramework-WebChat) and thus (b
 
 ### *Who is this for?*
 
-Anyone who is building a Bot Framework JavaScript client who enjoys/tolerates Rx and does not want to use [WebChat](https://github.com/Microsoft/BotFramework-WebChat). (WebChat already includes DirectLine so there is no reason to include this package too).
+Anyone who is building a Bot Framework JavaScript client who does not want to use [WebChat](https://github.com/Microsoft/BotFramework-WebChat).
 
-### *What is Rx?*
+If you're currently using WebChat, you don't need to make any changes as it includes this package. 
 
-**R**eactive E**x**tensions are a set of libraries for different languages implementing Reactive Functional Programming a.k.a. the Observable pattern. This library uses [RxJS](https://github.com/reactivex/rxjs/).
+### *What is that funny `subscribe()` method in the samples below?
+
+Instead of callbacks or Promises, this library handles async operations using the Observable pattern. Try it, you'll like it. For more information, check out [RxJS](https://github.com/reactivex/rxjs/).
 
 ### *Can I use [TypeScript](http://www.typescriptlang.com)?*
 
