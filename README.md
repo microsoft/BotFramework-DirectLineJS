@@ -12,7 +12,7 @@ Anyone who is building a Bot Framework JavaScript client who does not want to us
 
 If you're currently using WebChat, you don't need to make any changes as it includes this package. 
 
-### *What is that funny `subscribe()` method in the samples below?
+### *What is that funny `subscribe()` method in the samples below?*
 
 Instead of callbacks or Promises, this library handles async operations using the Observable pattern. Try it, you'll like it. For more information, check out [RxJS](https://github.com/reactivex/rxjs/).
 
