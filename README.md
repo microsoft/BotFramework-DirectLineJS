@@ -1,6 +1,6 @@
-# Microsoft Bot Framework Direct Line library for JavaScript
+# BotFramework-DirectLineJS
 
-Client library for the [Microsoft Bot Framework](http://www.botframework.com) [DirectLine](https://docs.botframework.com/en-us/restapi/directline3/) protocol.
+Client library for the [Microsoft Bot Framework](http://www.botframework.com) *[Direct Line](https://docs.botframework.com/en-us/restapi/directline3/)* protocol.
 
 Used by [WebChat](https://github.com/Microsoft/BotFramework-WebChat) and thus (by extension) [Emulator](https://github.com/Microsoft/BotFramework-Emulator), WebChat channel, and [Azure Bot Service](https://azure.microsoft.com/en-us/services/bot-service/).
 
@@ -8,7 +8,7 @@ Used by [WebChat](https://github.com/Microsoft/BotFramework-WebChat) and thus (b
 
 ### *Who is this for?*
 
-Anyone who is building a Bot Framework JavaScript client who does not want to use [WebChat](https://github.com/Microsoft/BotFramework-WebChat). (WebChat already includes DirectLine so there is no reason to include this package too).
+Anyone who is building a Bot Framework JavaScript client who enjoys/tolerates Rx and does not want to use [WebChat](https://github.com/Microsoft/BotFramework-WebChat). (WebChat already includes DirectLine so there is no reason to include this package too).
 
 ### *What is Rx?*
 
@@ -40,13 +40,13 @@ There are several ways:
 
 ## How to create and use a directLine object
 
-### First, obtain security credentials for your bot:
+### Obtain security credentials for your bot:
 
 1. If you haven't already, [register your bot](https://dev.botframework.com/bots/new).
-2. Add a DirectLine (**not WebChat**) channel, and generate a Direct Line Secret. Make sure to Direct Line 3.0 is enabled.
+2. Add a DirectLine (**not WebChat**) channel, and generate a Direct Line Secret. Make sure Direct Line 3.0 is enabled.
 3. For testing you can use your Direct Line Secret as a security token, but for production you will likely want to exchange that Secret for a Token as detailed in the Direct Line [documentation](https://docs.botframework.com/en-us/restapi/directline3/).
 
-### Second, create a DirectLine object:
+### Create a DirectLine object:
 
     var directLine = new DirectLine({
         secret: /* put your Direct Line secret here */,
@@ -93,7 +93,7 @@ Direct Line will helpfully send your client a copy of every sent activity, so a 
 
 ### Monitor connection status
 
-Subscribing to either `postActivity` or `activity$` will start the process of connecting to the bot. Your app can monitor the current connection status and react appropriately :
+Subscribing to either `postActivity` or `activity$` will start the process of connecting to the bot. Your app can listen to the connection status and react appropriately :
 
     directLine.connectionStatus$
     .subscribe(connectionStatus =>
@@ -107,13 +107,13 @@ Subscribing to either `postActivity` or `activity$` will start the process of co
         }
     );
 
-### Reconnecting to a conversation
+### Reconnect to a conversation
 
 If your app created your DirectLine object by passing a token, DirectLine will refresh that token every 15 minutes.
 Should your client lose connectivity (e.g. close laptop, fail to pay Internet access bill, go under a tunnel), `connectionStatus$`
 will change to `ConnectionStatus.ExpiredToken`. Your app can request a new token from its server, which should call
 the [Reconnect](https://docs.botframework.com/en-us/restapi/directline3/#reconnecting-to-a-conversation) API. 
-The resultant Conversation object can then be passed by the app to DirectLine:
+The resultant Conversation object can then be passed by the app to DirectLine, which will 
 
     var conversation = /* a Conversation object obtained from your app's server */;
     directLine.reconnect(conversation);
