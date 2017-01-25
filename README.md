@@ -50,64 +50,76 @@ There are several ways:
 
 ### Create a DirectLine object:
 
-    var directLine = new DirectLine({
-        secret: /* put your Direct Line secret here */,
-        token: /* or put your Direct Line token here (supply secret OR token, not both) */,
-        domain: /* optional: if you are not using the default Direct Line endpoint, e.g. if you are using a region-specific endpoint, put its full URL here */
-        webSocket: /* optional: true if you want to use WebSocket to receive messages. Currently defaults to false. */,
-    });
+```typescript
+var directLine = new DirectLine({
+    secret: /* put your Direct Line secret here */,
+    token: /* or put your Direct Line token here (supply secret OR token, not both) */,
+    domain: /* optional: if you are not using the default Direct Line endpoint, e.g. if you are using a region-specific endpoint, put its full URL here */
+    webSocket: /* optional: true if you want to use WebSocket to receive messages. Currently defaults to false. */,
+});
+```
 
 ### Post activities to the bot:
 
-    directLine.postActivity({
-        from: { id: 'myUserId', name: 'myUserName' }, // required (from.name is optional)
-        type: 'message',
-        text: 'a message for you, Rudy'
-    }).subscribe(
-        id => console.log("Posted activity, assigned ID ", id),
-        error => console.log("Error posting activity", error)
-    );
+```typescript
+directLine.postActivity({
+    from: { id: 'myUserId', name: 'myUserName' }, // required (from.name is optional)
+    type: 'message',
+    text: 'a message for you, Rudy'
+}).subscribe(
+    id => console.log("Posted activity, assigned ID ", id),
+    error => console.log("Error posting activity", error)
+);
+```
 
 You can also post messages with attachments, and non-message activities such as events, by supplying the appropriate fields in the activity.
 
 ### Listen to activities sent from the bot:
 
-    directLine.activity$
-    .subscribe(
-        activity => console.log("received activity ", activity)
-    );
+```typescript
+directLine.activity$
+.subscribe(
+    activity => console.log("received activity ", activity)
+);
+```
 
 You can use RxJS operators on incoming activities. To see only message activities:
 
-    directLine.activity$
-    .filter(activity => activity.type === 'message')
-    .subscribe(
-        message => console.log("received message ", message)
-    );
+```typescript
+directLine.activity$
+.filter(activity => activity.type === 'message')
+.subscribe(
+    message => console.log("received message ", message)
+);
+```
 
 Direct Line will helpfully send your client a copy of every sent activity, so a common pattern is to filter incoming messages on `from`:
 
-    directLine.activity$
-    .filter(activity => activity.type === 'message' && activity.from.id !== 'yourBotHandle')
-    .subscribe(
-        message => console.log("received message ", message)
-    );
+```typescript
+directLine.activity$
+.filter(activity => activity.type === 'message' && activity.from.id !== 'yourBotHandle')
+.subscribe(
+    message => console.log("received message ", message)
+);
+```
 
 ### Monitor connection status
 
 Subscribing to either `postActivity` or `activity$` will start the process of connecting to the bot. Your app can listen to the connection status and react appropriately :
 
-    directLine.connectionStatus$
-    .subscribe(connectionStatus =>
-        switch(connectionStatus) {
-            case ConnectionStatus.Uninitialized:    // the status when the DirectLine object is first created/constructed
-            case ConnectionStatus.Connecting:       // currently trying to connect to the conversation
-            case ConnectionStatus.Online:           // successfully connected to the converstaion. Connection is healthy so far as we know.
-            case ConnectionStatus.ExpiredToken:     // last operation errored out with an expired token. Your app should supply a new one.
-            case ConnectionStatus.FailedToConnect:  // the initial attempt to connect to the conversation failed. No recovery possible.
-            case ConnectionStatus.Ended:            // the bot ended the conversation
-        }
-    );
+```typescript
+directLine.connectionStatus$
+.subscribe(connectionStatus =>
+    switch(connectionStatus) {
+        case ConnectionStatus.Uninitialized:    // the status when the DirectLine object is first created/constructed
+        case ConnectionStatus.Connecting:       // currently trying to connect to the conversation
+        case ConnectionStatus.Online:           // successfully connected to the converstaion. Connection is healthy so far as we know.
+        case ConnectionStatus.ExpiredToken:     // last operation errored out with an expired token. Your app should supply a new one.
+        case ConnectionStatus.FailedToConnect:  // the initial attempt to connect to the conversation failed. No recovery possible.
+        case ConnectionStatus.Ended:            // the bot ended the conversation
+    }
+);
+```
 
 ### Reconnect to a conversation
 
@@ -117,8 +129,10 @@ will change to `ConnectionStatus.ExpiredToken`. Your app can request a new token
 the [Reconnect](https://docs.botframework.com/en-us/restapi/directline3/#reconnecting-to-a-conversation) API. 
 The resultant Conversation object can then be passed by the app to DirectLine, which will 
 
-    var conversation = /* a Conversation object obtained from your app's server */;
-    directLine.reconnect(conversation);
+```typescript
+var conversation = /* a Conversation object obtained from your app's server */;
+directLine.reconnect(conversation);
+```
 
 ## Copyright & License
 
