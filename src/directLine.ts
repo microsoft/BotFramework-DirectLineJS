@@ -55,7 +55,8 @@ export interface HeroCard {
         subtitle?: string,
         text?: string,
         images?: { url: string }[],
-        buttons?: Button[]
+        buttons?: Button[],
+        tap?: string
     }
 }
 
@@ -66,7 +67,7 @@ export interface Thumbnail {
         subtitle?: string,
         text?: string,
         images?: { url: string }[],
-        buttons?: Button[]
+        buttons?: Button[],
         tap?: string
     }
 }
