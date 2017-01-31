@@ -36,16 +36,16 @@ export interface Conversation {
 export type MediaType = "image/png" | "image/jpg" | "image/jpeg" | "image/gif" | "audio/mpeg" | "audio/mp4" | "video/mp4";
 
 export interface Media {
-    contentType: MediaType,    
+    contentType: MediaType,
     contentUrl: string,
     name?: string
 }
 
 export interface Button {
-    type: "imBack" | "postBack" | "openUrl" | "signin",
+    type: "openUrl" | "imBack" | "postBack" | "playAudio" | "playVideo" | "showImage" | "downloadFile" | "signin" | "call",
     title: string,
-    value: string
-    image?: string,
+    value: string,
+    image?: string
 }
 
 export interface HeroCard {
@@ -55,9 +55,10 @@ export interface HeroCard {
         subtitle?: string,
         text?: string,
         images?: { url: string }[],
-        buttons?: Button[]
+        buttons?: Button[],
+        tap?: string
     }
-} 
+}
 
 export interface Thumbnail {
     contentType: "application/vnd.microsoft.card.thumbnail",
@@ -66,7 +67,7 @@ export interface Thumbnail {
         subtitle?: string,
         text?: string,
         images?: { url: string }[],
-        buttons?: Button[]
+        buttons?: Button[],
         tap?: string
     }
 }
@@ -101,7 +102,7 @@ export interface Receipt {
         total?: string,
         buttons?: Button[]
     }
-}  
+}
 
 // Deprecated format for Skype channels. For testing legacy bots in Emulator only.
 export interface FlexCard {
@@ -114,7 +115,7 @@ export interface FlexCard {
         buttons?: Button[],
         aspect?: string
     }
-}  
+}
 
 export interface AudioCard {
     contentType: "application/vnd.microsoft.card.audio",
@@ -399,7 +400,7 @@ export class DirectLine implements IBotConnection {
         // So, since WebChat is partially a reference implementation of Direct Line, we implement both.
         if (activity.type === "message" && activity.attachments && activity.attachments.length > 0)
             return this.postMessageWithAttachments(activity);
-            
+
         // If we're not connected to the bot, get connected
         // Will throw an error if we are not connected
         konsole.log("postActivity", activity);
@@ -501,7 +502,7 @@ export class DirectLine implements IBotConnection {
                     // two empty objects to be emitted. Which is harmless but, again, slightly ugly.
                     this.connectionStatus$.next(ConnectionStatus.ExpiredToken);
                 }
-                return Observable.empty<AjaxResponse>();            
+                return Observable.empty<AjaxResponse>();
             })
 //          .do(ajaxResponse => konsole.log("getActivityGroup ajaxResponse", ajaxResponse))
             .map(ajaxResponse => ajaxResponse.response as ActivityGroup)
@@ -540,7 +541,7 @@ export class DirectLine implements IBotConnection {
             ws.onopen = open => {
                 konsole.log("WebSocket open", open);
                 // Chrome is pretty bad at noticing when a WebSocket connection is broken.
-                // If we periodically ping the server with empty messages, it helps Chrome 
+                // If we periodically ping the server with empty messages, it helps Chrome
                 // realize when connection breaks, and close the socket. We then throw an
                 // error, and that give us the opportunity to attempt to reconnect.
                 sub = Observable.interval(timeout).subscribe(_ => ws.send(null));
@@ -556,11 +557,11 @@ export class DirectLine implements IBotConnection {
 
             // This is the 'unsubscribe' method, which is called when this observable is disposed.
             // When the WebSocket closes itself, we throw an error, and this function is eventually called.
-            // When the observable is closed first (e.g. when tearing down a WebChat instance) then 
+            // When the observable is closed first (e.g. when tearing down a WebChat instance) then
             // we need to manually close the WebSocket.
             return () => {
                 if (ws.readyState === 0 || ws.readyState === 1) ws.close();
-            }            
+            }
         }) as Observable<T>
     }
 
