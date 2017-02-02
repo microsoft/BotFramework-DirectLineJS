@@ -55,7 +55,7 @@ var directLine = new DirectLine({
     secret: /* put your Direct Line secret here */,
     token: /* or put your Direct Line token here (supply secret OR token, not both) */,
     domain: /* optional: if you are not using the default Direct Line endpoint, e.g. if you are using a region-specific endpoint, put its full URL here */
-    webSocket: /* optional: true if you want to use WebSocket to receive messages. Currently defaults to false. */,
+    webSocket: /* optional: false if you want to use polling GET to receive messages. Defaults to true (use WebSocket). */,
 });
 ```
 

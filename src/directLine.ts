@@ -253,7 +253,7 @@ export class DirectLine implements IBotConnection {
     public activity$: Observable<Activity>;
 
     private domain = "https://directline.botframework.com/v3/directline";
-    private webSocket = false;
+    private webSocket = true;
 
     private conversationId: string;
     private secret: string;
