@@ -268,7 +268,7 @@ export class DirectLine implements IBotConnection {
         this.token = options.secret || options.token;
         if (options.domain)
             this.domain = options.domain;
-        if (options.webSocket)
+        if (options.webSocket !== undefined)
             this.webSocket = options.webSocket;
 
         this.activity$ = this.webSocket && WebSocket !== undefined
