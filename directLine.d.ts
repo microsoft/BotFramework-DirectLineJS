@@ -15,7 +15,7 @@ export interface Media {
     contentUrl: string;
     name?: string;
 }
-export interface Button {
+export interface CardAction {
     type: "imBack" | "postBack" | "openUrl" | "signin";
     title: string;
     value: string;
@@ -30,7 +30,8 @@ export interface HeroCard {
         images?: {
             url: string;
         }[];
-        buttons?: Button[];
+        buttons?: CardAction[];
+        tap?: CardAction;
     };
 }
 export interface Thumbnail {
@@ -42,15 +43,15 @@ export interface Thumbnail {
         images?: {
             url: string;
         }[];
-        buttons?: Button[];
-        tap?: string;
+        buttons?: CardAction[];
+        tap?: CardAction;
     };
 }
 export interface Signin {
     contentType: "application/vnd.microsoft.card.signin";
     content: {
         text?: string;
-        buttons?: Button[];
+        buttons?: CardAction[];
     };
 }
 export interface ReceiptItem {
@@ -62,7 +63,7 @@ export interface ReceiptItem {
     };
     price?: string;
     quantity?: string;
-    tap?: string;
+    tap?: CardAction;
 }
 export interface Receipt {
     contentType: "application/vnd.microsoft.card.receipt";
@@ -77,7 +78,7 @@ export interface Receipt {
         tax?: string;
         VAT?: string;
         total?: string;
-        buttons?: Button[];
+        buttons?: CardAction[];
     };
 }
 export interface FlexCard {
@@ -88,9 +89,9 @@ export interface FlexCard {
         text?: string;
         images?: {
             url: string;
-            tap?: Button;
+            tap?: CardAction;
         }[];
-        buttons?: Button[];
+        buttons?: CardAction[];
         aspect?: string;
     };
 }
@@ -104,7 +105,7 @@ export interface AudioCard {
             url: string;
             profile?: string;
         }[];
-        buttons?: Button[];
+        buttons?: CardAction[];
         autoloop?: boolean;
         autostart?: boolean;
     };
@@ -119,7 +120,7 @@ export interface VideoCard {
             url: string;
             profile?: string;
         }[];
-        buttons?: Button[];
+        buttons?: CardAction[];
         image?: {
             url: string;
             alt?: string;
@@ -138,7 +139,7 @@ export interface AnimationCard {
             url: string;
             profile?: string;
         }[];
-        buttons?: Button[];
+        buttons?: CardAction[];
         image?: {
             url: string;
             alt?: string;
