@@ -271,7 +271,7 @@ export class DirectLine implements IBotConnection {
         if (options.webSocket !== undefined)
             this.webSocket = options.webSocket;
 
-        this.activity$ = this.webSocket && WebSocket !== undefined
+        this.activity$ = this.webSocket && typeof WebSocket !== 'undefined' && WebSocket
             ? this.webSocketActivity$()
             : this.pollingGetActivity$();
     }
