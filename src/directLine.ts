@@ -41,7 +41,7 @@ export interface Media {
     name?: string
 }
 
-export interface Button {
+export interface CardAction {
     type: "openUrl" | "imBack" | "postBack" | "playAudio" | "playVideo" | "showImage" | "downloadFile" | "signin" | "call",
     title: string,
     value: string,
@@ -55,8 +55,8 @@ export interface HeroCard {
         subtitle?: string,
         text?: string,
         images?: { url: string }[],
-        buttons?: Button[],
-        tap?: string
+        buttons?: CardAction[],
+        tap?: CardAction
     }
 }
 
@@ -67,8 +67,8 @@ export interface Thumbnail {
         subtitle?: string,
         text?: string,
         images?: { url: string }[],
-        buttons?: Button[],
-        tap?: string
+        buttons?: CardAction[],
+        tap?: CardAction
     }
 }
 
@@ -76,7 +76,7 @@ export interface Signin {
     contentType: "application/vnd.microsoft.card.signin",
     content: {
         text?: string,
-        buttons?: Button[]
+        buttons?: CardAction[]
     }
 }
 
@@ -87,7 +87,7 @@ export interface ReceiptItem {
     image?: { url: string },
     price?: string,
     quantity?: string,
-    tap?: string
+    tap?: CardAction
 }
 
 export interface Receipt {
@@ -96,11 +96,11 @@ export interface Receipt {
         title?: string,
         facts?: { key: string, value: string }[],
         items?: ReceiptItem[],
-        tap?: string,
+        tap?: CardAction,
         tax?: string,
         VAT?: string,
         total?: string,
-        buttons?: Button[]
+        buttons?: CardAction[]
     }
 }
 
@@ -111,8 +111,8 @@ export interface FlexCard {
         title?: string,
         subtitle?: string,
         text?: string,
-        images?: { url: string, tap?: Button }[],
-        buttons?: Button[],
+        images?: { url: string, tap?: CardAction }[],
+        buttons?: CardAction[],
         aspect?: string
     }
 }
@@ -124,7 +124,7 @@ export interface AudioCard {
         subtitle?: string,
         text?: string,
         media?: { url: string, profile?: string }[],
-        buttons?: Button[],
+        buttons?: CardAction[],
         autoloop?: boolean,
         autostart?: boolean
     }
@@ -137,7 +137,7 @@ export interface VideoCard {
         subtitle?: string,
         text?: string,
         media?: { url: string, profile?: string }[],
-        buttons?: Button[],
+        buttons?: CardAction[],
         image?: { url: string, alt?: string },
         autoloop?: boolean,
         autostart?: boolean
@@ -151,7 +151,7 @@ export interface AnimationCard {
         subtitle?: string,
         text?: string,
         media?: { url: string, profile?: string }[],
-        buttons?: Button[],
+        buttons?: CardAction[],
         image?: { url: string, alt?: string },
         autoloop?: boolean,
         autostart?: boolean
