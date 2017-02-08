@@ -74,7 +74,7 @@ export interface Receipt {
             value: string;
         }[];
         items?: ReceiptItem[];
-        tap?: string;
+        tap?: CardAction;
         tax?: string;
         VAT?: string;
         total?: string;
