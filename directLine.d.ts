@@ -209,6 +209,7 @@ export interface DirectLineOptions {
     token?: string;
     domain?: string;
     webSocket?: boolean;
+    pollingInterval?: number;
 }
 export declare class DirectLine implements IBotConnection {
     constructor(options: DirectLineOptions);
