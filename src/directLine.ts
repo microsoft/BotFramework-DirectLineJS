@@ -13,7 +13,6 @@ import 'rxjs/add/operator/delay';
 import 'rxjs/add/operator/do';
 import 'rxjs/add/operator/filter';
 import 'rxjs/add/operator/map';
-import 'rxjs/add/operator/mapTo';
 import 'rxjs/add/operator/mergeMap';
 import 'rxjs/add/operator/retryWhen';
 import 'rxjs/add/operator/take';
@@ -41,8 +40,10 @@ export interface Media {
     name?: string
 }
 
+export type CardActionTypes = "openUrl" | "imBack" | "postBack" | "playAudio" | "playVideo" | "showImage" | "downloadFile" | "signin" | "call";
+
 export interface CardAction {
-    type: "openUrl" | "imBack" | "postBack" | "playAudio" | "playVideo" | "showImage" | "downloadFile" | "signin" | "call",
+    type: CardActionTypes,
     title: string,
     value: string,
     image?: string
@@ -296,7 +297,7 @@ export class DirectLine implements IBotConnection {
                 }, error => {
                     this.connectionStatus$.next(ConnectionStatus.FailedToConnect);
                 })
-                .mapTo(connectionStatus);
+                .map(_ => connectionStatus);
             } else {
                 return Observable.of(connectionStatus);
             }
@@ -319,6 +320,12 @@ export class DirectLine implements IBotConnection {
         })
 
         return once ? obs.take(1) : obs;
+    }
+
+    private expiredToken() {
+        const connectionStatus = this.connectionStatus$.getValue();
+        if (connectionStatus != ConnectionStatus.Ended && connectionStatus != ConnectionStatus.FailedToConnect)
+            this.connectionStatus$.next(ConnectionStatus.ExpiredToken);
     }
 
     private startConversation() {
@@ -370,7 +377,7 @@ export class DirectLine implements IBotConnection {
                 .mergeMap(error => {
                     if (error.status === 403) {
                         // if the token is expired there's no reason to keep trying
-                        this.connectionStatus$.next(ConnectionStatus.ExpiredToken);
+                        this.expiredToken();
                         return Observable.throw(error);
                     }
                     return Observable.of(error);
@@ -422,9 +429,8 @@ export class DirectLine implements IBotConnection {
         .catch(error => this.catchExpiredToken(error));
     }
 
-    private postMessageWithAttachments(message: Message) {
+    private postMessageWithAttachments({ attachments, ... messageWithoutAttachments }: Message) {
         let formData: FormData;
-        const { attachments, ... newMessage } = message;
 
         // If we're not connected to the bot, get connected
         // Will throw an error if we are not connected
@@ -433,7 +439,7 @@ export class DirectLine implements IBotConnection {
             // To send this message to DirectLine we need to deconstruct it into a "template" activity
             // and one blob for each attachment.
             formData = new FormData();
-            formData.append('activity', new Blob([JSON.stringify(newMessage)], { type: 'application/vnd.microsoft.activity' }));
+            formData.append('activity', new Blob([JSON.stringify(messageWithoutAttachments)], { type: 'application/vnd.microsoft.activity' }));
 
             return Observable.from(attachments || [])
             .flatMap((media: Media) =>
@@ -451,7 +457,7 @@ export class DirectLine implements IBotConnection {
         .flatMap(_ =>
             Observable.ajax({
                 method: "POST",
-                url: `${this.domain}/conversations/${this.conversationId}/upload?userId=${message.from.id}`,
+                url: `${this.domain}/conversations/${this.conversationId}/upload?userId=${messageWithoutAttachments.from.id}`,
                 body: formData,
                 timeout,
                 headers: {
@@ -467,7 +473,7 @@ export class DirectLine implements IBotConnection {
     private catchPostError(error: any) {
         if (error.status === 403)
             // token has expired (will fall through to return "retry")
-            this.connectionStatus$.next(ConnectionStatus.ExpiredToken);
+            this.expiredToken();
         else if (error.status >= 400 && error.status < 500)
             // more unrecoverable errors
             return Observable.throw(error);
@@ -500,7 +506,7 @@ export class DirectLine implements IBotConnection {
                     // to immediately throw an error, which is caught by the catch() below and transformed into an empty
                     // object. Then next() returns, and we emit an empty object. Which means one 403 is causing
                     // two empty objects to be emitted. Which is harmless but, again, slightly ugly.
-                    this.connectionStatus$.next(ConnectionStatus.ExpiredToken);
+                    this.expiredToken();
                 }
                 return Observable.empty<AjaxResponse>();
             })
@@ -581,13 +587,13 @@ export class DirectLine implements IBotConnection {
                 this.token = result.response.token;
                 this.streamUrl = result.response.streamUrl;
             })
-            .mapTo(null)
+            .map(_ => null)
             .retryWhen(error$ => error$
                 .mergeMap(error => {
                     if (error.status === 403) {
                         // token has expired. We can't recover from this here, but the embedding
                         // website might eventually call reconnect() with a new token and streamUrl.
-                        this.connectionStatus$.next(ConnectionStatus.ExpiredToken);
+                        this.expiredToken();
                     }
                     return Observable.of(error);
                 })
