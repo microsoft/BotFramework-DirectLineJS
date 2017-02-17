@@ -222,7 +222,8 @@ export interface DirectLineOptions {
     secret?: string,
     token?: string
     domain?: string,
-    webSocket?: boolean
+    webSocket?: boolean,
+    pollingInterval?: number
 }
 
 const lifetimeRefreshToken = 30 * 60 * 1000;
@@ -262,6 +263,8 @@ export class DirectLine implements IBotConnection {
     private watermark = '';
     private streamUrl: string;
 
+    private pollingInterval: number = 1000;
+
     private tokenRefreshSubscription: Subscription;
 
     constructor(options: DirectLineOptions) {
@@ -271,6 +274,9 @@ export class DirectLine implements IBotConnection {
             this.domain = options.domain;
         if (options.webSocket !== undefined)
             this.webSocket = options.webSocket;
+
+        if (options.pollingInterval !== undefined)
+            this.pollingInterval = options.pollingInterval;
 
         this.activity$ = this.webSocket && typeof WebSocket !== 'undefined' && WebSocket
             ? this.webSocketActivity$()
@@ -487,7 +493,7 @@ export class DirectLine implements IBotConnection {
     }
 
     private pollingGetActivity$() {
-        return Observable.interval(1000)
+        return Observable.interval(this.pollingInterval)
         .combineLatest(this.checkConnection())
         .flatMap(_ =>
             Observable.ajax({
