@@ -14,7 +14,7 @@ If you're currently using WebChat, you don't need to make any changes as it incl
 
 ### *What is that funny `subscribe()` method in the samples below?*
 
-Instead of callbacks or Promises, this library handles async operations using the Observables. Try it, you'll like it! For more information, check out [RxJS](https://github.com/reactivex/rxjs/).
+Instead of callbacks or Promises, this library handles async operations using Observables. Try it, you'll like it! For more information, check out [RxJS](https://github.com/reactivex/rxjs/).
 
 ### *Can I use [TypeScript](http://www.typescriptlang.com)?*
 
