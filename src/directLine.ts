@@ -245,7 +245,6 @@ const konsole = {
 export interface IBotConnection {
     connectionStatus$: BehaviorSubject<ConnectionStatus>,
     activity$: Observable<Activity>,
-    reconnect(conversation: Conversation): void,
     end(): void,
     postActivity(activity: Activity): Observable<string>
 }

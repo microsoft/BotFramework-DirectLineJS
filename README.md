@@ -14,7 +14,7 @@ If you're currently using WebChat, you don't need to make any changes as it incl
 
 ### *What is that funny `subscribe()` method in the samples below?*
 
-Instead of callbacks or Promises, this library handles async operations using the Observable pattern. Try it, you'll like it. For more information, check out [RxJS](https://github.com/reactivex/rxjs/).
+Instead of callbacks or Promises, this library handles async operations using the Observables. Try it, you'll like it! For more information, check out [RxJS](https://github.com/reactivex/rxjs/).
 
 ### *Can I use [TypeScript](http://www.typescriptlang.com)?*
 
@@ -30,7 +30,7 @@ That said, the public API is still subject to change.
 
 0. Clone this repo
 1. `npm install`
-2. `npm run build` (or `npm run watch` to rebuild on every change)
+2. `npm run build` (or `npm run watch` to rebuild on every change, or `npm run prepublish` to build production)
 
 ## How to include in your app
 

@@ -1,9 +1,9 @@
 {
   "name": "botframework-directlinejs",
-  "version": "0.8.4",
+  "version": "0.9.0",
   "description": "client library for the Microsoft Bot Framework Direct Line 3.0 protocol",
   "main": "built/directLine.js",
-  "types": "directLine.d.ts",
+  "types": "built/directLine.d.ts",
   "scripts": {
     "build": "tsc && webpack",
     "watch": "npm-run-all -p -r -l tsc-watch webpack-watch",
