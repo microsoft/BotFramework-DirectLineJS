@@ -100,7 +100,7 @@ Direct Line will helpfully send your client a copy of every sent activity, so a 
 
 ```typescript
 directLine.activity$
-.filter(activity => activity.type === 'message' && activity.from.id !== 'yourBotHandle')
+.filter(activity => activity.type === 'message' && activity.from.id === 'yourBotHandle')
 .subscribe(
     message => console.log("received message ", message)
 );
