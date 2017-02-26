@@ -110,7 +110,7 @@ Subscribing to either `postActivity` or `activity$` will start the process of co
 
 ```typescript
 directLine.connectionStatus$
-.subscribe(connectionStatus =>
+.subscribe(connectionStatus => {
     switch(connectionStatus) {
         case ConnectionStatus.Uninitialized:    // the status when the DirectLine object is first created/constructed
         case ConnectionStatus.Connecting:       // currently trying to connect to the conversation
@@ -119,7 +119,7 @@ directLine.connectionStatus$
         case ConnectionStatus.FailedToConnect:  // the initial attempt to connect to the conversation failed. No recovery possible.
         case ConnectionStatus.Ended:            // the bot ended the conversation
     }
-);
+});
 ```
 
 ### Reconnect to a conversation
