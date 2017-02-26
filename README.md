@@ -51,6 +51,8 @@ There are several ways:
 ### Create a DirectLine object:
 
 ```typescript
+import { DirectLine } from 'botframework-directlinejs';
+
 var directLine = new DirectLine({
     secret: /* put your Direct Line secret here */,
     token: /* or put your Direct Line token here (supply secret OR token, not both) */,
@@ -109,6 +111,9 @@ directLine.activity$
 Subscribing to either `postActivity` or `activity$` will start the process of connecting to the bot. Your app can listen to the connection status and react appropriately :
 
 ```typescript
+
+import { ConnectionStatus } from 'botframework-directlinejs';
+
 directLine.connectionStatus$
 .subscribe(connectionStatus => {
     switch(connectionStatus) {
