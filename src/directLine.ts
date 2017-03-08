@@ -15,6 +15,7 @@ import 'rxjs/add/operator/filter';
 import 'rxjs/add/operator/map';
 import 'rxjs/add/operator/mergeMap';
 import 'rxjs/add/operator/retryWhen';
+import 'rxjs/add/operator/share';
 import 'rxjs/add/operator/take';
 
 import 'rxjs/add/observable/dom/ajax';
@@ -278,9 +279,10 @@ export class DirectLine implements IBotConnection {
         if (options.pollingInterval !== undefined)
             this.pollingInterval = options.pollingInterval;
 
-        this.activity$ = this.webSocket && typeof WebSocket !== 'undefined' && WebSocket
+        this.activity$ = (this.webSocket && typeof WebSocket !== 'undefined' && WebSocket
             ? this.webSocketActivity$()
-            : this.pollingGetActivity$();
+            : this.pollingGetActivity$()
+        ).share();
     }
 
     // Every time we're about to make a Direct Line REST call, we call this first to see check the current connection status.
