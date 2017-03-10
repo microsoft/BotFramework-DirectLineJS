@@ -189,7 +189,8 @@ export interface Message extends IActivity {
     textFormat?: "plain" | "markdown" | "xml",
     attachmentLayout?: AttachmentLayout,
     attachments?: Attachment[],
-    entities?: any[]
+    entities?: any[],
+    suggestedActions?: CardAction[]
 }
 
 export interface Typing extends IActivity {
