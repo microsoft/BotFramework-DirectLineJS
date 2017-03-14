@@ -593,7 +593,8 @@ export class DirectLine implements IBotConnection {
                 }
             })
             .do(result => {
-                this.token = result.response.token;
+                if (!this.secret)
+                    this.token = result.response.token;
                 this.streamUrl = result.response.streamUrl;
             })
             .map(_ => null)
