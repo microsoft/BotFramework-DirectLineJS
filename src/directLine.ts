@@ -280,9 +280,9 @@ export class DirectLine implements IBotConnection {
             this.domain = options.domain;
         if (options.webSocket !== undefined)
             this.webSocket = options.webSocket;
-        if(options.conversationId && options.watermark){
+        if(options.conversationId){
             this.conversationId = options.conversationId;
-            this.watermark = options.watermark;
+            if(options.watermark) this.watermark =  options.watermark;
             this.connectionStatus$.next(ConnectionStatus.Reconnect);
         }
 
@@ -300,42 +300,33 @@ export class DirectLine implements IBotConnection {
     private checkConnection(once = false) {
         let obs =  this.connectionStatus$
         .flatMap(connectionStatus => {
-            if (connectionStatus === ConnectionStatus.Uninitialized) {
-                this.connectionStatus$.next(ConnectionStatus.Connecting);
-
-                return this.startConversation()
-                .do(conversation => {
-                    this.conversationId = conversation.conversationId;
-                    this.token = this.secret || conversation.token;
-                    this.streamUrl = conversation.streamUrl;
-                    if (!this.secret)
-                        this.refreshTokenLoop();
-
-                    this.connectionStatus$.next(ConnectionStatus.Online);
-                }, error => {
-                    this.connectionStatus$.next(ConnectionStatus.FailedToConnect);
-                })
-                .map(_ => connectionStatus);
-            } else if(connectionStatus === ConnectionStatus.Reconnect) {
-                this.connectionStatus$.next(ConnectionStatus.Connecting);
-                
-                return this.reconnectConversation()
-                .do(conversation => {
-                    this.conversationId = conversation.conversationId;
-                    this.token = this.secret || conversation.token;
-                    this.streamUrl = conversation.streamUrl;
-                    if (!this.secret)
-                        this.refreshTokenLoop();
-
-                    this.connectionStatus$.next(ConnectionStatus.Online);
-                }, error => {
-                    this.connectionStatus$.next(ConnectionStatus.FailedToConnect);
-                })
-                .map(_ => connectionStatus);
+            var ajaxConversation;
+            
+            switch(connectionStatus){
+                case ConnectionStatus.Uninitialized: 
+                    this.connectionStatus$.next(ConnectionStatus.Connecting);
+                    ajaxConversation = this.startConversation();
+                    break;
+                case ConnectionStatus.Reconnect:
+                    this.connectionStatus$.next(ConnectionStatus.Reconnecting);
+                    ajaxConversation = this.startConversation(true);
+                    break;
+                default:
+                    return Observable.of(connectionStatus);
             }
-            else {
-                return Observable.of(connectionStatus);
-            }
+
+            return ajaxConversation.do(conversation => {
+                this.conversationId = conversation.conversationId;
+                this.token = this.secret || conversation.token;
+                this.streamUrl = conversation.streamUrl;
+                if (!this.secret)
+                    this.refreshTokenLoop();
+
+                this.connectionStatus$.next(ConnectionStatus.Online);
+            }, error => {
+                this.connectionStatus$.next(ConnectionStatus.FailedToConnect);
+            })
+            .map(_ => connectionStatus);
         })
         .filter(connectionStatus => connectionStatus != ConnectionStatus.Uninitialized && connectionStatus != ConnectionStatus.Connecting)
         .flatMap(connectionStatus => {
@@ -363,34 +354,13 @@ export class DirectLine implements IBotConnection {
             this.connectionStatus$.next(ConnectionStatus.ExpiredToken);
     }
 
-    private reconnectConversation() {
-        return Observable.ajax({
-            method: "GET",
-            url: `${this.domain}/conversations/${this.conversationId}?watermark=${this.watermark}`,
-            timeout,
-            headers: {
-                "Accept": "application/json",
-                "Authorization": `Bearer ${this.token}`
-            }
-        })
-//      .do(ajaxResponse => konsole.log("conversation ajaxResponse", ajaxResponse.response))
-        .map(ajaxResponse => ajaxResponse.response as Conversation)
-        .retryWhen(error$ =>
-            // for now we deem 4xx and 5xx errors as unrecoverable
-            // for everything else (timeouts), retry for a while
-            error$.mergeMap(error => error.status >= 400 && error.status < 600
-                ? Observable.throw(error)
-                : Observable.of(error)
-            )
-            .delay(timeout)
-            .take(retries)
-        )
-    }
+    private startConversation(reconnect:boolean = false) {
+        let url = reconnect ? `${this.domain}/conversations/${this.conversationId}?watermark=${this.watermark}` : `${this.domain}/conversations`;
+        let method = reconnect ? "GET" : "POST";
 
-    private startConversation() {
         return Observable.ajax({
-            method: "POST",
-            url: `${this.domain}/conversations`, //${this.conversationId ? `/${this.conversationId}?watermark=${this.watermark}` : ''}`,
+            method: method,
+            url: url,
             timeout,
             headers: {
                 "Accept": "application/json",
