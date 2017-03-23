@@ -219,8 +219,8 @@ export enum ConnectionStatus {
     ExpiredToken,               // last operation errored out with an expired token. Possibly waiting for someone to supply a new one.
     FailedToConnect,            // the initial attempt to connect to the conversation failed. No recovery possible.
     Ended,                      // the bot ended the conversation
-    Reconnect,
-    Reconnecting
+    Resume,
+    Resuming
 }
 
 export interface DirectLineOptions {
@@ -283,7 +283,7 @@ export class DirectLine implements IBotConnection {
         if(options.conversationId){
             this.conversationId = options.conversationId;
             if(options.watermark) this.watermark =  options.watermark;
-            this.connectionStatus$.next(ConnectionStatus.Reconnect);
+            this.connectionStatus$.next(ConnectionStatus.Resume);
         }
 
         if (options.pollingInterval !== undefined)
@@ -307,8 +307,8 @@ export class DirectLine implements IBotConnection {
                     this.connectionStatus$.next(ConnectionStatus.Connecting);
                     ajaxConversation = this.startConversation();
                     break;
-                case ConnectionStatus.Reconnect:
-                    this.connectionStatus$.next(ConnectionStatus.Reconnecting);
+                case ConnectionStatus.Resume:
+                    this.connectionStatus$.next(ConnectionStatus.Resuming);
                     ajaxConversation = this.startConversation(true);
                     break;
                 default:
