@@ -140,6 +140,24 @@ var conversation = /* a Conversation object obtained from your app's server */;
 directLine.reconnect(conversation);
 ```
 
+### Resume an existing conversation
+
+When using DirectLine with WebChat, closing the current tab or refreshing the page will create a new conversation in most cases.
+
+You can resume a conversation by:
+- Storing the conversationid and watermark (in a *permanent* place, like local storage)
+- Giving these values back while creating the DirectLine object
+
+```typescript
+botConnection = new DirectLine.DirectLine({
+    secret: /* or token */,
+    conversationId: /* the conversationid you stored from previous conversation */,
+    watermark: /* the watermark you stored from previous conversation */,
+});
+```
+
+You can see the watermark as an *activity 'bookmark'*. The resuming scenario will ask to get all the conversation activities from the watermark you specify.
+
 ## Copyright & License
 
 © 2017 Microsoft Corporation
