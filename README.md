@@ -149,7 +149,9 @@ You can resume a conversation by:
 - Giving these values back while creating the DirectLine object
 
 ```typescript
-botConnection = new DirectLine.DirectLine({
+import { DirectLine } from 'botframework-directlinejs';
+
+botConnection = new DirectLine({
     secret: /* or token */,
     conversationId: /* the conversationid you stored from previous conversation */,
     watermark: /* the watermark you stored from previous conversation */,
