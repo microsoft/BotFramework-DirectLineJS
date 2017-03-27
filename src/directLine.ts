@@ -190,7 +190,7 @@ export interface Message extends IActivity {
     attachmentLayout?: AttachmentLayout,
     attachments?: Attachment[],
     entities?: any[],
-    suggestedActions?: CardAction[]
+    suggestedActions?: { actions: CardAction[] }
 }
 
 export interface Typing extends IActivity {
