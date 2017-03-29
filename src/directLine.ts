@@ -275,21 +275,19 @@ export class DirectLine implements IBotConnection {
     constructor(options: DirectLineOptions) {
         this.secret = options.secret;
         this.token = options.secret || options.token;
-        this.webSocket = typeof WebSocket !== 'undefined' && WebSocket !== undefined; 
+        this.webSocket = (options.webSocket === undefined ? true : options.webSocket) && typeof WebSocket !== 'undefined' && WebSocket !== undefined; 
 
         if (options.domain)
             this.domain = options.domain;
-        if (options.webSocket !== undefined)
-            this.webSocket = this.webSocket && options.webSocket;
         if (options.conversationId) {
             this.conversationId = options.conversationId;
         }
-        if (options.watermark !== undefined) {
-                if (this.webSocket) 
-                    console.warn("Watermark was ignored: it is not supported using websockets at the moment");
-                else
-                    this.watermark =  options.watermark;
-            }
+        if (options.watermark) {
+            if (this.webSocket) 
+                console.warn("Watermark was ignored: it is not supported using websockets at the moment");
+            else
+                this.watermark =  options.watermark;
+        }
         if (options.streamUrl) {
             if (options.token && options.conversationId) 
                 this.streamUrl = options.streamUrl;
@@ -314,7 +312,7 @@ export class DirectLine implements IBotConnection {
                 this.connectionStatus$.next(ConnectionStatus.Connecting);
 
                 //if token and streamUrl are defined it means reconnect has already been done. Skipping it.
-                if (this.token !== undefined && this.streamUrl !== undefined) {
+                if (this.token && this.streamUrl) {
                     this.connectionStatus$.next(ConnectionStatus.Online);
                     return Observable.of(connectionStatus);
                 } else {
