@@ -142,23 +142,52 @@ directLine.reconnect(conversation);
 
 ### Resume an existing conversation
 
-When using DirectLine with WebChat, closing the current tab or refreshing the page will create a new conversation in most cases.
+When using DirectLine with WebChat, closing the current tab or refreshing the page will create a new conversation in most cases. You can resume an existing conversation to keep the user in the same context.
 
-You can resume a conversation by:
-- Storing the conversationid and watermark (in a *permanent* place, like local storage)
-- Giving these values back while creating the DirectLine object
+**When using a secret** you can resume a conversation by:
+- Storing the conversationid (in a *permanent* place, like local storage)
+- Giving this value back while creating the DirectLine object along with the secret
 
 ```typescript
 import { DirectLine } from 'botframework-directlinejs';
 
 botConnection = new DirectLine({
-    secret: /* or token */,
-    conversationId: /* the conversationid you stored from previous conversation */,
-    watermark: /* the watermark you stored from previous conversation */,
+    secret: /* SECRET */,
+    conversationId: /* the conversationid you stored from previous conversation */
 });
 ```
 
-You can see the watermark as an *activity 'bookmark'*. The resuming scenario will ask to get all the conversation activities from the watermark you specify.
+**When using a token** you can resume a conversation by:
+- Storing the conversationid and your token (in a *permanent* place, like local storage)
+- Calling the DirectLine reconnect API yourself to get a refreshed token and a streamurl
+- Creating the DirectLine object using the ConversationId, Token, and StreamUrl
+
+```typescript
+import { DirectLine } from 'botframework-directlinejs';
+
+botConnection = new DirectLine({
+    token: /* the token you retrieved while reconnecting */,
+    streamUrl: /* the streamUrl you retrieved while reconnecting */,
+    conversationId: /* the conversationid you stored from previous conversation */
+});
+```
+
+**Getting history** : you can retrieve history using watermarks:
+You can see the watermark as an *activity 'bookmark'*. The resuming scenario will replay all the conversation activities from the watermark you specify. For now, this only works when using the polling version of DirectLine.
+
+```typescript
+import { DirectLine } from 'botframework-directlinejs';
+
+botConnection = new DirectLine({
+    token: /* the token you retrieved while reconnecting */,
+    streamUrl: /* the streamUrl you retrieved while reconnecting */,
+    conversationId: /* the conversationid you stored from previous conversation */,
+    watermark: /* a watermark you saved from a previous conversation */,
+    webSocket: false
+});
+```
+
+*Watermark with websocket will be supported in the future.*
 
 ## Copyright & License
 
