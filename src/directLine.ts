@@ -223,10 +223,13 @@ export enum ConnectionStatus {
 
 export interface DirectLineOptions {
     secret?: string,
-    token?: string
+    token?: string,
+    conversationId?: string,
+    watermark?: string,
     domain?: string,
     webSocket?: boolean,
-    pollingInterval?: number
+    pollingInterval?: number,
+    streamUrl?: string
 }
 
 const lifetimeRefreshToken = 30 * 60 * 1000;
@@ -257,7 +260,7 @@ export class DirectLine implements IBotConnection {
     public activity$: Observable<Activity>;
 
     private domain = "https://directline.botframework.com/v3/directline";
-    private webSocket = true;
+    private webSocket;
 
     private conversationId: string;
     private secret: string;
@@ -272,15 +275,29 @@ export class DirectLine implements IBotConnection {
     constructor(options: DirectLineOptions) {
         this.secret = options.secret;
         this.token = options.secret || options.token;
+        this.webSocket = (options.webSocket === undefined ? true : options.webSocket) && typeof WebSocket !== 'undefined' && WebSocket !== undefined; 
+
         if (options.domain)
             this.domain = options.domain;
-        if (options.webSocket !== undefined)
-            this.webSocket = options.webSocket;
-
+        if (options.conversationId) {
+            this.conversationId = options.conversationId;
+        }
+        if (options.watermark) {
+            if (this.webSocket) 
+                console.warn("Watermark was ignored: it is not supported using websockets at the moment");
+            else
+                this.watermark =  options.watermark;
+        }
+        if (options.streamUrl) {
+            if (options.token && options.conversationId) 
+                this.streamUrl = options.streamUrl;
+            else
+                console.warn("streamUrl was ignored: you need to provide a token and a conversationid");
+        }
         if (options.pollingInterval !== undefined)
             this.pollingInterval = options.pollingInterval;
 
-        this.activity$ = (this.webSocket && typeof WebSocket !== 'undefined' && WebSocket
+        this.activity$ = (this.webSocket
             ? this.webSocketActivity$()
             : this.pollingGetActivity$()
         ).share();
@@ -294,21 +311,27 @@ export class DirectLine implements IBotConnection {
             if (connectionStatus === ConnectionStatus.Uninitialized) {
                 this.connectionStatus$.next(ConnectionStatus.Connecting);
 
-                return this.startConversation()
-                .do(conversation => {
-                    this.conversationId = conversation.conversationId;
-                    this.token = this.secret || conversation.token;
-                    this.streamUrl = conversation.streamUrl;
-                    if (!this.secret)
-                        this.refreshTokenLoop();
-
+                //if token and streamUrl are defined it means reconnect has already been done. Skipping it.
+                if (this.token && this.streamUrl) {
                     this.connectionStatus$.next(ConnectionStatus.Online);
-                }, error => {
-                    this.connectionStatus$.next(ConnectionStatus.FailedToConnect);
-                })
-                .map(_ => connectionStatus);
-            } else {
-                return Observable.of(connectionStatus);
+                    return Observable.of(connectionStatus);
+                } else {
+                    return this.startConversation().do(conversation => {
+                        this.conversationId = conversation.conversationId;
+                        this.token = this.secret || conversation.token;
+                        this.streamUrl = conversation.streamUrl;
+                        if (!this.secret)
+                            this.refreshTokenLoop();
+
+                        this.connectionStatus$.next(ConnectionStatus.Online);
+                    }, error => {
+                        this.connectionStatus$.next(ConnectionStatus.FailedToConnect);
+                    })
+                    .map(_ => connectionStatus);
+                }
+            }
+            else {
+                return Observable.of(connectionStatus);            
             }
         })
         .filter(connectionStatus => connectionStatus != ConnectionStatus.Uninitialized && connectionStatus != ConnectionStatus.Connecting)
@@ -338,9 +361,15 @@ export class DirectLine implements IBotConnection {
     }
 
     private startConversation() {
+        //if conversationid is set here, it means we need to call the reconnect api, else it is a new conversation
+        const url = this.conversationId 
+            ? `${this.domain}/conversations/${this.conversationId}?watermark=${this.watermark}` 
+            : `${this.domain}/conversations`;
+        const method = this.conversationId ? "GET" : "POST";
+
         return Observable.ajax({
-            method: "POST",
-            url: `${this.domain}/conversations`,
+            method,
+            url,
             timeout,
             headers: {
                 "Accept": "application/json",
