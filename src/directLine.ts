@@ -218,7 +218,7 @@ export enum ConnectionStatus {
     Online,                     // successfully connected to the converstaion. Connection is healthy so far as we know.
     ExpiredToken,               // last operation errored out with an expired token. Possibly waiting for someone to supply a new one.
     FailedToConnect,            // the initial attempt to connect to the conversation failed. No recovery possible.
-    Ended                      // the bot ended the conversation
+    Ended                       // the bot ended the conversation
 }
 
 export interface DirectLineOptions {
@@ -315,7 +315,7 @@ export class DirectLine implements IBotConnection {
             if (connectionStatus === ConnectionStatus.Uninitialized) {
                 this.connectionStatus$.next(ConnectionStatus.Connecting);
 
-                 //if token and streamUrl are defined it means reconnect has already been done. Skipping it.
+                //if token and streamUrl are defined it means reconnect has already been done. Skipping it.
                 if (this.token !== undefined && this.streamUrl !== undefined) {
                     this.connectionStatus$.next(ConnectionStatus.Online);
                     return Observable.of(connectionStatus);
