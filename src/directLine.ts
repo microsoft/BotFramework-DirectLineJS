@@ -245,9 +245,7 @@ const konsole = {
     log: (message?: any, ... optionalParams: any[]) => {
         if (typeof(window) !== 'undefined' && window["botchatDebug"] && message)
             console.log(message, ... optionalParams);
-    },
-    //warnings should always be displayed
-    warn: (message?: any, ... optionalParams: any[]) => console.warn(message, ... optionalParams)
+    }
 }
 
 export interface IBotConnection {
@@ -262,7 +260,7 @@ export class DirectLine implements IBotConnection {
     public activity$: Observable<Activity>;
 
     private domain = "https://directline.botframework.com/v3/directline";
-    private webSocket = true;
+    private webSocket;
 
     private conversationId: string;
     private secret: string;
@@ -277,31 +275,31 @@ export class DirectLine implements IBotConnection {
     constructor(options: DirectLineOptions) {
         this.secret = options.secret;
         this.token = options.secret || options.token;
-        const useWebSockets:boolean = options.webSocket && typeof WebSocket !== 'undefined' && WebSocket !== undefined;
+        this.webSocket = typeof WebSocket !== 'undefined' && WebSocket !== undefined; 
 
         if (options.domain)
             this.domain = options.domain;
         if (options.webSocket !== undefined)
-            this.webSocket = options.webSocket;
-        if (options.conversationId !== undefined) {
+            this.webSocket = this.webSocket && options.webSocket;
+        if (options.conversationId) {
             this.conversationId = options.conversationId;
-            if (options.watermark !== undefined) {
-                if (useWebSockets) 
-                    konsole.warn("Watermark was ignored: it is not supported using websockets at the moment");
+        }
+        if (options.watermark !== undefined) {
+                if (this.webSocket) 
+                    console.warn("Watermark was ignored: it is not supported using websockets at the moment");
                 else
                     this.watermark =  options.watermark;
             }
-        }
-        if (options.streamUrl !== undefined) {
-            if (options.token !== undefined && options.conversationId !== undefined) 
+        if (options.streamUrl) {
+            if (options.token && options.conversationId) 
                 this.streamUrl = options.streamUrl;
             else
-                konsole.warn("streamUrl was ignored: you need to provide a token and a conversationid");
+                console.warn("streamUrl was ignored: you need to provide a token and a conversationid");
         }
         if (options.pollingInterval !== undefined)
             this.pollingInterval = options.pollingInterval;
 
-        this.activity$ = (useWebSockets
+        this.activity$ = (this.webSocket
             ? this.webSocketActivity$()
             : this.pollingGetActivity$()
         ).share();
@@ -372,8 +370,8 @@ export class DirectLine implements IBotConnection {
         const method = this.conversationId ? "GET" : "POST";
 
         return Observable.ajax({
-            method: method,
-            url: url,
+            method,
+            url,
             timeout,
             headers: {
                 "Accept": "application/json",

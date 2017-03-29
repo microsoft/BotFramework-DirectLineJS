@@ -151,7 +151,7 @@ When using DirectLine with WebChat, closing the current tab or refreshing the pa
 ```typescript
 import { DirectLine } from 'botframework-directlinejs';
 
-botConnection = new DirectLine({
+const dl = new DirectLine({
     secret: /* SECRET */,
     conversationId: /* the conversationid you stored from previous conversation */
 });
@@ -165,20 +165,20 @@ botConnection = new DirectLine({
 ```typescript
 import { DirectLine } from 'botframework-directlinejs';
 
-botConnection = new DirectLine({
+const dl = new DirectLine({
     token: /* the token you retrieved while reconnecting */,
     streamUrl: /* the streamUrl you retrieved while reconnecting */,
     conversationId: /* the conversationid you stored from previous conversation */
 });
 ```
 
-**Getting history** : you can retrieve history using watermarks:
+**Getting any history that Direct Line has cached** : you can retrieve history using watermarks:
 You can see the watermark as an *activity 'bookmark'*. The resuming scenario will replay all the conversation activities from the watermark you specify. For now, this only works when using the polling version of DirectLine.
 
 ```typescript
 import { DirectLine } from 'botframework-directlinejs';
 
-botConnection = new DirectLine({
+const dl = new DirectLine({
     token: /* the token you retrieved while reconnecting */,
     streamUrl: /* the streamUrl you retrieved while reconnecting */,
     conversationId: /* the conversationid you stored from previous conversation */,
