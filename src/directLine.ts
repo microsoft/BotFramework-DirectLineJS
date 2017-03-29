@@ -177,6 +177,7 @@ export interface IActivity {
     eTag?: string,
     from: User,
     id?: string,
+    localTimestamp?: string,
     timestamp?: string
 }
 
