@@ -218,9 +218,7 @@ export enum ConnectionStatus {
     Online,                     // successfully connected to the converstaion. Connection is healthy so far as we know.
     ExpiredToken,               // last operation errored out with an expired token. Possibly waiting for someone to supply a new one.
     FailedToConnect,            // the initial attempt to connect to the conversation failed. No recovery possible.
-    Ended,                      // the bot ended the conversation
-    Resume,
-    Resuming
+    Ended                      // the bot ended the conversation
 }
 
 export interface DirectLineOptions {
@@ -230,7 +228,8 @@ export interface DirectLineOptions {
     watermark?: string,
     domain?: string,
     webSocket?: boolean,
-    pollingInterval?: number
+    pollingInterval?: number,
+    streamUrl?: string
 }
 
 const lifetimeRefreshToken = 30 * 60 * 1000;
@@ -246,7 +245,9 @@ const konsole = {
     log: (message?: any, ... optionalParams: any[]) => {
         if (typeof(window) !== 'undefined' && window["botchatDebug"] && message)
             console.log(message, ... optionalParams);
-    }
+    },
+    //warnings should always be displayed
+    warn: (message?: any, ... optionalParams: any[]) => console.warn(message, ... optionalParams)
 }
 
 export interface IBotConnection {
@@ -276,20 +277,31 @@ export class DirectLine implements IBotConnection {
     constructor(options: DirectLineOptions) {
         this.secret = options.secret;
         this.token = options.secret || options.token;
+        const useWebSockets:boolean = options.webSocket && typeof WebSocket !== 'undefined' && WebSocket !== undefined;
+
         if (options.domain)
             this.domain = options.domain;
         if (options.webSocket !== undefined)
             this.webSocket = options.webSocket;
-        if(options.conversationId){
+        if (options.conversationId !== undefined) {
             this.conversationId = options.conversationId;
-            if(options.watermark) this.watermark =  options.watermark;
-            this.connectionStatus$.next(ConnectionStatus.Resume);
+            if (options.watermark !== undefined) {
+                if (useWebSockets) 
+                    konsole.warn("Watermark was ignored: it is not supported using websockets at the moment");
+                else
+                    this.watermark =  options.watermark;
+            }
         }
-
+        if (options.streamUrl !== undefined) {
+            if (options.token !== undefined && options.conversationId !== undefined) 
+                this.streamUrl = options.streamUrl;
+            else
+                konsole.warn("streamUrl was ignored: you need to provide a token and a conversationid");
+        }
         if (options.pollingInterval !== undefined)
             this.pollingInterval = options.pollingInterval;
 
-        this.activity$ = (this.webSocket && typeof WebSocket !== 'undefined' && WebSocket
+        this.activity$ = (useWebSockets
             ? this.webSocketActivity$()
             : this.pollingGetActivity$()
         ).share();
@@ -300,33 +312,31 @@ export class DirectLine implements IBotConnection {
     private checkConnection(once = false) {
         let obs =  this.connectionStatus$
         .flatMap(connectionStatus => {
-            var ajaxConversation;
-            
-            switch(connectionStatus){
-                case ConnectionStatus.Uninitialized: 
-                    this.connectionStatus$.next(ConnectionStatus.Connecting);
-                    ajaxConversation = this.startConversation();
-                    break;
-                case ConnectionStatus.Resume:
-                    this.connectionStatus$.next(ConnectionStatus.Resuming);
-                    ajaxConversation = this.startConversation(true);
-                    break;
-                default:
+            if (connectionStatus === ConnectionStatus.Uninitialized) {
+                this.connectionStatus$.next(ConnectionStatus.Connecting);
+
+                 //if token and streamUrl are defined it means reconnect has already been done. Skipping it.
+                if (this.token !== undefined && this.streamUrl !== undefined) {
+                    this.connectionStatus$.next(ConnectionStatus.Online);
                     return Observable.of(connectionStatus);
+                } else {
+                    return this.startConversation().do(conversation => {
+                        this.conversationId = conversation.conversationId;
+                        this.token = this.secret || conversation.token;
+                        this.streamUrl = conversation.streamUrl;
+                        if (!this.secret)
+                            this.refreshTokenLoop();
+
+                        this.connectionStatus$.next(ConnectionStatus.Online);
+                    }, error => {
+                        this.connectionStatus$.next(ConnectionStatus.FailedToConnect);
+                    })
+                    .map(_ => connectionStatus);
+                }
             }
-
-            return ajaxConversation.do(conversation => {
-                this.conversationId = conversation.conversationId;
-                this.token = this.secret || conversation.token;
-                this.streamUrl = conversation.streamUrl;
-                if (!this.secret)
-                    this.refreshTokenLoop();
-
-                this.connectionStatus$.next(ConnectionStatus.Online);
-            }, error => {
-                this.connectionStatus$.next(ConnectionStatus.FailedToConnect);
-            })
-            .map(_ => connectionStatus);
+            else {
+                return Observable.of(connectionStatus);            
+            }
         })
         .filter(connectionStatus => connectionStatus != ConnectionStatus.Uninitialized && connectionStatus != ConnectionStatus.Connecting)
         .flatMap(connectionStatus => {
@@ -354,9 +364,12 @@ export class DirectLine implements IBotConnection {
             this.connectionStatus$.next(ConnectionStatus.ExpiredToken);
     }
 
-    private startConversation(reconnect:boolean = false) {
-        let url = reconnect ? `${this.domain}/conversations/${this.conversationId}?watermark=${this.watermark}` : `${this.domain}/conversations`;
-        let method = reconnect ? "GET" : "POST";
+    private startConversation() {
+        //if conversationid is set here, it means we need to call the reconnect api, else it is a new conversation
+        const url = this.conversationId 
+            ? `${this.domain}/conversations/${this.conversationId}?watermark=${this.watermark}` 
+            : `${this.domain}/conversations`;
+        const method = this.conversationId ? "GET" : "POST";
 
         return Observable.ajax({
             method: method,
