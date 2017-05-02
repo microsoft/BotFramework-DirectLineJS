@@ -47,7 +47,7 @@ export type CardActionTypes = "openUrl" | "imBack" | "postBack" | "playAudio" | 
 export interface CardAction {
     type: CardActionTypes,
     title: string,
-    value: string,
+    value: any,
     image?: string
 }
 
