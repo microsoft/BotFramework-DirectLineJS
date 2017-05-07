@@ -31,7 +31,8 @@ export interface Conversation {
     conversationId: string,
     token: string,
     eTag?: string,
-    streamUrl?: string
+    streamUrl?: string,
+    referenceGrammarId?: string
 }
 
 export type MediaType = "image/png" | "image/jpg" | "image/jpeg" | "image/gif" | "audio/mpeg" | "audio/mp4" | "video/mp4";
@@ -147,6 +148,11 @@ export interface VideoCard {
     }
 }
 
+export interface AdaptiveCard {
+    contentType: "application/vnd.microsoft.card.adaptive",
+    content: any;
+}
+
 export interface AnimationCard {
     contentType: "application/vnd.microsoft.card.animation",
     content: {
@@ -161,7 +167,7 @@ export interface AnimationCard {
     }
 }
 
-export type Attachment = Media | HeroCard | Thumbnail | Signin | Receipt | AudioCard | VideoCard | AnimationCard | FlexCard;
+export type Attachment = Media | HeroCard | Thumbnail | Signin | Receipt | AudioCard | VideoCard | AnimationCard | FlexCard | AdaptiveCard;
 
 export interface User {
     id: string,
@@ -190,7 +196,10 @@ export interface Message extends IActivity {
     attachmentLayout?: AttachmentLayout,
     attachments?: Attachment[],
     entities?: any[],
-    suggestedActions?: { actions: CardAction[], to?: string[] }
+    suggestedActions?: { actions: CardAction[], to?: string[] },
+    speak?: string,
+    inputHint?: string,
+    value?: object
 }
 
 export interface Typing extends IActivity {
@@ -252,6 +261,7 @@ export interface IBotConnection {
     connectionStatus$: BehaviorSubject<ConnectionStatus>,
     activity$: Observable<Activity>,
     end(): void,
+    referenceGrammarId?: string,
     postActivity(activity: Activity): Observable<string>
 }
 
@@ -267,6 +277,7 @@ export class DirectLine implements IBotConnection {
     private token: string;
     private watermark = '';
     private streamUrl: string;
+    public referenceGrammarId: string;
 
     private pollingInterval: number = 1000;
 
@@ -320,6 +331,7 @@ export class DirectLine implements IBotConnection {
                         this.conversationId = conversation.conversationId;
                         this.token = this.secret || conversation.token;
                         this.streamUrl = conversation.streamUrl;
+                        this.referenceGrammarId = conversation.referenceGrammarId;
                         if (!this.secret)
                             this.refreshTokenLoop();
 
