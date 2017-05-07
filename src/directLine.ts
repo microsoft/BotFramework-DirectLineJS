@@ -261,7 +261,7 @@ export interface IBotConnection {
     connectionStatus$: BehaviorSubject<ConnectionStatus>,
     activity$: Observable<Activity>,
     end(): void,
-    getConversation(): Conversation,
+    referenceGrammarId?: string,
     postActivity(activity: Activity): Observable<string>
 }
 
@@ -277,7 +277,7 @@ export class DirectLine implements IBotConnection {
     private token: string;
     private watermark = '';
     private streamUrl: string;
-    private referenceGrammarId: string;
+    public referenceGrammarId: string;
 
     private pollingInterval: number = 1000;
 
@@ -443,15 +443,6 @@ export class DirectLine implements IBotConnection {
         this.streamUrl = conversation.streamUrl;
         if (this.connectionStatus$.getValue() === ConnectionStatus.ExpiredToken)
             this.connectionStatus$.next(ConnectionStatus.Online);
-    }
-
-    getConversation(): Conversation {
-        return {
-            conversationId: this.conversationId,
-            referenceGrammarId: this.referenceGrammarId,
-            streamUrl: this.streamUrl,
-            token: this.token
-        };
     }
 
     end() {
