@@ -199,7 +199,7 @@ export interface Message extends IActivity {
     suggestedActions?: { actions: CardAction[], to?: string[] },
     speak?: string,
     inputHint?: string,
-    value?: object
+    value?: Object
 }
 
 export interface Typing extends IActivity {
