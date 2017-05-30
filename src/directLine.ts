@@ -188,8 +188,7 @@ export interface IActivity {
 
 export type AttachmentLayout = "list" | "carousel";
 
-export interface Message extends IActivity {
-    type: "message",
+export interface IBaseMessage extends IActivity {
     text?: string,
     locale?: string,
     textFormat?: "plain" | "markdown" | "xml",
@@ -202,18 +201,12 @@ export interface Message extends IActivity {
     value?: object
 }
 
-export interface MessageUpdate extends IActivity {
-    type: "update",
-    text?: string,
-    locale?: string,
-    textFormat?: "plain" | "markdown" | "xml",
-    attachmentLayout?: AttachmentLayout,
-    attachments?: Attachment[],
-    entities?: any[],
-    suggestedActions?: { actions: CardAction[], to?: string[] },
-    speak?: string,
-    inputHint?: string,
-    value?: object
+export interface Message extends IBaseMessage {
+    type: "message"
+}
+
+export interface MessageUpdate extends IBaseMessage {
+    type: "update"
 }
 
 export interface MessageDelete extends IActivity {
