@@ -202,6 +202,24 @@ export interface Message extends IActivity {
     value?: object
 }
 
+export interface MessageUpdate extends IActivity {
+    type: "update",
+    text?: string,
+    locale?: string,
+    textFormat?: "plain" | "markdown" | "xml",
+    attachmentLayout?: AttachmentLayout,
+    attachments?: Attachment[],
+    entities?: any[],
+    suggestedActions?: { actions: CardAction[], to?: string[] },
+    speak?: string,
+    inputHint?: string,
+    value?: object
+}
+
+export interface MessageDelete extends IActivity {
+    type: "delete"
+}
+
 export interface Typing extends IActivity {
     type: "typing"
 }
@@ -212,7 +230,7 @@ export interface EventActivity extends IActivity {
     value: any
 }
 
-export type Activity = Message | Typing | EventActivity;
+export type Activity = Message | Typing | EventActivity | MessageDelete | MessageUpdate;
 
 interface ActivityGroup {
     activities: Activity[],
