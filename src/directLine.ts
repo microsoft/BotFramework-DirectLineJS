@@ -273,7 +273,9 @@ export interface IBotConnection {
     activity$: Observable<Activity>,
     end(): void,
     referenceGrammarId?: string,
-    postActivity(activity: Activity): Observable<string>
+    postActivity(activity: Activity): Observable<string>,
+    putActivity(activity: Activity): Observable<string>,
+    deleteActivity(activityId: string): Observable<string>
 }
 
 export class DirectLine implements IBotConnection {
@@ -529,6 +531,49 @@ export class DirectLine implements IBotConnection {
             .catch(error => this.catchPostError(error))
         )
         .catch(error => this.catchPostError(error));
+    }
+
+    putActivity(activity: Activity) {
+        // If we're not connected to the bot, get connected
+        // Will throw an error if we are not connected
+        konsole.log("putActivity", activity);
+        return this.checkConnection(true)
+        .flatMap(_ =>
+            Observable.ajax({
+                method: "PUT",
+                url: `${this.domain}/conversations/${this.conversationId}/activities/${activity.id}`,
+                body: activity,
+                timeout,
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${this.token}`
+                }
+            })
+            .map(ajaxResponse => ajaxResponse.response.id as string)
+            .catch(error => this.catchPostError(error))
+        )
+        .catch(error => this.catchExpiredToken(error));
+    }
+
+    deleteActivity(activityId: string) {
+        // If we're not connected to the bot, get connected
+        // Will throw an error if we are not connected
+        konsole.log("deleteActivity", activityId);
+        return this.checkConnection(true)
+        .flatMap(_ =>
+            Observable.ajax({
+                method: "DELETE",
+                url: `${this.domain}/conversations/${this.conversationId}/activities/${activityId}`,
+                timeout,
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${this.token}`
+                }
+            })
+            .map(ajaxResponse => ajaxResponse.response.id as string)
+            .catch(error => this.catchPostError(error))
+        )
+        .catch(error => this.catchExpiredToken(error));
     }
 
     private catchPostError(error: any) {
