@@ -40,7 +40,8 @@ export type MediaType = "image/png" | "image/jpg" | "image/jpeg" | "image/gif" |
 export interface Media {
     contentType: MediaType,
     contentUrl: string,
-    name?: string
+    name?: string,
+    thumbnailUrl?: string
 }
 
 export type CardActionTypes = "openUrl" | "imBack" | "postBack" | "playAudio" | "playVideo" | "showImage" | "downloadFile" | "signin" | "call";
