@@ -45,7 +45,7 @@ export interface Media {
 }
 
 export interface UnknownMedia{
-    contentType?: string,
+    contentType: string,
     contentUrl: string,
     name?: string,
     thumbnailUrl?: string    
