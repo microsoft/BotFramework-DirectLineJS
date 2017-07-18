@@ -44,6 +44,13 @@ export interface Media {
     thumbnailUrl?: string
 }
 
+export interface UnknownMedia{
+    contentType: string,
+    contentUrl: string,
+    name?: string,
+    thumbnailUrl?: string    
+}
+
 export type CardActionTypes = "openUrl" | "imBack" | "postBack" | "playAudio" | "playVideo" | "showImage" | "downloadFile" | "signin" | "call";
 
 export interface CardAction {
@@ -168,7 +175,7 @@ export interface AnimationCard {
     }
 }
 
-export type Attachment = Media | HeroCard | Thumbnail | Signin | Receipt | AudioCard | VideoCard | AnimationCard | FlexCard | AdaptiveCard;
+export type Attachment = Media | UnknownMedia | HeroCard | Thumbnail | Signin | Receipt | AudioCard | VideoCard | AnimationCard | FlexCard | AdaptiveCard;
 
 export interface User {
     id: string,
