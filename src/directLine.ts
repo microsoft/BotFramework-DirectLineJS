@@ -175,7 +175,8 @@ export interface AnimationCard {
     }
 }
 
-export type Attachment = Media | UnknownMedia | HeroCard | Thumbnail | Signin | Receipt | AudioCard | VideoCard | AnimationCard | FlexCard | AdaptiveCard;
+export type KnownMedia = Media | HeroCard | Thumbnail | Signin | Receipt | AudioCard | VideoCard | AnimationCard | FlexCard | AdaptiveCard;
+export type Attachment = KnownMedia | UnknownMedia;
 
 export interface User {
     id: string,
