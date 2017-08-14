@@ -110,7 +110,7 @@ export interface Receipt {
         items?: ReceiptItem[],
         tap?: CardAction,
         tax?: string,
-        VAT?: string,
+        vat?: string,
         total?: string,
         buttons?: CardAction[]
     }
