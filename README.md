@@ -1,4 +1,4 @@
-# BotFramework-DirectLineJS
+﻿# BotFramework-DirectLineJS 
 
 Client library for the [Microsoft Bot Framework](http://www.botframework.com) *[Direct Line](https://docs.botframework.com/en-us/restapi/directline3/)* protocol.
 
