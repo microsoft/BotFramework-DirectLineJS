@@ -594,6 +594,26 @@ export class DirectLine implements IBotConnection {
         .flatMap(activityGroup => this.observableFromActivityGroup(activityGroup))
     }
 
+    private isMobileOS() {
+        var userAgent = navigator.userAgent || navigator.vendor || window.opera;
+  
+            // Windows Phone must come first because its UA also contains "Android"
+          if (/windows phone/i.test(userAgent)) {
+              return true;
+          }
+  
+          if (/android/i.test(userAgent)) {
+            return true;
+          }
+  
+          // iOS detection from: http://stackoverflow.com/a/9039885/177710
+          if (/iPad|iPhone|iPod/.test(userAgent) && !window.MSStream) {
+            return true;
+          }
+  
+          return false;
+      } 
+    
     // Originally we used Observable.webSocket, but it's fairly opionated  and I ended up writing
     // a lot of code to work around their implemention details. Since WebChat is meant to be a reference
     // implementation, I decided roll the below, where the logic is more purposeful. - @billba
@@ -603,13 +623,15 @@ export class DirectLine implements IBotConnection {
             const ws = new WebSocket(this.streamUrl);
             let sub: Subscription;
 
-            ws.onopen = open => {
-                konsole.log("WebSocket open", open);
-                // Chrome is pretty bad at noticing when a WebSocket connection is broken.
-                // If we periodically ping the server with empty messages, it helps Chrome
-                // realize when connection breaks, and close the socket. We then throw an
-                // error, and that give us the opportunity to attempt to reconnect.
-                sub = Observable.interval(timeout).subscribe(_ => ws.send(null));
+            if (!isMobileOS()) {
+                ws.onopen = open => {
+                    konsole.log("WebSocket open", open);
+                    // Chrome is pretty bad at noticing when a WebSocket connection is broken.
+                    // If we periodically ping the server with empty messages, it helps Chrome
+                    // realize when connection breaks, and close the socket. We then throw an
+                    // error, and that give us the opportunity to attempt to reconnect.
+                    sub = Observable.interval(timeout).subscribe(_ => ws.send(null));
+                }
             }
 
             ws.onclose = close => {
