@@ -1,7 +1,7 @@
 node_modules
-built
+# built
 .vscode
-/directLine.js
-/directLine.js.map
+# /directLine.js
+# /directLine.js.map
 
 npm-debug.log
