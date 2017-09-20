@@ -60,13 +60,19 @@ export interface CardAction {
     image?: string
 }
 
+export interface CardImage {
+    alt?: string,
+    url: string,
+    tap?: CardAction
+}
+
 export interface HeroCard {
     contentType: "application/vnd.microsoft.card.hero",
     content: {
         title?: string,
         subtitle?: string,
         text?: string,
-        images?: { url: string }[],
+        images?: CardImage[],
         buttons?: CardAction[],
         tap?: CardAction
     }
@@ -78,7 +84,7 @@ export interface Thumbnail {
         title?: string,
         subtitle?: string,
         text?: string,
-        images?: { url: string }[],
+        images?: CardImage[],
         buttons?: CardAction[],
         tap?: CardAction
     }
@@ -96,7 +102,7 @@ export interface ReceiptItem {
     title?: string,
     subtitle?: string,
     text?: string,
-    image?: { url: string },
+    image?: CardImage,
     price?: string,
     quantity?: string,
     tap?: CardAction
@@ -123,7 +129,7 @@ export interface FlexCard {
         title?: string,
         subtitle?: string,
         text?: string,
-        images?: { url: string, tap?: CardAction }[],
+        images?: CardImage[],
         buttons?: CardAction[],
         aspect?: string
     }
