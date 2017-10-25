@@ -287,7 +287,7 @@ export class DirectLine implements IBotConnection {
     private domain = "https://directline.botframework.com/v3/directline";
     private webSocket;
 
-    private conversationId: string;
+    public conversationId: string;
     private secret: string;
     private token: string;
     private watermark = '';
