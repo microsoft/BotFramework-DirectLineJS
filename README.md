@@ -59,12 +59,23 @@ global.XMLHttpRequest = require("xhr2");
 2. Add a DirectLine (**not WebChat**) channel, and generate a Direct Line Secret. Make sure Direct Line 3.0 is enabled.
 3. For testing you can use your Direct Line Secret as a security token, but for production you will likely want to exchange that Secret for a Token as detailed in the Direct Line [documentation](https://docs.botframework.com/en-us/restapi/directline3/).
 
-### Create a DirectLine object:
+### Create a DirectLine object using TypeScript:
 
 ```typescript
 import { DirectLine } from 'botframework-directlinejs';
 
 var directLine = new DirectLine({
+    secret: /* put your Direct Line secret here */,
+    token: /* or put your Direct Line token here (supply secret OR token, not both) */,
+    domain: /* optional: if you are not using the default Direct Line endpoint, e.g. if you are using a region-specific endpoint, put its full URL here */
+    webSocket: /* optional: false if you want to use polling GET to receive messages. Defaults to true (use WebSocket). */,
+    pollingInterval: /* optional: set polling interval in milliseconds. Default to 1000 */,
+});
+```
+### Create a DirectLine object using Javascript:
+
+```typescript
+var directLine = new DirectLine.DirectLine({
     secret: /* put your Direct Line secret here */,
     token: /* or put your Direct Line token here (supply secret OR token, not both) */,
     domain: /* optional: if you are not using the default Direct Line endpoint, e.g. if you are using a region-specific endpoint, put its full URL here */
