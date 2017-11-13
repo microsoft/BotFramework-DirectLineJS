@@ -35,7 +35,7 @@ export interface Conversation {
     referenceGrammarId?: string
 }
 
-export type MediaType = "image/png" | "image/jpg" | "image/jpeg" | "image/gif" | "audio/mpeg" | "audio/mp4" | "video/mp4";
+export type MediaType = "image/png" | "image/jpg" | "image/jpeg" | "image/gif" | "image/svg+xml" | "audio/mpeg" | "audio/mp4" | "video/mp4";
 
 export interface Media {
     contentType: MediaType,
