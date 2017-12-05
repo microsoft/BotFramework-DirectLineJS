@@ -143,7 +143,7 @@ directLine.connectionStatus$
 If your app created your DirectLine object by passing a token, DirectLine will refresh that token every 15 minutes.
 Should your client lose connectivity (e.g. close laptop, fail to pay Internet access bill, go under a tunnel), `connectionStatus$`
 will change to `ConnectionStatus.ExpiredToken`. Your app can request a new token from its server, which should call
-the [Reconnect](https://docs.botframework.com/en-us/restapi/directline3/#reconnecting-to-a-conversation) API. 
+the [Reconnect](https://docs.microsoft.com/en-us/bot-framework/rest-api/bot-framework-rest-direct-line-3-0-reconnect-to-conversation) API. 
 The resultant Conversation object can then be passed by the app to DirectLine, which will 
 
 ```typescript
