@@ -98,6 +98,15 @@ export interface Signin {
     }
 }
 
+export interface OAuth {
+    contentType: "application/vnd.microsoft.card.oauth",
+    content: {
+        text?: string,
+        name: string,
+        buttons?: CardAction[]
+    }
+}
+
 export interface ReceiptItem {
     title?: string,
     subtitle?: string,
@@ -181,7 +190,7 @@ export interface AnimationCard {
     }
 }
 
-export type KnownMedia = Media | HeroCard | Thumbnail | Signin | Receipt | AudioCard | VideoCard | AnimationCard | FlexCard | AdaptiveCard;
+export type KnownMedia = Media | HeroCard | Thumbnail | Signin | OAuth | Receipt | AudioCard | VideoCard | AnimationCard | FlexCard | AdaptiveCard;
 export type Attachment = KnownMedia | UnknownMedia;
 
 export interface User {
