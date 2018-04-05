@@ -35,12 +35,20 @@ export interface Conversation {
     referenceGrammarId?: string
 }
 
-export type MediaType = "image/png" | "image/jpg" | "image/jpeg" | "image/gif" | "audio/mpeg" | "audio/mp4" | "video/mp4";
+export type MediaType = "image/png" | "image/jpg" | "image/jpeg" | "image/gif" | "image/svg+xml" | "audio/mpeg" | "audio/mp4" | "video/mp4";
 
 export interface Media {
     contentType: MediaType,
     contentUrl: string,
-    name?: string
+    name?: string,
+    thumbnailUrl?: string
+}
+
+export interface UnknownMedia{
+    contentType: string,
+    contentUrl: string,
+    name?: string,
+    thumbnailUrl?: string    
 }
 
 export type CardActionTypes = "openUrl" | "imBack" | "postBack" | "playAudio" | "playVideo" | "showImage" | "downloadFile" | "signin" | "call";
@@ -52,13 +60,19 @@ export interface CardAction {
     image?: string
 }
 
+export interface CardImage {
+    alt?: string,
+    url: string,
+    tap?: CardAction
+}
+
 export interface HeroCard {
     contentType: "application/vnd.microsoft.card.hero",
     content: {
         title?: string,
         subtitle?: string,
         text?: string,
-        images?: { url: string }[],
+        images?: CardImage[],
         buttons?: CardAction[],
         tap?: CardAction
     }
@@ -70,7 +84,7 @@ export interface Thumbnail {
         title?: string,
         subtitle?: string,
         text?: string,
-        images?: { url: string }[],
+        images?: CardImage[],
         buttons?: CardAction[],
         tap?: CardAction
     }
@@ -88,7 +102,7 @@ export interface ReceiptItem {
     title?: string,
     subtitle?: string,
     text?: string,
-    image?: { url: string },
+    image?: CardImage,
     price?: string,
     quantity?: string,
     tap?: CardAction
@@ -102,7 +116,7 @@ export interface Receipt {
         items?: ReceiptItem[],
         tap?: CardAction,
         tax?: string,
-        VAT?: string,
+        vat?: string,
         total?: string,
         buttons?: CardAction[]
     }
@@ -115,7 +129,7 @@ export interface FlexCard {
         title?: string,
         subtitle?: string,
         text?: string,
-        images?: { url: string, tap?: CardAction }[],
+        images?: CardImage[],
         buttons?: CardAction[],
         aspect?: string
     }
@@ -167,7 +181,8 @@ export interface AnimationCard {
     }
 }
 
-export type Attachment = Media | HeroCard | Thumbnail | Signin | Receipt | AudioCard | VideoCard | AnimationCard | FlexCard | AdaptiveCard;
+export type KnownMedia = Media | HeroCard | Thumbnail | Signin | Receipt | AudioCard | VideoCard | AnimationCard | FlexCard | AdaptiveCard;
+export type Attachment = KnownMedia | UnknownMedia;
 
 export interface User {
     id: string,
@@ -656,7 +671,7 @@ export class DirectLine implements IBotConnection {
                 // If we periodically ping the server with empty messages, it helps Chrome
                 // realize when connection breaks, and close the socket. We then throw an
                 // error, and that give us the opportunity to attempt to reconnect.
-                sub = Observable.interval(timeout).subscribe(_ => ws.send(null));
+                sub = Observable.interval(timeout).subscribe(_ => ws.send(""));
             }
 
             ws.onclose = close => {
