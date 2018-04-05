@@ -2,6 +2,7 @@
 
 import { AjaxResponse, AjaxRequest } from 'rxjs/observable/dom/AjaxObservable';
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
+import { Subject } from 'rxjs/Subject';
 import { Observable } from 'rxjs/Observable';
 import { Subscriber } from 'rxjs/Subscriber';
 import { Subscription } from 'rxjs/Subscription';
@@ -102,7 +103,7 @@ export interface OAuth {
     contentType: "application/vnd.microsoft.card.oauth",
     content: {
         text?: string,
-        name: string,
+        connectionname: string,
         buttons?: CardAction[]
     }
 }
@@ -286,12 +287,16 @@ export interface IBotConnection {
     activity$: Observable<Activity>,
     end(): void,
     referenceGrammarId?: string,
-    postActivity(activity: Activity): Observable<string>
+    postActivity(activity: Activity): Observable<string>,
+    getSessionId(): Observable<string>,
+    onPostActivity: Observable<Activity>
 }
 
 export class DirectLine implements IBotConnection {
     public connectionStatus$ = new BehaviorSubject(ConnectionStatus.Uninitialized);
     public activity$: Observable<Activity>;
+    public onPostActivity: Observable<Activity>;
+    private onPostActivitySubject: Subject<Activity>;
 
     private domain = "https://directline.botframework.com/v3/directline";
     private webSocket;
@@ -311,6 +316,9 @@ export class DirectLine implements IBotConnection {
         this.secret = options.secret;
         this.token = options.secret || options.token;
         this.webSocket = (options.webSocket === undefined ? true : options.webSocket) && typeof WebSocket !== 'undefined' && WebSocket !== undefined; 
+
+        this.onPostActivitySubject = new Subject<Activity>();
+        this.onPostActivity = this.onPostActivitySubject.asObservable();
 
         if (options.domain)
             this.domain = options.domain;
@@ -474,8 +482,35 @@ export class DirectLine implements IBotConnection {
             this.tokenRefreshSubscription.unsubscribe();
         this.connectionStatus$.next(ConnectionStatus.Ended);
     }
+    
+    getSessionId(): Observable<string> {
+        // If we're not connected to the bot, get connected
+        // Will throw an error if we are not connected
+        konsole.log("getSessionId");
+        return this.checkConnection(true)
+            .flatMap(_ =>
+                Observable.ajax({
+                    method: "GET",
+                    url: `${this.domain}/session/getsessionid`, 
+                    withCredentials: true,
+                    timeout,
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${this.token}`
+                    }
+                })
+                .map(ajaxResponse => {
+                    konsole.log("getSessionId response: " + ajaxResponse.response.sessionId);
+                    return ajaxResponse.response.sessionId as string;
+                })
+                .catch(error => this.catchPostError(error))
+            )
+            .catch(error => this.catchExpiredToken(error));
+    }
 
     postActivity(activity: Activity) {
+        this.onPostActivitySubject.next(activity);
+
         // Use postMessageWithAttachments for messages with attachments that are local files (e.g. an image to upload)
         // Technically we could use it for *all* activities, but postActivity is much lighter weight
         // So, since WebChat is partially a reference implementation of Direct Line, we implement both.
