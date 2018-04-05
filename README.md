@@ -198,8 +198,6 @@ const dl = new DirectLine({
 });
 ```
 
-*Watermark with websocket will be supported in the future.*
-
 ## Copyright & License
 
 © 2017 Microsoft Corporation
