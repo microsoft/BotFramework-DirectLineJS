@@ -2,7 +2,6 @@
 
 import { AjaxResponse, AjaxRequest } from 'rxjs/observable/dom/AjaxObservable';
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
-import { Subject } from 'rxjs/Subject';
 import { Observable } from 'rxjs/Observable';
 import { Subscriber } from 'rxjs/Subscriber';
 import { Subscription } from 'rxjs/Subscription';
