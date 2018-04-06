@@ -288,15 +288,12 @@ export interface IBotConnection {
     end(): void,
     referenceGrammarId?: string,
     postActivity(activity: Activity): Observable<string>,
-    getSessionId(): Observable<string>,
-    onPostActivity: Observable<Activity>
+    getSessionId(): Observable<string>
 }
 
 export class DirectLine implements IBotConnection {
     public connectionStatus$ = new BehaviorSubject(ConnectionStatus.Uninitialized);
     public activity$: Observable<Activity>;
-    public onPostActivity: Observable<Activity>;
-    private onPostActivitySubject: Subject<Activity>;
 
     private domain = "https://directline.botframework.com/v3/directline";
     private webSocket;
@@ -316,9 +313,6 @@ export class DirectLine implements IBotConnection {
         this.secret = options.secret;
         this.token = options.secret || options.token;
         this.webSocket = (options.webSocket === undefined ? true : options.webSocket) && typeof WebSocket !== 'undefined' && WebSocket !== undefined; 
-
-        this.onPostActivitySubject = new Subject<Activity>();
-        this.onPostActivity = this.onPostActivitySubject.asObservable();
 
         if (options.domain)
             this.domain = options.domain;
@@ -509,8 +503,6 @@ export class DirectLine implements IBotConnection {
     }
 
     postActivity(activity: Activity) {
-        this.onPostActivitySubject.next(activity);
-
         // Use postMessageWithAttachments for messages with attachments that are local files (e.g. an image to upload)
         // Technically we could use it for *all* activities, but postActivity is much lighter weight
         // So, since WebChat is partially a reference implementation of Direct Line, we implement both.
