@@ -287,7 +287,7 @@ export interface IBotConnection {
     end(): void,
     referenceGrammarId?: string,
     postActivity(activity: Activity): Observable<string>,
-    getSessionId(): Observable<string>
+    getSessionId? : () => Observable<string>
 }
 
 export class DirectLine implements IBotConnection {
