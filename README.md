@@ -16,6 +16,8 @@ If you're currently using WebChat, you don't need to make any changes as it incl
 
 Instead of callbacks or Promises, this library handles async operations using Observables. Try it, you'll like it! For more information, check out [RxJS](https://github.com/reactivex/rxjs/).
 
+> This library has been built upon RxJS 5.\* syntax. In order to get it working with RxJS 6.\*, please install RxJS `compat` module: `npm i rxjs-compat`
+
 ### *Can I use [TypeScript](http://www.typescriptlang.com)?*
 
 You bet.
