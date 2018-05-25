@@ -319,10 +319,7 @@ export class DirectLine implements IBotConnection {
             this.conversationId = options.conversationId;
         }
         if (options.watermark) {
-            if (this.webSocket) 
-                console.warn("Watermark was ignored: it is not supported using websockets at the moment");
-            else
-                this.watermark =  options.watermark;
+            this.watermark =  options.watermark;
         }
         if (options.streamUrl) {
             if (options.token && options.conversationId) 
