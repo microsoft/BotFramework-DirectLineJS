@@ -298,8 +298,8 @@ export class DirectLine implements IBotConnection {
     private webSocket;
 
     private conversationId: string;
-    private secret: string;
-    private token: string;
+    public secret: string;
+    public token: string;
     private watermark = '';
     private streamUrl: string;
     public referenceGrammarId: string;
