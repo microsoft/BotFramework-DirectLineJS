@@ -35,13 +35,20 @@ export interface Conversation {
     referenceGrammarId?: string
 }
 
-export type MediaType = "image/png" | "image/jpg" | "image/jpeg" | "image/gif" | "audio/mpeg" | "audio/mp4" | "video/mp4";
+export type MediaType = "image/png" | "image/jpg" | "image/jpeg" | "image/gif" | "image/svg+xml" | "audio/mpeg" | "audio/mp4" | "video/mp4";
 
 export interface Media {
     contentType: MediaType,
     contentUrl: string,
     name?: string,
     thumbnailUrl?: string
+}
+
+export interface UnknownMedia{
+    contentType: string,
+    contentUrl: string,
+    name?: string,
+    thumbnailUrl?: string    
 }
 
 export type CardActionTypes = "openUrl" | "imBack" | "postBack" | "playAudio" | "playVideo" | "showImage" | "downloadFile" | "signin" | "call";
@@ -53,13 +60,19 @@ export interface CardAction {
     image?: string
 }
 
+export interface CardImage {
+    alt?: string,
+    url: string,
+    tap?: CardAction
+}
+
 export interface HeroCard {
     contentType: "application/vnd.microsoft.card.hero",
     content: {
         title?: string,
         subtitle?: string,
         text?: string,
-        images?: { url: string }[],
+        images?: CardImage[],
         buttons?: CardAction[],
         tap?: CardAction
     }
@@ -71,7 +84,7 @@ export interface Thumbnail {
         title?: string,
         subtitle?: string,
         text?: string,
-        images?: { url: string }[],
+        images?: CardImage[],
         buttons?: CardAction[],
         tap?: CardAction
     }
@@ -85,11 +98,20 @@ export interface Signin {
     }
 }
 
+export interface OAuth {
+    contentType: "application/vnd.microsoft.card.oauth",
+    content: {
+        text?: string,
+        connectionname: string,
+        buttons?: CardAction[]
+    }
+}
+
 export interface ReceiptItem {
     title?: string,
     subtitle?: string,
     text?: string,
-    image?: { url: string },
+    image?: CardImage,
     price?: string,
     quantity?: string,
     tap?: CardAction
@@ -103,7 +125,7 @@ export interface Receipt {
         items?: ReceiptItem[],
         tap?: CardAction,
         tax?: string,
-        VAT?: string,
+        vat?: string,
         total?: string,
         buttons?: CardAction[]
     }
@@ -116,7 +138,7 @@ export interface FlexCard {
         title?: string,
         subtitle?: string,
         text?: string,
-        images?: { url: string, tap?: CardAction }[],
+        images?: CardImage[],
         buttons?: CardAction[],
         aspect?: string
     }
@@ -168,7 +190,8 @@ export interface AnimationCard {
     }
 }
 
-export type Attachment = Media | HeroCard | Thumbnail | Signin | Receipt | AudioCard | VideoCard | AnimationCard | FlexCard | AdaptiveCard;
+export type KnownMedia = Media | HeroCard | Thumbnail | Signin | OAuth | Receipt | AudioCard | VideoCard | AnimationCard | FlexCard | AdaptiveCard;
+export type Attachment = KnownMedia | UnknownMedia;
 
 export interface User {
     id: string,
@@ -263,7 +286,8 @@ export interface IBotConnection {
     activity$: Observable<Activity>,
     end(): void,
     referenceGrammarId?: string,
-    postActivity(activity: Activity): Observable<string>
+    postActivity(activity: Activity): Observable<string>,
+    getSessionId? : () => Observable<string>
 }
 
 export class DirectLine implements IBotConnection {
@@ -451,6 +475,31 @@ export class DirectLine implements IBotConnection {
             this.tokenRefreshSubscription.unsubscribe();
         this.connectionStatus$.next(ConnectionStatus.Ended);
     }
+    
+    getSessionId(): Observable<string> {
+        // If we're not connected to the bot, get connected
+        // Will throw an error if we are not connected
+        konsole.log("getSessionId");
+        return this.checkConnection(true)
+            .flatMap(_ =>
+                Observable.ajax({
+                    method: "GET",
+                    url: `${this.domain}/session/getsessionid`, 
+                    withCredentials: true,
+                    timeout,
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${this.token}`
+                    }
+                })
+                .map(ajaxResponse => {
+                    konsole.log("getSessionId response: " + ajaxResponse.response.sessionId);
+                    return ajaxResponse.response.sessionId as string;
+                })
+                .catch(error => this.catchPostError(error))
+            )
+            .catch(error => this.catchExpiredToken(error));
+    }
 
     postActivity(activity: Activity) {
         // Use postMessageWithAttachments for messages with attachments that are local files (e.g. an image to upload)
@@ -601,7 +650,7 @@ export class DirectLine implements IBotConnection {
                 // If we periodically ping the server with empty messages, it helps Chrome
                 // realize when connection breaks, and close the socket. We then throw an
                 // error, and that give us the opportunity to attempt to reconnect.
-                sub = Observable.interval(timeout).subscribe(_ => ws.send(null));
+                sub = Observable.interval(timeout).subscribe(_ => ws.send(""));
             }
 
             ws.onclose = close => {
