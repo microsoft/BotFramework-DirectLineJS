@@ -1,5 +1,7 @@
 # BotFramework-DirectLineJS
 
+[![Build Status](https://travis-ci.org/Microsoft/BotFramework-DirectLineJS.svg?branch=master)](https://travis-ci.org/Microsoft/BotFramework-DirectLineJS)
+
 Client library for the [Microsoft Bot Framework](http://www.botframework.com) *[Direct Line](https://docs.botframework.com/en-us/restapi/directline3/)* protocol.
 
 Used by [WebChat](https://github.com/Microsoft/BotFramework-WebChat) and thus (by extension) [Emulator](https://github.com/Microsoft/BotFramework-Emulator), WebChat channel, and [Azure Bot Service](https://azure.microsoft.com/en-us/services/bot-service/).
@@ -10,7 +12,7 @@ Used by [WebChat](https://github.com/Microsoft/BotFramework-WebChat) and thus (b
 
 Anyone who is building a Bot Framework JavaScript client who does not want to use [WebChat](https://github.com/Microsoft/BotFramework-WebChat).
 
-If you're currently using WebChat, you don't need to make any changes as it includes this package. 
+If you're currently using WebChat, you don't need to make any changes as it includes this package.
 
 ### *What is that funny `subscribe()` method in the samples below?*
 
@@ -50,7 +52,7 @@ This library uses RxJs/AjaxObserverable which is meant for use in a DOM environm
 ```typescript
 global.XMLHttpRequest = require("xhr2");
 ```
-    
+
 ## How to create and use a directLine object
 
 ### Obtain security credentials for your bot:
@@ -143,8 +145,8 @@ directLine.connectionStatus$
 If your app created your DirectLine object by passing a token, DirectLine will refresh that token every 15 minutes.
 Should your client lose connectivity (e.g. close laptop, fail to pay Internet access bill, go under a tunnel), `connectionStatus$`
 will change to `ConnectionStatus.ExpiredToken`. Your app can request a new token from its server, which should call
-the [Reconnect](https://docs.botframework.com/en-us/restapi/directline3/#reconnecting-to-a-conversation) API. 
-The resultant Conversation object can then be passed by the app to DirectLine, which will 
+the [Reconnect](https://docs.botframework.com/en-us/restapi/directline3/#reconnecting-to-a-conversation) API.
+The resultant Conversation object can then be passed by the app to DirectLine, which will
 
 ```typescript
 var conversation = /* a Conversation object obtained from your app's server */;
