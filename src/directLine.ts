@@ -48,7 +48,7 @@ export interface UnknownMedia{
     contentType: string,
     contentUrl: string,
     name?: string,
-    thumbnailUrl?: string    
+    thumbnailUrl?: string
 }
 
 export type CardActionTypes = "openUrl" | "imBack" | "postBack" | "playAudio" | "playVideo" | "showImage" | "downloadFile" | "signin" | "call";
@@ -193,10 +193,13 @@ export interface AnimationCard {
 export type KnownMedia = Media | HeroCard | Thumbnail | Signin | OAuth | Receipt | AudioCard | VideoCard | AnimationCard | FlexCard | AdaptiveCard;
 export type Attachment = KnownMedia | UnknownMedia;
 
+export type UserRole = "bot" | "channel" | "user";
+
 export interface User {
     id: string,
     name?: string,
-    iconUrl?: string
+    iconUrl?: string,
+    role?: UserRole
 }
 
 export interface IActivity {
@@ -311,7 +314,7 @@ export class DirectLine implements IBotConnection {
     constructor(options: DirectLineOptions) {
         this.secret = options.secret;
         this.token = options.secret || options.token;
-        this.webSocket = (options.webSocket === undefined ? true : options.webSocket) && typeof WebSocket !== 'undefined' && WebSocket !== undefined; 
+        this.webSocket = (options.webSocket === undefined ? true : options.webSocket) && typeof WebSocket !== 'undefined' && WebSocket !== undefined;
 
         if (options.domain)
             this.domain = options.domain;
@@ -319,13 +322,13 @@ export class DirectLine implements IBotConnection {
             this.conversationId = options.conversationId;
         }
         if (options.watermark) {
-            if (this.webSocket) 
+            if (this.webSocket)
                 console.warn("Watermark was ignored: it is not supported using websockets at the moment");
             else
                 this.watermark =  options.watermark;
         }
         if (options.streamUrl) {
-            if (options.token && options.conversationId) 
+            if (options.token && options.conversationId)
                 this.streamUrl = options.streamUrl;
             else
                 console.warn("streamUrl was ignored: you need to provide a token and a conversationid");
@@ -368,7 +371,7 @@ export class DirectLine implements IBotConnection {
                 }
             }
             else {
-                return Observable.of(connectionStatus);            
+                return Observable.of(connectionStatus);
             }
         })
         .filter(connectionStatus => connectionStatus != ConnectionStatus.Uninitialized && connectionStatus != ConnectionStatus.Connecting)
@@ -399,8 +402,8 @@ export class DirectLine implements IBotConnection {
 
     private startConversation() {
         //if conversationid is set here, it means we need to call the reconnect api, else it is a new conversation
-        const url = this.conversationId 
-            ? `${this.domain}/conversations/${this.conversationId}?watermark=${this.watermark}` 
+        const url = this.conversationId
+            ? `${this.domain}/conversations/${this.conversationId}?watermark=${this.watermark}`
             : `${this.domain}/conversations`;
         const method = this.conversationId ? "GET" : "POST";
 
@@ -475,7 +478,7 @@ export class DirectLine implements IBotConnection {
             this.tokenRefreshSubscription.unsubscribe();
         this.connectionStatus$.next(ConnectionStatus.Ended);
     }
-    
+
     getSessionId(): Observable<string> {
         // If we're not connected to the bot, get connected
         // Will throw an error if we are not connected
@@ -484,7 +487,7 @@ export class DirectLine implements IBotConnection {
             .flatMap(_ =>
                 Observable.ajax({
                     method: "GET",
-                    url: `${this.domain}/session/getsessionid`, 
+                    url: `${this.domain}/session/getsessionid`,
                     withCredentials: true,
                     timeout,
                     headers: {
