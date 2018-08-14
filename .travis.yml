@@ -1,0 +1,29 @@
+language: node_js
+node_js:
+  - "10"
+before_script:
+  - npx version-from-git --travis --no-git-tag-version
+  - npm run build
+deploy:
+  # Since we are using Lerna without hoist (conflict between babel@6 and babel@7), thus, we cannot use npm provider to deploy
+  - provider: npm
+    api_key:
+      secure: "W24mXQs7PztN6beyuVo2tLap4Lzu/xwWYocWg+HCOh8P86rlHpNSAZ3vU1QxuFTApaykimenE2m8Q62nz9wcCc++BvTZ1N5bDH63nzPF/KAnF/AHS2V0Rqc6BirMWQz9JmirnFpOCkaiQsewcG/5SyGriXqVfQixipjMRnqzcIP91wIRz+V71bqJRqiKwjT4Cg5Om6p5xTsw1mTMutPywNVcPPk7FcfxLAVG3aV/h1PbR+V4MWKHQUm6lUjZDSVpQ3VOJtb3+h7TMQIe9Z9YEms1S7Wyul0Qbw2bp3CY84voVnw+yksrfPMbrqTs6fzxkzfmz4m/t8PFRs6AKU0FVo+01A0Nev2kQurJfutZiOuNraTcItqwB1W0DvYL+fKdWiAFU/DEMVUDac2FEjC6HSqUGe5KSAih+WHXC2ovxc0AoeIDAw1HenxsPnJpNPda3zkos8TuqFAU7VTiqEE/P/CqvKNIum8WaG2qDIm4wBa0YcjGiN/c1+2E9MbI2geP/v94JUu7+TcYTrDOmI+4sw2fTBG+0oVv7f6bPDKTv0gwJCLcXTntlv4bKeqmTsOJD/CcNVzbutCMFL9y6Xlw/fMj+BJ+9G3yFsYFAc65erjmjc9En0lIF1MV75TKdlaD/moEjzTyguyRlWRatVzSMrgBa+uwtxwoEFK9GrWyJOQ="
+    email: "botframework@microsoft.com"
+    on:
+      branch: master
+    skip_cleanup: true
+    tag: master
+  - provider: npm
+    api_key:
+      secure: "W24mXQs7PztN6beyuVo2tLap4Lzu/xwWYocWg+HCOh8P86rlHpNSAZ3vU1QxuFTApaykimenE2m8Q62nz9wcCc++BvTZ1N5bDH63nzPF/KAnF/AHS2V0Rqc6BirMWQz9JmirnFpOCkaiQsewcG/5SyGriXqVfQixipjMRnqzcIP91wIRz+V71bqJRqiKwjT4Cg5Om6p5xTsw1mTMutPywNVcPPk7FcfxLAVG3aV/h1PbR+V4MWKHQUm6lUjZDSVpQ3VOJtb3+h7TMQIe9Z9YEms1S7Wyul0Qbw2bp3CY84voVnw+yksrfPMbrqTs6fzxkzfmz4m/t8PFRs6AKU0FVo+01A0Nev2kQurJfutZiOuNraTcItqwB1W0DvYL+fKdWiAFU/DEMVUDac2FEjC6HSqUGe5KSAih+WHXC2ovxc0AoeIDAw1HenxsPnJpNPda3zkos8TuqFAU7VTiqEE/P/CqvKNIum8WaG2qDIm4wBa0YcjGiN/c1+2E9MbI2geP/v94JUu7+TcYTrDOmI+4sw2fTBG+0oVv7f6bPDKTv0gwJCLcXTntlv4bKeqmTsOJD/CcNVzbutCMFL9y6Xlw/fMj+BJ+9G3yFsYFAc65erjmjc9En0lIF1MV75TKdlaD/moEjzTyguyRlWRatVzSMrgBa+uwtxwoEFK9GrWyJOQ="
+    email: "botframework@microsoft.com"
+    on:
+      tags: true
+    skip_cleanup: true
+  - provider: releases
+    api_key:
+      secure: "KauO88Sy2l65xZl5zWgj3YB8wyEV/xfio6yFzTjCTKTqJ+TTfyRzRCsD0fvfMqX+jT90o48dvLvhtw3aOyBmN6zA4o+YsOKFQwa4881gdtJDAv0hLhW6h3CkT+zlbTfIGyLAfQDNyLFDo0VSKKaQ6h/gRp1kgfiFWmisfaDgYRkAyPsC3hhjV66TgCoMbBW+jyqJhvgxTKwJTRuond5/vu4JANd/Emdmn1AqKQoIzVDSJ76sSQIq+tu+kUm/jYm4wO+suLeI69EovRIcS9SPV52N7hiMDAP1eRlOCeNXiB4vIsbShVtJhiFjXBh8fmwVXhV/eSmk1Anqmqt3KVoFwN92yRpC0dLZDzMlUqUQ2yTOKrYSXKoZBYKeHVhDPiztxOi3yWrAh8owA1TnRLt/6GC9pCHS1Xv2eechzdZ7IhXOkDm2GK8uyH1io6xHAdfhCvXTwH3CrQtt7qZrdPFYG2cq4UEdzGVI+PEx3revGCmCtwsZRJ0n1P5TSpEJmtUYkcz26YqfIAoh1KNT2LRWBaZv5dDBxQ49aAua4O79l5+6He9dilt7R+sNGOLO0JXBJylZUH/FfkKe9bPNuVCITLPu18llL73z7DKBq/qQLkmc2FLmLzq8nSZbu7Gq5VWNYuuvNl5w0ljqaV+PaDYaogntdkR6RukBklJ9fasQCHs="
+    on:
+      tags: true
+    skip_cleanup: true
