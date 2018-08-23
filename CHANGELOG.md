@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 ### Changed
-- Add handling of 403/500 for `getSessionId`, in [#87](https://github.com/Microsoft/BotFramework-WebChat/pull/87)
+- Add handling of 403/500 for `getSessionId`, in [#87](https://github.com/Microsoft/BotFramework-DirectLineJS/pull/87)
 
 ## [0.9.16] - 2018-08-14
 ### Added
