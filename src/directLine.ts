@@ -496,10 +496,16 @@ export class DirectLine implements IBotConnection {
                     }
                 })
                 .map(ajaxResponse => {
-                    konsole.log("getSessionId response: " + ajaxResponse.response.sessionId);
-                    return ajaxResponse.response.sessionId as string;
+                    if (ajaxResponse && ajaxResponse.response && ajaxResponse.response.sessionId) {
+                        konsole.log("getSessionId response: " + ajaxResponse.response.sessionId);
+                        return ajaxResponse.response.sessionId as string;
+                    }
+                    return '';
                 })
-                .catch(error => this.catchPostError(error))
+                .catch(error => {
+                    konsole.log("getSessionId error: " + error.status);
+                    return Observable.of('');
+                })
             )
             .catch(error => this.catchExpiredToken(error));
     }
