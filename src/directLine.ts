@@ -279,7 +279,7 @@ const errorFailedToConnect = new Error("failed to connect");
 
 const konsole = {
     log: (message?: any, ... optionalParams: any[]) => {
-        if (typeof(window) !== 'undefined' && window["botchatDebug"] && message)
+        if (typeof(window) !== 'undefined' && (window as any)["botchatDebug"] && message)
             console.log(message, ... optionalParams);
     }
 }
@@ -298,7 +298,7 @@ export class DirectLine implements IBotConnection {
     public activity$: Observable<Activity>;
 
     private domain = "https://directline.botframework.com/v3/directline";
-    private webSocket;
+    private webSocket: boolean;
 
     private conversationId: string;
     private secret: string;
@@ -384,10 +384,10 @@ export class DirectLine implements IBotConnection {
                     return Observable.throw(errorFailedToConnect);
 
                 case ConnectionStatus.ExpiredToken:
-                    return Observable.throw(errorExpiredToken);
+                    return Observable.of(connectionStatus);
 
                 default:
-                    return Observable.of(null);
+                    return Observable.of(connectionStatus);
             }
         })
 
@@ -598,8 +598,11 @@ export class DirectLine implements IBotConnection {
     private pollingGetActivity$() {
         return Observable.interval(this.pollingInterval)
         .combineLatest(this.checkConnection())
-        .flatMap(_ =>
-            Observable.ajax({
+        .flatMap(([_, connectionStatus]) => {
+            if (connectionStatus !== ConnectionStatus.Online)
+                return Observable.empty<Activity>()
+
+            return Observable.ajax({
                 method: "GET",
                 url: `${this.domain}/conversations/${this.conversationId}/activities?watermark=${this.watermark}`,
                 timeout,
@@ -622,7 +625,7 @@ export class DirectLine implements IBotConnection {
 //          .do(ajaxResponse => konsole.log("getActivityGroup ajaxResponse", ajaxResponse))
             .map(ajaxResponse => ajaxResponse.response as ActivityGroup)
             .flatMap(activityGroup => this.observableFromActivityGroup(activityGroup))
-        )
+        })
         .catch(error => Observable.empty<Activity>());
     }
 
