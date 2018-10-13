@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 - Add support for watermark in Web Socket, in [#96](https://github.com/Microsoft/BotFramework-DirectLineJS/pull/96)
 
+### Changed
+- Delay before retrying Web Socket, in [#97](https://github.com/Microsoft/BotFramework-WebChat/pull/97)
+
 ## [0.9.17] - 2018-08-31
 ### Changed
 - Add handling of 403/500 for `getSessionId`, in [#87](https://github.com/Microsoft/BotFramework-DirectLineJS/pull/87)

@@ -646,7 +646,7 @@ export class DirectLine implements IBotConnection {
             // WebSockets can be closed by the server or the browser. In the former case we need to
             // retrieve a new streamUrl. In the latter case we could first retry with the current streamUrl,
             // but it's simpler just to always fetch a new one.
-            .retryWhen(error$ => error$.mergeMap(error => this.reconnectToConversation()))
+            .retryWhen(error$ => error$.delay(3000).mergeMap(error => this.reconnectToConversation()))
         )
         .flatMap(activityGroup => this.observableFromActivityGroup(activityGroup))
     }
