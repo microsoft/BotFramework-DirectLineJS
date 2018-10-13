@@ -316,25 +316,29 @@ export class DirectLine implements IBotConnection {
         this.token = options.secret || options.token;
         this.webSocket = (options.webSocket === undefined ? true : options.webSocket) && typeof WebSocket !== 'undefined' && WebSocket !== undefined;
 
-        if (options.domain)
+        if (options.domain) {
             this.domain = options.domain;
+        }
+        
         if (options.conversationId) {
             this.conversationId = options.conversationId;
         }
+        
         if (options.watermark) {
-            if (this.webSocket)
-                console.warn("Watermark was ignored: it is not supported using websockets at the moment");
-            else
-                this.watermark =  options.watermark;
+            this.watermark =  options.watermark;
         }
+        
         if (options.streamUrl) {
-            if (options.token && options.conversationId)
+            if (options.token && options.conversationId) {
                 this.streamUrl = options.streamUrl;
-            else
-                console.warn("streamUrl was ignored: you need to provide a token and a conversationid");
+            } else {
+                console.warn('streamUrl was ignored: you need to provide a token and a conversationid');
+            }
         }
-        if (options.pollingInterval !== undefined)
+        
+        if (options.pollingInterval !== undefined) {
             this.pollingInterval = options.pollingInterval;
+        }
 
         this.activity$ = (this.webSocket
             ? this.webSocketActivity$()
