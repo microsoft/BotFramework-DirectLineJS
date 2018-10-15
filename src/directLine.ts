@@ -388,10 +388,10 @@ export class DirectLine implements IBotConnection {
                     return Observable.throw(errorFailedToConnect);
 
                 case ConnectionStatus.ExpiredToken:
-                    return Observable.throw(errorExpiredToken);
+                    return Observable.of(connectionStatus);
 
                 default:
-                    return Observable.of(null);
+                    return Observable.of(connectionStatus);
             }
         })
 
