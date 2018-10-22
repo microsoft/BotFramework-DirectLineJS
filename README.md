@@ -45,11 +45,12 @@ There are several ways:
 
 This library uses RxJs/AjaxObserverable which is meant for use in a DOM environment. That doesn't mean you can't also use it from Node though, you just need to do a couple of extra things:
 
-1. `npm install --save xhr2`
+1. `npm install --save ws xhr2`
 2. Add the following towards the top of your main application file:
 
 ```typescript
-global.XMLHttpRequest = require("xhr2");
+global.XMLHttpRequest = require('xhr2');
+global.WebSocket = require('ws');
 ```
 
 ## How to create and use a directLine object
