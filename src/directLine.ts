@@ -604,51 +604,53 @@ export class DirectLine implements IBotConnection {
     }
 
     private pollingGetActivity$() {
-        const poller$: Observable<AjaxResponse> = Observable.create((theSubscriber: Subscriber<any>) => {
+        const poller$: Observable<AjaxResponse> = Observable.create((subscriber: Subscriber<any>) => {
             // A BehaviorSubject to trigger polling. Since it is a BehaviorSubject
             // the first event is produced immediately.
             const trigger$ = new BehaviorSubject<any>({});
 
-            trigger$.subscribe(data => {
-                const ajax: Observable<AjaxResponse> = Observable.ajax({
-                    method: 'GET',
-                    url: `${ this.domain }/conversations/${ this.conversationId }/activities?watermark=${ this.watermark }`,
-                    timeout,
-                    headers: {
-                        Accept: 'application/json',
-                        Authorization: `Bearer ${ this.token }`
-                    }
-                });
-
-                const startTimestampMS = Date.now();
-                
-                let onSuccess = (result: AjaxResponse) => {
-                    theSubscriber.next(result);
-                    setTimeout(() => trigger$.next(data), Math.max(0, this.pollingInterval - Date.now() + startTimestampMS));
-                };
-
-                let onError = (error: any) => {
-                    if (error.status === 403) {
-                        this.connectionStatus$.next(ConnectionStatus.ExpiredToken);
-                        setTimeout(() => trigger$.next(data), this.pollingIntervalMS);
-                    } else if (error.status === 404) {
-                        this.connectionStatus$.next(ConnectionStatus.Ended);
-                    } else {
-                        // propagate the error
-                        theSubscriber.error(error);
-                    }
-                };
-
+            trigger$.subscribe(() => {
                 if (this.connectionStatus$.getValue() === ConnectionStatus.Online) {
-                    ajax.subscribe(onSuccess, onError);
+                    const startTimestamp = Date.now();
+
+                    Observable.ajax({
+                        headers: {
+                            Accept: 'application/json',
+                            Authorization: `Bearer ${ this.token }`
+                        },
+                        method: 'GET',
+                        url: `${ this.domain }/conversations/${ this.conversationId }/activities?watermark=${ this.watermark }`,
+                        timeout
+                    }).subscribe(
+                        (result: AjaxResponse) => {
+                            subscriber.next(result);
+                            setTimeout(() => trigger$.next(null), Math.max(0, this.pollingInterval - Date.now() + startTimestamp));
+                        },
+                        (error: any) => {
+                            switch (error.status) {
+                                case 403:
+                                    this.connectionStatus$.next(ConnectionStatus.ExpiredToken);
+                                    setTimeout(() => trigger$.next(null), this.pollingInterval);
+                                    break;
+
+                                case 404:
+                                    this.connectionStatus$.next(ConnectionStatus.Ended);
+                                    break;
+
+                                default:
+                                    // propagate the error
+                                    subscriber.error(error);
+                                    break;
+                            }
+                        }
+                    );
                 }
             });
         });
 
         return this.checkConnection()
-        .flatMap(_ =>
-            poller$
-            .catch(error => Observable.empty<AjaxResponse>())
+        .flatMap(_ => poller$
+            .catch(() => Observable.empty<AjaxResponse>())
             .map(ajaxResponse => ajaxResponse.response as ActivityGroup)
             .flatMap(activityGroup => this.observableFromActivityGroup(activityGroup)));
     }
