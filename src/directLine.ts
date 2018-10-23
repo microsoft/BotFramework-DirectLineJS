@@ -279,7 +279,7 @@ const errorFailedToConnect = new Error("failed to connect");
 
 const konsole = {
     log: (message?: any, ... optionalParams: any[]) => {
-        if (typeof(window) !== 'undefined' && (window as any)["botchatDebug"] && message)
+        if (typeof window !== 'undefined' && (window as any)["botchatDebug"] && message)
             console.log(message, ... optionalParams);
     }
 }
@@ -319,15 +319,15 @@ export class DirectLine implements IBotConnection {
         if (options.domain) {
             this.domain = options.domain;
         }
-        
+
         if (options.conversationId) {
             this.conversationId = options.conversationId;
         }
-        
+
         if (options.watermark) {
             this.watermark =  options.watermark;
         }
-        
+
         if (options.streamUrl) {
             if (options.token && options.conversationId) {
                 this.streamUrl = options.streamUrl;
@@ -335,7 +335,7 @@ export class DirectLine implements IBotConnection {
                 console.warn('streamUrl was ignored: you need to provide a token and a conversationid');
             }
         }
-        
+
         if (options.pollingInterval !== undefined) {
             this.pollingInterval = options.pollingInterval;
         }
@@ -461,7 +461,11 @@ export class DirectLine implements IBotConnection {
                         // if the token is expired there's no reason to keep trying
                         this.expiredToken();
                         return Observable.throw(error);
+                    } else if (error.status === 404) {
+                        // If the bot is gone, we should stop retrying
+                        return Observable.throw(error);
                     }
+
                     return Observable.of(error);
                 })
                 .delay(timeout)
@@ -600,37 +604,55 @@ export class DirectLine implements IBotConnection {
     }
 
     private pollingGetActivity$() {
-        return Observable.interval(this.pollingInterval)
-        .combineLatest(this.checkConnection())
-        .flatMap(([_, connectionStatus]) => {
-            if (connectionStatus !== ConnectionStatus.Online)
-                return Observable.empty<Activity>()
+        const poller$: Observable<AjaxResponse> = Observable.create((subscriber: Subscriber<any>) => {
+            // A BehaviorSubject to trigger polling. Since it is a BehaviorSubject
+            // the first event is produced immediately.
+            const trigger$ = new BehaviorSubject<any>({});
 
-            return Observable.ajax({
-                method: "GET",
-                url: `${this.domain}/conversations/${this.conversationId}/activities?watermark=${this.watermark}`,
-                timeout,
-                headers: {
-                    "Accept": "application/json",
-                    "Authorization": `Bearer ${this.token}`
+            trigger$.subscribe(() => {
+                if (this.connectionStatus$.getValue() === ConnectionStatus.Online) {
+                    const startTimestamp = Date.now();
+
+                    Observable.ajax({
+                        headers: {
+                            Accept: 'application/json',
+                            Authorization: `Bearer ${ this.token }`
+                        },
+                        method: 'GET',
+                        url: `${ this.domain }/conversations/${ this.conversationId }/activities?watermark=${ this.watermark }`,
+                        timeout
+                    }).subscribe(
+                        (result: AjaxResponse) => {
+                            subscriber.next(result);
+                            setTimeout(() => trigger$.next(null), Math.max(0, this.pollingInterval - Date.now() + startTimestamp));
+                        },
+                        (error: any) => {
+                            switch (error.status) {
+                                case 403:
+                                    this.connectionStatus$.next(ConnectionStatus.ExpiredToken);
+                                    setTimeout(() => trigger$.next(null), this.pollingInterval);
+                                    break;
+
+                                case 404:
+                                    this.connectionStatus$.next(ConnectionStatus.Ended);
+                                    break;
+
+                                default:
+                                    // propagate the error
+                                    subscriber.error(error);
+                                    break;
+                            }
+                        }
+                    );
                 }
-            })
-            .catch(error => {
-                if (error.status === 403) {
-                    // This is slightly ugly. We want to update this.connectionStatus$ to ExpiredToken so that subsequent
-                    // calls to checkConnection will throw an error. But when we do so, it causes this.checkConnection()
-                    // to immediately throw an error, which is caught by the catch() below and transformed into an empty
-                    // object. Then next() returns, and we emit an empty object. Which means one 403 is causing
-                    // two empty objects to be emitted. Which is harmless but, again, slightly ugly.
-                    this.expiredToken();
-                }
-                return Observable.empty<AjaxResponse>();
-            })
-//          .do(ajaxResponse => konsole.log("getActivityGroup ajaxResponse", ajaxResponse))
+            });
+        });
+
+        return this.checkConnection()
+        .flatMap(_ => poller$
+            .catch(() => Observable.empty<AjaxResponse>())
             .map(ajaxResponse => ajaxResponse.response as ActivityGroup)
-            .flatMap(activityGroup => this.observableFromActivityGroup(activityGroup))
-        })
-        .catch(error => Observable.empty<Activity>());
+            .flatMap(activityGroup => this.observableFromActivityGroup(activityGroup)));
     }
 
     private observableFromActivityGroup(activityGroup: ActivityGroup) {
@@ -711,7 +733,10 @@ export class DirectLine implements IBotConnection {
                         // token has expired. We can't recover from this here, but the embedding
                         // website might eventually call reconnect() with a new token and streamUrl.
                         this.expiredToken();
+                    } else if (error.status === 404) {
+                        return Observable.throw(errorConversationEnded);
                     }
+
                     return Observable.of(error);
                 })
                 .delay(timeout)
@@ -719,5 +744,4 @@ export class DirectLine implements IBotConnection {
             )
         )
     }
-
 }
