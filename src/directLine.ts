@@ -604,47 +604,44 @@ export class DirectLine implements IBotConnection {
     }
 
     private pollingGetActivity$() {
-        var poller$ : Observable<AjaxResponse> = Observable.create((theSubscriber:Subscriber<any>) => {
+        const poller$: Observable<AjaxResponse> = Observable.create((theSubscriber: Subscriber<any>) => {
             // A BehaviorSubject to trigger polling. Since it is a BehaviorSubject
             // the first event is produced immediately.
-            var trigger$ = new BehaviorSubject<any>({});
-            trigger$.subscribe((data)=> {
-                var ajax : Observable<AjaxResponse> = Observable.ajax({
-                    method: "GET",
-                    url: `${this.domain}/conversations/${this.conversationId}/activities?watermark=${this.watermark}`,
+            const trigger$ = new BehaviorSubject<any>({});
+
+            trigger$.subscribe(data => {
+                const ajax: Observable<AjaxResponse> = Observable.ajax({
+                    method: 'GET',
+                    url: `${ this.domain }/conversations/${ this.conversationId }/activities?watermark=${ this.watermark }`,
                     timeout,
                     headers: {
-                        "Accept": "application/json",
-                        "Authorization": `Bearer ${this.token}`
+                        Accept: 'application/json',
+                        Authorization: `Bearer ${ this.token }`
                     }
                 });
 
-                // Capture the polling interval and connectionStatus$ so that it
-                // may be used within callbacks that are not invoked with the
-                // object context
-                var pollingIntervalMS = this.pollingInterval;
-                var connectionStatus$ = this.connectionStatus$;
-                var startTimestampMS = Date.now()
-                let onSuccess = function (result:AjaxResponse) {
+                const startTimestampMS = Date.now();
+                
+                let onSuccess = (result: AjaxResponse) => {
                     theSubscriber.next(result);
-                    var interval = pollingIntervalMS - Date.now() + startTimestampMS;
-                    setTimeout(() => trigger$.next(data), interval < 0 ? 0 : interval);
-                }
+                    setTimeout(() => trigger$.next(data), Math.max(0, this.pollingInterval - Date.now() + startTimestampMS));
+                };
 
-                let onError = function(error:any) {
+                let onError = (error: any) => {
                     if (error.status === 403) {
-                        connectionStatus$.next(ConnectionStatus.ExpiredToken)
-                        setTimeout(() => trigger$.next(data), pollingIntervalMS)
+                        this.connectionStatus$.next(ConnectionStatus.ExpiredToken);
+                        setTimeout(() => trigger$.next(data), this.pollingIntervalMS);
                     } else if (error.status === 404) {
-                        connectionStatus$.next(ConnectionStatus.Ended)
+                        this.connectionStatus$.next(ConnectionStatus.Ended);
                     } else {
                         // propagate the error
-                        theSubscriber.error(error)
+                        theSubscriber.error(error);
                     }
-                }
+                };
 
-                if (this.connectionStatus$.getValue() === ConnectionStatus.Online)
+                if (this.connectionStatus$.getValue() === ConnectionStatus.Online) {
                     ajax.subscribe(onSuccess, onError);
+                }
             });
         });
 
