@@ -604,51 +604,53 @@ export class DirectLine implements IBotConnection {
     }
 
     private pollingGetActivity$() {
-        // Skip if the last request is still pending
-        let shouldSkip = false;
+        const poller$: Observable<AjaxResponse> = Observable.create((theSubscriber: Subscriber<any>) => {
+            // A BehaviorSubject to trigger polling. Since it is a BehaviorSubject
+            // the first event is produced immediately.
+            const trigger$ = new BehaviorSubject<any>({});
 
-        return Observable.interval(this.pollingInterval)
-        .combineLatest(this.checkConnection())
-        .flatMap(() => {
-            if (shouldSkip) {
-                return Observable.empty<Activity>();
-            } else {
-                shouldSkip = true;
-
-                return Observable.ajax({
-                    method: "GET",
-                    url: `${this.domain}/conversations/${this.conversationId}/activities?watermark=${this.watermark}`,
+            trigger$.subscribe(data => {
+                const ajax: Observable<AjaxResponse> = Observable.ajax({
+                    method: 'GET',
+                    url: `${ this.domain }/conversations/${ this.conversationId }/activities?watermark=${ this.watermark }`,
                     timeout,
                     headers: {
-                        "Accept": "application/json",
-                        "Authorization": `Bearer ${this.token}`
+                        Accept: 'application/json',
+                        Authorization: `Bearer ${ this.token }`
                     }
-                })
-                .do(() => {
-                    shouldSkip = false;
-                }, () => {
-                    shouldSkip = false;
-                })
-                .catch(error => {
-                    if (error.status === 403) {
-                        // This is slightly ugly. We want to update this.connectionStatus$ to ExpiredToken so that subsequent
-                        // calls to checkConnection will throw an error. But when we do so, it causes this.checkConnection()
-                        // to immediately throw an error, which is caught by the catch() below and transformed into an empty
-                        // object. Then next() returns, and we emit an empty object. Which means one 403 is causing
-                        // two empty objects to be emitted. Which is harmless but, again, slightly ugly.
-                        this.expiredToken();
-                    } else if (error.status === 404) {
-                        return Observable.throw(errorConversationEnded);
-                    }
+                });
 
-                    return Observable.empty<AjaxResponse>();
-                })
-    //          .do(ajaxResponse => konsole.log("getActivityGroup ajaxResponse", ajaxResponse))
-                .map(ajaxResponse => ajaxResponse.response as ActivityGroup)
-                .flatMap(activityGroup => this.observableFromActivityGroup(activityGroup))
-            }
-        })
-        .catch(() => Observable.empty<Activity>());
+                const startTimestampMS = Date.now();
+                
+                let onSuccess = (result: AjaxResponse) => {
+                    theSubscriber.next(result);
+                    setTimeout(() => trigger$.next(data), Math.max(0, this.pollingInterval - Date.now() + startTimestampMS));
+                };
+
+                let onError = (error: any) => {
+                    if (error.status === 403) {
+                        this.connectionStatus$.next(ConnectionStatus.ExpiredToken);
+                        setTimeout(() => trigger$.next(data), this.pollingIntervalMS);
+                    } else if (error.status === 404) {
+                        this.connectionStatus$.next(ConnectionStatus.Ended);
+                    } else {
+                        // propagate the error
+                        theSubscriber.error(error);
+                    }
+                };
+
+                if (this.connectionStatus$.getValue() === ConnectionStatus.Online) {
+                    ajax.subscribe(onSuccess, onError);
+                }
+            });
+        });
+
+        return this.checkConnection()
+        .flatMap(_ =>
+            poller$
+            .catch(error => Observable.empty<AjaxResponse>())
+            .map(ajaxResponse => ajaxResponse.response as ActivityGroup)
+            .flatMap(activityGroup => this.observableFromActivityGroup(activityGroup)));
     }
 
     private observableFromActivityGroup(activityGroup: ActivityGroup) {
