@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 - Delay before retrying Web Socket, in [#97](https://github.com/Microsoft/BotFramework-WebChat/pull/97)
+- Slow down polling on congested traffic, in [#98](https://github.com/Microsoft/BotFramework-DirectLineJS/pull/98)
 - Bump dependencies, in [#100](https://github.com/Microsoft/BotFramework-DirectLineJS/pull/100)
    - `deep-extend` from `0.4.2` to `0.5.1`
    - `randomatic` from `1.1.7` to `3.1.0`
