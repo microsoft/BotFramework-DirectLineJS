@@ -265,13 +265,14 @@ export interface DirectLineOptions {
     domain?: string,
     webSocket?: boolean,
     pollingInterval?: number,
-    streamUrl?: string
+    streamUrl?: string,
+    timeout?: number
 }
 
 const lifetimeRefreshToken = 30 * 60 * 1000;
 const intervalRefreshToken = lifetimeRefreshToken / 2;
-const timeout = 20 * 1000;
-const retries = (lifetimeRefreshToken - intervalRefreshToken) / timeout;
+const defaultTimeout = 20 * 1000;
+const defaultRetries = (lifetimeRefreshToken - intervalRefreshToken) / defaultTimeout;
 
 const errorExpiredToken = new Error("expired token");
 const errorConversationEnded = new Error("conversation ended");
@@ -306,6 +307,8 @@ export class DirectLine implements IBotConnection {
     private watermark = '';
     private streamUrl: string;
     public referenceGrammarId: string;
+    private timeout: number = defaultTimeout;
+    private retries: number = defaultRetries;
 
     private pollingInterval: number = 1000;
 
@@ -338,6 +341,11 @@ export class DirectLine implements IBotConnection {
 
         if (options.pollingInterval !== undefined) {
             this.pollingInterval = options.pollingInterval;
+        }
+
+        if (options.timeout) {
+            this.timeout = options.timeout;
+            this.retries = (lifetimeRefreshToken - intervalRefreshToken) / this.timeout;
         }
 
         this.activity$ = (this.webSocket
@@ -414,7 +422,7 @@ export class DirectLine implements IBotConnection {
         return Observable.ajax({
             method,
             url,
-            timeout,
+            timeout: this.timeout,
             headers: {
                 "Accept": "application/json",
                 "Authorization": `Bearer ${this.token}`
@@ -429,8 +437,8 @@ export class DirectLine implements IBotConnection {
                 ? Observable.throw(error)
                 : Observable.of(error)
             )
-            .delay(timeout)
-            .take(retries)
+            .delay(this.timeout)
+            .take(this.retries)
         )
     }
 
@@ -449,7 +457,7 @@ export class DirectLine implements IBotConnection {
             Observable.ajax({
                 method: "POST",
                 url: `${this.domain}/tokens/refresh`,
-                timeout,
+                timeout: this.timeout,
                 headers: {
                     "Authorization": `Bearer ${this.token}`
                 }
@@ -468,8 +476,8 @@ export class DirectLine implements IBotConnection {
 
                     return Observable.of(error);
                 })
-                .delay(timeout)
-                .take(retries)
+                .delay(this.timeout)
+                .take(this.retries)
             )
         )
     }
@@ -497,7 +505,7 @@ export class DirectLine implements IBotConnection {
                     method: "GET",
                     url: `${this.domain}/session/getsessionid`,
                     withCredentials: true,
-                    timeout,
+                    timeout: this.timeout,
                     headers: {
                         "Content-Type": "application/json",
                         "Authorization": `Bearer ${this.token}`
@@ -534,7 +542,7 @@ export class DirectLine implements IBotConnection {
                 method: "POST",
                 url: `${this.domain}/conversations/${this.conversationId}/activities`,
                 body: activity,
-                timeout,
+                timeout: this.timeout,
                 headers: {
                     "Content-Type": "application/json",
                     "Authorization": `Bearer ${this.token}`
@@ -576,7 +584,7 @@ export class DirectLine implements IBotConnection {
                 method: "POST",
                 url: `${this.domain}/conversations/${this.conversationId}/upload?userId=${messageWithoutAttachments.from.id}`,
                 body: formData,
-                timeout,
+                timeout: this.timeout,
                 headers: {
                     "Authorization": `Bearer ${this.token}`
                 }
@@ -620,7 +628,7 @@ export class DirectLine implements IBotConnection {
                         },
                         method: 'GET',
                         url: `${ this.domain }/conversations/${ this.conversationId }/activities?watermark=${ this.watermark }`,
-                        timeout
+                        timeout: this.timeout
                     }).subscribe(
                         (result: AjaxResponse) => {
                             subscriber.next(result);
@@ -688,7 +696,7 @@ export class DirectLine implements IBotConnection {
                 // If we periodically ping the server with empty messages, it helps Chrome
                 // realize when connection breaks, and close the socket. We then throw an
                 // error, and that give us the opportunity to attempt to reconnect.
-                sub = Observable.interval(timeout).subscribe(_ => ws.send(""));
+                sub = Observable.interval(this.timeout).subscribe(_ => ws.send(""));
             }
 
             ws.onclose = close => {
@@ -715,7 +723,7 @@ export class DirectLine implements IBotConnection {
             Observable.ajax({
                 method: "GET",
                 url: `${this.domain}/conversations/${this.conversationId}?watermark=${this.watermark}`,
-                timeout,
+                timeout: this.timeout,
                 headers: {
                     "Accept": "application/json",
                     "Authorization": `Bearer ${this.token}`
@@ -739,8 +747,8 @@ export class DirectLine implements IBotConnection {
 
                     return Observable.of(error);
                 })
-                .delay(timeout)
-                .take(retries)
+                .delay(this.timeout)
+                .take(this.retries)
             )
         )
     }

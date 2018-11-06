@@ -72,6 +72,7 @@ var directLine = new DirectLine({
     domain: /* optional: if you are not using the default Direct Line endpoint, e.g. if you are using a region-specific endpoint, put its full URL here */
     webSocket: /* optional: false if you want to use polling GET to receive messages. Defaults to true (use WebSocket). */,
     pollingInterval: /* optional: set polling interval in milliseconds. Default to 1000 */,
+    timeout: /* optional: set post activity timeout in milliseconds. Default: 20000 */,
 });
 ```
 
