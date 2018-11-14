@@ -1,17 +1,40 @@
 {
-    "compilerOptions": {
-        "declaration": true,
-        "lib": [
-            "dom",
-            "es2017"
-        ],
-        "module": "commonjs",
-        "noImplicitAny": false,
-        "outDir": "./built/",
-        "target": "es5",
-        "sourceMap": true
-    },
-    "files": [
-        "src/directLine.ts"
-    ]
+  "compilerOptions": {
+    "baseUrl": ".",
+    "outDir": "lib",
+    "module": "esnext",
+    "target": "esnext",
+    "resolveJsonModule": true,
+    "lib": [
+      "es6",
+      "dom",
+      "es2017",
+      "esnext"
+    ],
+    "sourceMap": true,
+    "declaration": true,
+    "moduleResolution": "node",
+    "forceConsistentCasingInFileNames": true,
+    "noImplicitReturns": true,
+    "noImplicitThis": false,
+    "noImplicitAny": false,
+    // "strictNullChecks": true,
+    "suppressImplicitAnyIndexErrors": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": false
+  },
+  "include": [
+    "./src"
+  ],
+  "exclude": [
+    "./build",
+    "./built",
+    "./scripts",
+    "./__tests__/**/*",
+    "./**/*.spec.ts",
+    "./**/*.test.ts",
+    "**/node_modules",
+    "./packages",
+    "./public"
+  ]
 }

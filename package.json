@@ -2,16 +2,18 @@
   "name": "botframework-directlinejs",
   "version": "0.10.1-0",
   "description": "client library for the Microsoft Bot Framework Direct Line 3.0 protocol",
-  "main": "built/directLine.js",
-  "types": "built/directLine.d.ts",
+  "main": "lib/web/directLine.js",
+  "types": "lib/directLine.d.ts",
   "scripts": {
-    "build": "tsc && webpack",
-    "watch": "npx npm-run-all -p -r -l tsc-watch webpack-watch",
-    "tsc-watch": "tsc -w",
-    "webpack-watch": "webpack -w",
-    "clean": "rm -rf built",
-    "prepublish": "tsc && webpack --config webpack.production.config.js",
-    "test": "echo TODO: Add tests"
+    "build": "run-p clean build:node:prod build:web:prod emit",
+    "build:node:dev": "node ./scripts/build.js",
+    "build:web:dev": "node ./scripts/build.js",
+    "build:node:prod": "node ./scripts/build.js",
+    "build:web:prod": "node ./scripts/build.js",
+    "emit": "tsc --emitDeclarationOnly --declaration",
+    "clean": "rm -rf lib",
+    "prepublish": "npm run build",
+    "test": "jest"
   },
   "repository": {
     "type": "git",
@@ -20,12 +22,28 @@
   "author": "Microsoft Corp",
   "license": "MIT",
   "dependencies": {
-    "rxjs": "^5.0.3"
+    "botframework-schema": "^4.1.5",
+    "form-data": "^2.3.3",
+    "node-fetch": "^2.3.0"
   },
   "devDependencies": {
-    "source-map-loader": "^0.1.5",
-    "ts-loader": "^1.3.3",
-    "typescript": "^2.3.2",
-    "webpack": "^1.14.0"
+    "@babel/cli": "^7.1.0",
+    "@babel/core": "^7.1.0",
+    "@babel/plugin-proposal-class-properties": "7.1.0",
+    "@babel/plugin-proposal-object-rest-spread": "7.0.0",
+    "@babel/plugin-transform-runtime": "7.1.0",
+    "@babel/preset-env": "7.1.5",
+    "@babel/preset-typescript": "7.1.0",
+    "@babel/runtime": "7.1.5",
+    "@types/jest": "^22.2.3",
+    "babel-jest": "23.6.0",
+    "babel-loader": "8.0.4",
+    "jest": "^23.0.0",
+    "npm-run-all": "^4.1.3",
+    "tslint": "5.11.0",
+    "tslint-loader": "3.5.4",
+    "typescript": "3.1.6",
+    "webpack": "4.25.1",
+    "webpack-cli": "^3.1.2"
   }
 }
