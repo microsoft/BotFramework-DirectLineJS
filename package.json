@@ -4,6 +4,7 @@
   "description": "client library for the Microsoft Bot Framework Direct Line 3.0 protocol",
   "main": "lib/web/directLine.js",
   "types": "lib/directLine.d.ts",
+  "files": ["lib"],
   "scripts": {
     "build": "run-p clean build:node:prod build:web:prod emit",
     "build:node:dev": "node ./scripts/build.js",
