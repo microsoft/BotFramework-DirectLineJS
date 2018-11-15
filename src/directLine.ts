@@ -382,9 +382,7 @@ export class DirectLine {
         connectionStatus = ConnectionStatus.IndeterminateError;
         break;
     }
-    if (connectionStatus) {
-      connectionStatus.error = { status, statusText };
-    }
+    connectionStatus.error = { status, statusText };
     return (this.status = connectionStatus);
   }
 
