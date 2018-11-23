@@ -540,7 +540,7 @@ export class DirectLine implements IBotConnection {
                     "Authorization": `Bearer ${this.token}`
                 }
             })
-            .map(ajaxResponse => ajaxResponse.response.id as string)
+            .map(ajaxResponse => ajaxResponse as AjaxRequest)
             .catch(error => this.catchPostError(error))
         )
         .catch(error => this.catchExpiredToken(error));
@@ -581,7 +581,7 @@ export class DirectLine implements IBotConnection {
                     "Authorization": `Bearer ${this.token}`
                 }
             })
-            .map(ajaxResponse => ajaxResponse.response.id as string)
+            .map(ajaxResponse => ajaxResponse as AjaxRequest)
             .catch(error => this.catchPostError(error))
         )
         .catch(error => this.catchPostError(error));
@@ -594,7 +594,7 @@ export class DirectLine implements IBotConnection {
         else if (error.status >= 400 && error.status < 500)
             // more unrecoverable errors
             return Observable.throw(error);
-        return Observable.of("retry");
+        return Observable.of(error);
     }
 
     private catchExpiredToken(error: any) {
