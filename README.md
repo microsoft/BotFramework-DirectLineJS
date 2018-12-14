@@ -146,7 +146,7 @@ If your app created your DirectLine object by passing a token, DirectLine will r
 Should your client lose connectivity (e.g. close laptop, fail to pay Internet access bill, go under a tunnel), `connectionStatus$`
 will change to `ConnectionStatus.ExpiredToken`. Your app can request a new token from its server, which should call
 the [Reconnect](https://docs.botframework.com/en-us/restapi/directline3/#reconnecting-to-a-conversation) API.
-The resultant Conversation object can then be passed by the app to DirectLine, which will
+The resultant Conversation object can then be passed by the app to DirectLine.
 
 ```typescript
 var conversation = /* a Conversation object obtained from your app's server */;
