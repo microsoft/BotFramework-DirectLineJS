@@ -186,7 +186,7 @@ const dl = new DirectLine({
 ```
 
 **Getting any history that Direct Line has cached** : you can retrieve history using watermarks:
-You can see the watermark as an *activity 'bookmark'*. The resuming scenario will replay all the conversation activities from the watermark you specify. For now, this only works when using the polling version of DirectLine.
+You can see the watermark as an *activity 'bookmark'*. The resuming scenario will replay all the conversation activities from the watermark you specify.
 
 ```typescript
 import { DirectLine } from 'botframework-directlinejs';
@@ -199,9 +199,6 @@ const dl = new DirectLine({
     webSocket: false
 });
 ```
-
-*Watermark with websocket will be supported in the future.*
-
 
 ## Contributing
 
