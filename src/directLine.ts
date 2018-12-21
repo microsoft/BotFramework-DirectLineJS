@@ -410,11 +410,12 @@ export class DirectLine implements IBotConnection {
         connectionStatusTo: ConnectionStatus,
         maxAttempts = 5
      ) {
+        maxAttempts--;
         let attempts = 0;
         let currStatus = null;
         return (status: ConnectionStatus): ConnectionStatus => {
             if (status === connectionStatusFrom && currStatus === status) {
-                if (attempts >= maxAttempts - 1) {
+                if (attempts >= maxAttempts) {
                     attempts = 0
                     return connectionStatusTo;
                 }
