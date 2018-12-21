@@ -386,7 +386,8 @@ export class DirectLine implements IBotConnection {
     private streamUrl: string;
     public referenceGrammarId: string;
 
-    private pollingInterval: number = 1000;
+    private pollingInterval: number = 1000; //ms
+    private readonly POLLING_INTERVAL_LOWER_BOUND: number = 50; //ms
 
     private tokenRefreshSubscription: Subscription;
 
@@ -415,8 +416,12 @@ export class DirectLine implements IBotConnection {
             }
         }
 
-        if (options.pollingInterval !== undefined) {
-            this.pollingInterval = options.pollingInterval;
+        if (options.pollingInterval !== undefined && typeof options.pollingInterval === 'number') {
+            if (options.pollingInterval < this.POLLING_INTERVAL_LOWER_BOUND) {
+                console.warn('provided pollingInterval is under lower bound (200ms), using default of 1000ms');
+            } else {
+                this.pollingInterval = options.pollingInterval;
+            }
         }
 
         this.expiredTokenExhaustion = this.setConnectionStatusFallback(
