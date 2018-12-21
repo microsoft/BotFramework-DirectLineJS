@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Changed
+
+- Prevents infinite WebSocket reconnection spam on subsequent token expiration signals [#127](https://github.com/Microsoft/BotFramework-DirectLineJS/pull/127)
+
 ## [0.10.0] - 2018-10-30
 ### Added
 - Add support for watermark in Web Socket, in [#96](https://github.com/Microsoft/BotFramework-DirectLineJS/pull/96)
