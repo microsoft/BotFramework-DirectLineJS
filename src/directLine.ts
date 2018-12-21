@@ -301,6 +301,7 @@ export class DirectLine implements IBotConnection {
     private webSocket: boolean;
 
     private conversationId: string;
+    private expiredTokenExhaustion: Function;
     private secret: string;
     private token: string;
     private watermark = '';
@@ -339,6 +340,12 @@ export class DirectLine implements IBotConnection {
         if (options.pollingInterval !== undefined) {
             this.pollingInterval = options.pollingInterval;
         }
+
+        this.expiredTokenExhaustion = this.setConnectionStatusFallback(
+            ConnectionStatus.ExpiredToken,
+            ConnectionStatus.FailedToConnect,
+            5
+        );
 
         this.activity$ = (this.webSocket
             ? this.webSocketActivity$()
@@ -398,10 +405,34 @@ export class DirectLine implements IBotConnection {
         return once ? obs.take(1) : obs;
     }
 
+    setConnectionStatusFallback(
+        connectionStatusFrom: ConnectionStatus,
+        connectionStatusTo: ConnectionStatus,
+        maxAttempts = 5
+     ) {
+        maxAttempts--;
+        let attempts = 0;
+        let currStatus = null;
+        return (status: ConnectionStatus): ConnectionStatus => {
+            if (status === connectionStatusFrom && currStatus === status) {
+                if (attempts >= maxAttempts) {
+                    attempts = 0
+                    return connectionStatusTo;
+                }
+            }
+            attempts++;
+            currStatus = status;
+            return status;
+        };
+    }
+
     private expiredToken() {
         const connectionStatus = this.connectionStatus$.getValue();
         if (connectionStatus != ConnectionStatus.Ended && connectionStatus != ConnectionStatus.FailedToConnect)
             this.connectionStatus$.next(ConnectionStatus.ExpiredToken);
+
+        const protectedConnectionStatus = this.expiredTokenExhaustion(this.connectionStatus$.getValue());
+        this.connectionStatus$.next(protectedConnectionStatus);
     }
 
     private startConversation() {
