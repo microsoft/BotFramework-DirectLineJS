@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.10.1] - 2018-12-21
 ### Changed
 
 - Prevents infinite WebSocket reconnection spam on subsequent token expiration signals [#127](https://github.com/Microsoft/BotFramework-DirectLineJS/pull/127)
