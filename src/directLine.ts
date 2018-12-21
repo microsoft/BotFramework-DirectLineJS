@@ -351,6 +351,8 @@ const intervalRefreshToken = lifetimeRefreshToken / 2;
 const timeout = 20 * 1000;
 const retries = (lifetimeRefreshToken - intervalRefreshToken) / timeout;
 
+const POLLING_INTERVAL_LOWER_BOUND: number = 200; //ms
+
 const errorExpiredToken = new Error("expired token");
 const errorConversationEnded = new Error("conversation ended");
 const errorFailedToConnect = new Error("failed to connect");
@@ -387,7 +389,6 @@ export class DirectLine implements IBotConnection {
     public referenceGrammarId: string;
 
     private pollingInterval: number = 1000; //ms
-    private readonly POLLING_INTERVAL_LOWER_BOUND: number = 200; //ms
 
     private tokenRefreshSubscription: Subscription;
 
@@ -415,13 +416,14 @@ export class DirectLine implements IBotConnection {
                 console.warn('DirectLineJS: streamUrl was ignored: you need to provide a token and a conversationid');
             }
         }
+        
+        const interval = Math.min(~~options.pollingInterval, POLLING_INTERVAL_LOWER_BOUND);
 
-        if (typeof options.pollingInterval === 'number') {
-            if (options.pollingInterval < this.POLLING_INTERVAL_LOWER_BOUND) {
-                console.warn('DirectLineJS: provided pollingInterval is under lower bound (200ms), using default of 1000ms');
-            } else {
-                this.pollingInterval = options.pollingInterval;
-            }
+        if (options.pollingInterval &&
+            Math.min(~~options.pollingInterval, POLLING_INTERVAL_LOWER_BOUND) < POLLING_INTERVAL_LOWER_BOUND) {
+            console.warn('DirectLineJS: provided pollingInterval is under lower bound (200ms), using default of 1000ms');
+        } else {
+            this.pollingInterval = options.pollingInterval;
         }
 
         this.expiredTokenExhaustion = this.setConnectionStatusFallback(
