@@ -697,13 +697,12 @@ export class DirectLine implements IBotConnection {
                     this.token = result.response.token;
                 this.streamUrl = result.response.streamUrl;
             })
-            .map(_ => null)
             .retryWhen(error$ => error$
                 .mergeMap(error => {
                     if (error.status === 403) {
                         // token has expired. We can't recover from this here, but the embedding
                         // website might eventually call reconnect() with a new token and streamUrl.
-                        this.expiredToken();
+                        return Observable.throw(errorExpiredToken);
                     }
                     return Observable.of(error);
                 })
