@@ -593,7 +593,13 @@ export class DirectLine implements IBotConnection {
     end() {
         if (this.tokenRefreshSubscription)
             this.tokenRefreshSubscription.unsubscribe();
-        this.connectionStatus$.next(ConnectionStatus.Ended);
+        try {
+            this.connectionStatus$.next(ConnectionStatus.Ended);
+        } catch (e) {
+            if (e === errorConversationEnded)
+                return;
+            throw(e);
+        }
     }
 
     getSessionId(): Observable<string> {
