@@ -56,7 +56,7 @@ export type CardActionTypes = "call" | "downloadFile" | "imBack" | "messageBack"
 export interface CardAction {
     displayText?: string,
     image?: string,
-    title: string,
+    title?: string,
     type: CardActionTypes,
     value?: any
 }
