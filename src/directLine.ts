@@ -51,7 +51,7 @@ export interface UnknownMedia{
     thumbnailUrl?: string
 }
 
-export type CardActionTypes = "openUrl" | "imBack" | "postBack" | "playAudio" | "playVideo" | "showImage" | "downloadFile" | "signin" | "call";
+export type CardActionTypes = "call" | "downloadFile" | "imBack" | "messageBack" | "openUrl" | "playAudio" | "playVideo" | "postBack" |  "signin" | "showImage";
 
 export interface CardAction {
     type: CardActionTypes,
