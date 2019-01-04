@@ -54,10 +54,11 @@ export interface UnknownMedia{
 export type CardActionTypes = "call" | "downloadFile" | "imBack" | "messageBack" | "openUrl" | "playAudio" | "playVideo" | "postBack" |  "signin" | "showImage";
 
 export interface CardAction {
-    type: CardActionTypes,
+    displayText?: string,
+    image?: string,
     title: string,
-    value: any,
-    image?: string
+    type: CardActionTypes,
+    value?: any
 }
 
 export interface CardImage {
