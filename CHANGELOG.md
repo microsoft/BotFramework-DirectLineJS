@@ -6,12 +6,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 <!-- CHANGELOG line template
 ### Added/Changed/Removed
-- Added something, by [@johndoe](https://github.com/johndoe), in PR [#XXX](https://github.com/Microsoft/BotFramework-WebChat/pull/XXX)
+- Added something, by [@johndoe](https://github.com/johndoe), in PR [#XXX](https://github.com/Microsoft/BotFramework-DirectLineJS/pull/XXX)
 ### Changed (for dependency bumps)
-- `core`: Bumps to [`abc@1.2.3`](https://npmjs.com/package/abc/), in PR [#XXX](https://github.com/Microsoft/BotFramework-WebChat/pull/XXX)
+- `core`: Bumps to [`abc@1.2.3`](https://npmjs.com/package/abc/), in PR [#XXX](https://github.com/Microsoft/BotFramework-DirectLineJS/pull/XXX)
 ### Fixed
-- Fix [#XXX](https://github.com/Microsoft/BotFramework-WebChat/issues/XXX). Patched something, by [@johndoe](https://github.com/johndoe) in PR [#XXX](https://github.com/Microsoft/BotFramework-WebChat/pull/XXX)
+- Fix [#XXX](https://github.com/Microsoft/BotFramework-DirectLineJS/issues/XXX). Patched something, by [@johndoe](https://github.com/johndoe) in PR [#XXX](https://github.com/Microsoft/BotFramework-DirectLineJS/pull/XXX)
 -->
+
 ## [Unreleased]
 
 - Added `messageBack` to `CardActionTypes` and updated `CardAction` fields, by [@corinagum](https://github.com/corinagum), in PR [#138](https://github.com/Microsoft/BotFramework-DirectLineJS/pull/138)
