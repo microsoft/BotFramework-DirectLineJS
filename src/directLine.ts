@@ -51,26 +51,91 @@ export interface UnknownMedia{
     thumbnailUrl?: string
 }
 
-export type CardActionTypes = "call" | "downloadFile" | "imBack" | "messageBack" | "openUrl" | "playAudio" | "playVideo" | "postBack" |  "signin" | "showImage";
+export type CardActionTypes = "call" | "downloadFile"| "imBack" | "messageBack" | "openUrl" | "playAudio" | "playVideo" | "postBack" | "signin" | "showImage";
 
-export type CardAction = CardActionWithImage | CardActionWithTitle;
+export type CardAction = CallCardAction | DownloadFileCardAction | IMBackCardAction | MessageBackCardAction | OpenURLCardAction | PlayAudioCardAction | PlayVideoCardAction | PostBackCardAction | SignInCardAction | ShowImageCardAction;
 
-export interface CardActionWithImage {
+export interface CallCardAction {
+    image?: string,
+    title: string,
+    type: "call",
+    value: any
+}
+
+export interface DownloadFileCardAction {
+    image?: string,
+    title: string,
+    type: "downloadFile",
+    value: any
+}
+
+export interface IMBackCardAction {
+    image?: string,
+    title?: string,
+    type: "imBack",
+    value: string
+}
+
+export type MessageBackCardAction = MessageBackWithImage | MessageBackWithTitle
+
+export interface MessageBackWithImage {
     displayText?: string,
     image: string,
     text?: string,
     title?: string,
-    type: CardActionTypes,
+    type: "messageBack",
     value?: any
 }
 
-export interface CardActionWithTitle {
+export interface MessageBackWithTitle {
     displayText?: string,
     image?: string,
     text?: string,
     title: string,
-    type: CardActionTypes,
+    type: "messageBack",
     value?: any
+}
+
+export interface OpenURLCardAction {
+    image?: string,
+    title: string,
+    type: "openUrl",
+    value: any
+}
+
+export interface PlayAudioCardAction {
+    image?: string,
+    title: string,
+    type: "playAudio",
+    value: any
+}
+
+export interface PlayVideoCardAction {
+    image?: string,
+    title: string,
+    type: "playVideo",
+    value: any
+}
+
+export interface PostBackCardAction {
+    image?: string,
+    title?: string,
+    type: "postBack",
+    value: any
+}
+
+export interface ShowImageCardAction {
+    image?: string,
+    title: string,
+    type: "showImage",
+    value: any
+}
+
+export interface SignInCardAction {
+    image?: string,
+    title: string,
+    type: "signin",
+    value: any
 }
 
 export interface CardImage {
