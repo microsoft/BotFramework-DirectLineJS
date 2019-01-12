@@ -65,6 +65,8 @@ global.WebSocket = require('ws');
 
 ```typescript
 import { DirectLine } from 'botframework-directlinejs';
+// For Node.js:
+// const { DirectLine } = require('botframework-directlinejs');
 
 var directLine = new DirectLine({
     secret: /* put your Direct Line secret here */,
