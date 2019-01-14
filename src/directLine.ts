@@ -351,6 +351,8 @@ const intervalRefreshToken = lifetimeRefreshToken / 2;
 const timeout = 20 * 1000;
 const retries = (lifetimeRefreshToken - intervalRefreshToken) / timeout;
 
+const POLLING_INTERVAL_LOWER_BOUND: number = 200; //ms
+
 const errorExpiredToken = new Error("expired token");
 const errorConversationEnded = new Error("conversation ended");
 const errorFailedToConnect = new Error("failed to connect");
@@ -386,7 +388,7 @@ export class DirectLine implements IBotConnection {
     private streamUrl: string;
     public referenceGrammarId: string;
 
-    private pollingInterval: number = 1000;
+    private pollingInterval: number = 1000; //ms
 
     private tokenRefreshSubscription: Subscription;
 
@@ -411,11 +413,15 @@ export class DirectLine implements IBotConnection {
             if (options.token && options.conversationId) {
                 this.streamUrl = options.streamUrl;
             } else {
-                console.warn('streamUrl was ignored: you need to provide a token and a conversationid');
+                console.warn('DirectLineJS: streamUrl was ignored: you need to provide a token and a conversationid');
             }
         }
 
-        if (options.pollingInterval !== undefined) {
+        const interval = Math.min(~~options.pollingInterval, POLLING_INTERVAL_LOWER_BOUND);
+
+        if (options.pollingInterval && interval < POLLING_INTERVAL_LOWER_BOUND) {
+            console.warn(`DirectLineJS: provided pollingInterval (${options.pollingInterval}) is under lower bound (200ms), using default of 1000ms`);
+        } else {
             this.pollingInterval = options.pollingInterval;
         }
 
@@ -487,16 +493,14 @@ export class DirectLine implements IBotConnection {
         connectionStatusFrom: ConnectionStatus,
         connectionStatusTo: ConnectionStatus,
         maxAttempts = 5
-     ) {
+    ) {
         maxAttempts--;
         let attempts = 0;
         let currStatus = null;
         return (status: ConnectionStatus): ConnectionStatus => {
-            if (status === connectionStatusFrom && currStatus === status) {
-                if (attempts >= maxAttempts) {
-                    attempts = 0
-                    return connectionStatusTo;
-                }
+            if (status === connectionStatusFrom && currStatus === status && attempts >= maxAttempts) {
+                attempts = 0
+                return connectionStatusTo;
             }
             attempts++;
             currStatus = status;
