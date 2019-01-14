@@ -15,10 +15,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+- Adds protection against user-given pollingInterval values [#129](https://github.com/Microsoft/BotFramework-DirectLineJS/pull/129)
+
 ## [0.10.2] - 2018-01-09
 - Added `messageBack` to `CardActionTypes` and updated `CardAction` fields, by [@corinagum](https://github.com/corinagum), in PR [#138](https://github.com/Microsoft/BotFramework-DirectLineJS/pull/138)
 - Expand `CardAction`s with specific types, by [@corinagum](https://github.com/corinagum), in PR [#141](https://github.com/Microsoft/BotFramework-DirectLineJS/pull/141)
-- Adds protection against user-given pollingInterval values [#129](https://github.com/Microsoft/BotFramework-DirectLineJS/pull/129)
 
 ## [0.10.1] - 2018-12-21
 ### Changed

@@ -416,12 +416,11 @@ export class DirectLine implements IBotConnection {
                 console.warn('DirectLineJS: streamUrl was ignored: you need to provide a token and a conversationid');
             }
         }
-        
+
         const interval = Math.min(~~options.pollingInterval, POLLING_INTERVAL_LOWER_BOUND);
 
-        if (options.pollingInterval &&
-            Math.min(~~options.pollingInterval, POLLING_INTERVAL_LOWER_BOUND) < POLLING_INTERVAL_LOWER_BOUND) {
-            console.warn('DirectLineJS: provided pollingInterval is under lower bound (200ms), using default of 1000ms');
+        if (options.pollingInterval && interval < POLLING_INTERVAL_LOWER_BOUND) {
+            console.warn(`DirectLineJS: provided pollingInterval (${options.pollingInterval}) is under lower bound (200ms), using default of 1000ms`);
         } else {
             this.pollingInterval = options.pollingInterval;
         }
