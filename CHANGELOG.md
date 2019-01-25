@@ -14,8 +14,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 -->
 
 ## [Unreleased]
-
+### Added
 - Adds protection against user-given pollingInterval values [#129](https://github.com/Microsoft/BotFramework-DirectLineJS/pull/129)
+
+### Fixed
+- `errorConversationEnded` no longer thrown when calling `DirectLine#end`, by [@orgads](https://github.com/orgads), in PR [#133](https://github.com/Microsoft/BotFramework-DirectLineJS/pull/133)
 
 ## [0.10.2] - 2018-01-09
 - Added `messageBack` to `CardActionTypes` and updated `CardAction` fields, by [@corinagum](https://github.com/corinagum), in PR [#138](https://github.com/Microsoft/BotFramework-DirectLineJS/pull/138)
