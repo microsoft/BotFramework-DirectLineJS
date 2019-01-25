@@ -25,6 +25,13 @@ import 'rxjs/add/observable/interval';
 import 'rxjs/add/observable/of';
 import 'rxjs/add/observable/throw';
 
+declare var process: {
+    env: {
+        VERSION: string;
+    };
+    version: string;
+};
+
 // Direct Line 3.0 types
 
 export interface Conversation {
@@ -343,7 +350,9 @@ export interface DirectLineOptions {
     domain?: string,
     webSocket?: boolean,
     pollingInterval?: number,
-    streamUrl?: string
+    streamUrl?: string,
+    // Attached to all requests to identify requesting agent.
+    botAgent?: string
 }
 
 const lifetimeRefreshToken = 30 * 60 * 1000;
@@ -386,6 +395,8 @@ export class DirectLine implements IBotConnection {
     private token: string;
     private watermark = '';
     private streamUrl: string;
+    private botAgent = '';
+    private _commonHeaders: { [key: string]: string } = null;
     public referenceGrammarId: string;
 
     private pollingInterval: number = 1000; //ms
@@ -415,6 +426,10 @@ export class DirectLine implements IBotConnection {
             } else {
                 console.warn('DirectLineJS: streamUrl was ignored: you need to provide a token and a conversationid');
             }
+        }
+
+        if (options.botAgent) {
+            this.botAgent = options.botAgent;
         }
 
         const interval = Math.min(~~options.pollingInterval, POLLING_INTERVAL_LOWER_BOUND);
@@ -530,7 +545,7 @@ export class DirectLine implements IBotConnection {
             timeout,
             headers: {
                 "Accept": "application/json",
-                "Authorization": `Bearer ${this.token}`
+                ...this.commonHeaders()
             }
         })
 //      .do(ajaxResponse => konsole.log("conversation ajaxResponse", ajaxResponse.response))
@@ -564,7 +579,7 @@ export class DirectLine implements IBotConnection {
                 url: `${this.domain}/tokens/refresh`,
                 timeout,
                 headers: {
-                    "Authorization": `Bearer ${this.token}`
+                    ...this.commonHeaders()
                 }
             })
             .map(ajaxResponse => ajaxResponse.response.token as string)
@@ -619,7 +634,7 @@ export class DirectLine implements IBotConnection {
                     timeout,
                     headers: {
                         "Content-Type": "application/json",
-                        "Authorization": `Bearer ${this.token}`
+                        ...this.commonHeaders()
                     }
                 })
                 .map(ajaxResponse => {
@@ -656,8 +671,8 @@ export class DirectLine implements IBotConnection {
                 timeout,
                 headers: {
                     "Content-Type": "application/json",
-                    "Authorization": `Bearer ${this.token}`
-                }
+                    ...this.commonHeaders()
+                },
             })
             .map(ajaxResponse => ajaxResponse.response.id as string)
             .catch(error => this.catchPostError(error))
@@ -697,7 +712,7 @@ export class DirectLine implements IBotConnection {
                 body: formData,
                 timeout,
                 headers: {
-                    "Authorization": `Bearer ${this.token}`
+                    ...this.commonHeaders()
                 }
             })
             .map(ajaxResponse => ajaxResponse.response.id as string)
@@ -735,7 +750,7 @@ export class DirectLine implements IBotConnection {
                     Observable.ajax({
                         headers: {
                             Accept: 'application/json',
-                            Authorization: `Bearer ${ this.token }`
+                            ...this.commonHeaders()
                         },
                         method: 'GET',
                         url: `${ this.domain }/conversations/${ this.conversationId }/activities?watermark=${ this.watermark }`,
@@ -843,7 +858,7 @@ export class DirectLine implements IBotConnection {
                 timeout,
                 headers: {
                     "Accept": "application/json",
-                    "Authorization": `Bearer ${this.token}`
+                    ...this.commonHeaders()
                 }
             })
             .do(result => {
@@ -868,5 +883,36 @@ export class DirectLine implements IBotConnection {
                 .take(retries)
             )
         )
+    }
+
+    private commonHeaders() {
+        let userAgent = '';
+
+        try {
+            userAgent = window.navigator.userAgent || '';
+        } catch {
+            try {
+                // set node user agent
+                userAgent = `Node.js,Version=${process.version};`
+            } catch {
+                // no-op
+            }
+        }
+
+        return {
+            "Authorization": `Bearer ${this.token}`,
+            "User-Agent": `${this.getBotAgent()} (${userAgent})`,
+            "x-ms-bot-agent": this.getBotAgent()
+        };
+    }
+
+    private getBotAgent(): string {
+        let clientAgent = `directlinejs/${process.env.VERSION || '0.0.0'}`
+
+        if (this.botAgent) {
+            clientAgent += `; ${this.botAgent}`
+        }
+
+        return `DirectLine/3.0 (${clientAgent})`;
     }
 }
