@@ -25,6 +25,8 @@ import 'rxjs/add/observable/interval';
 import 'rxjs/add/observable/of';
 import 'rxjs/add/observable/throw';
 
+const DIRECT_LINE_VERSION = 'DirectLine/3.0';
+
 declare var process: {
     arch: string;
     env: {
@@ -399,7 +401,7 @@ export class DirectLine implements IBotConnection {
     private watermark = '';
     private streamUrl: string;
     private _botAgent = '';
-    private _userAgent: string = '';
+    private _userAgent: string;
     public referenceGrammarId: string;
 
     private pollingInterval: number = 1000; //ms
@@ -887,9 +889,7 @@ export class DirectLine implements IBotConnection {
     }
 
     private commonHeaders() {
-
-
-        if (this._userAgent === '') {
+        if (!this._userAgent) {
             try {
                 this._userAgent = window.navigator.userAgent || '';
             } catch {
@@ -919,6 +919,6 @@ export class DirectLine implements IBotConnection {
             clientAgent += `; ${customAgent}`
         }
 
-        return `DirectLine/3.0 (${clientAgent})`;
+        return `${DIRECT_LINE_VERSION} (${clientAgent})`;
     }
 }
