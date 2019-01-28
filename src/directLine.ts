@@ -26,9 +26,12 @@ import 'rxjs/add/observable/of';
 import 'rxjs/add/observable/throw';
 
 declare var process: {
+    arch: string;
     env: {
         VERSION: string;
     };
+    platform: string;
+    release: string;
     version: string;
 };
 
@@ -893,7 +896,10 @@ export class DirectLine implements IBotConnection {
         } catch {
             try {
                 // set node user agent
-                userAgent = `Node.js,Version=${process.version};`
+                // @ts-ignore
+                const os = require('os');
+                const { arch, platform, version } = process;
+                userAgent = `Node.js,Version=${version}; ${platform} ${os.release()}; ${arch}`
             } catch {
                 // no-op
             }

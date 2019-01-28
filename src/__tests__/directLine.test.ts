@@ -1,5 +1,15 @@
 import * as DirectLineExport from "../directLine";
 
+declare var process: {
+    arch: string;
+    env: {
+        VERSION: string;
+    };
+    platform: string;
+    release: string;
+    version: string;
+};
+
 test("#setConnectionStatusFallback", () => {
     const { DirectLine } = DirectLineExport;
     expect(typeof DirectLine.prototype.setConnectionStatusFallback).toBe("function")
@@ -23,13 +33,25 @@ test("#commonHeaders", () => {
     const botConnection = new DirectLine({ token: "secret-token", botAgent: "custom-bot-agent" });
     const botAgent = "DirectLine/3.0 (directlinejs/test-version; custom-bot-agent)";
 
-    // @ts-ignore
     process.env.VERSION = "test-version";
 
     // @ts-ignore
     expect(botConnection.commonHeaders()).toEqual({
         "Authorization": "Bearer secret-token",
         "User-Agent": `${botAgent} (${window.navigator.userAgent})`,
+        "x-ms-bot-agent": botAgent
+    });
+
+    // @ts-ignore
+    delete window.navigator
+    // @ts-ignore
+    const os = require('os');
+    const { arch, platform, version } = process;
+
+    // @ts-ignore
+    expect(botConnection.commonHeaders()).toEqual({
+        "Authorization": "Bearer secret-token",
+        "User-Agent": `${botAgent} (Node.js,Version=${version}; ${platform} ${os.release()}; ${arch})`,
         "x-ms-bot-agent": botAgent
     });
 });
