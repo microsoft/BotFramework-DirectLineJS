@@ -398,8 +398,8 @@ export class DirectLine implements IBotConnection {
     private token: string;
     private watermark = '';
     private streamUrl: string;
-    private botAgent = '';
-    private _commonHeaders: { [key: string]: string } = null;
+    private _botAgent = '';
+    private _userAgent: string = '';
     public referenceGrammarId: string;
 
     private pollingInterval: number = 1000; //ms
@@ -431,9 +431,7 @@ export class DirectLine implements IBotConnection {
             }
         }
 
-        if (options.botAgent) {
-            this.botAgent = options.botAgent;
-        }
+        this._botAgent = this.getBotAgent(options.botAgent);
 
         const interval = Math.min(~~options.pollingInterval, POLLING_INTERVAL_LOWER_BOUND);
 
@@ -889,34 +887,36 @@ export class DirectLine implements IBotConnection {
     }
 
     private commonHeaders() {
-        let userAgent = '';
 
-        try {
-            userAgent = window.navigator.userAgent || '';
-        } catch {
+
+        if (this._userAgent === '') {
             try {
-                // set node user agent
-                // @ts-ignore
-                const os = require('os');
-                const { arch, platform, version } = process;
-                userAgent = `Node.js,Version=${version}; ${platform} ${os.release()}; ${arch}`
+                this._userAgent = window.navigator.userAgent || '';
             } catch {
-                // no-op
+                try {
+                    // set node user agent
+                    // @ts-ignore
+                    const os = require('os');
+                    const { arch, platform, version } = process;
+                    this._userAgent = `Node.js,Version=${version}; ${platform} ${os.release()}; ${arch}`
+                } catch {
+                    // no-op
+                }
             }
         }
 
         return {
             "Authorization": `Bearer ${this.token}`,
-            "User-Agent": `${this.getBotAgent()} (${userAgent})`,
-            "x-ms-bot-agent": this.getBotAgent()
+            "User-Agent": `${this._botAgent} (${this._userAgent})`,
+            "x-ms-bot-agent": this._botAgent
         };
     }
 
-    private getBotAgent(): string {
+    private getBotAgent(customAgent: string = ''): string {
         let clientAgent = `directlinejs/${process.env.VERSION || '0.0.0'}`
 
-        if (this.botAgent) {
-            clientAgent += `; ${this.botAgent}`
+        if (customAgent) {
+            clientAgent += `; ${customAgent}`
         }
 
         return `DirectLine/3.0 (${clientAgent})`;

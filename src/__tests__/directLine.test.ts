@@ -28,30 +28,37 @@ test("#setConnectionStatusFallback", () => {
     expect(testFallback(0)).toBe(1);
 });
 
-test("#commonHeaders", () => {
-    const { DirectLine } = DirectLineExport;
-    const botConnection = new DirectLine({ token: "secret-token", botAgent: "custom-bot-agent" });
+describe("#commonHeaders", () => {
     const botAgent = "DirectLine/3.0 (directlinejs/test-version; custom-bot-agent)";
+    let botConnection;
 
-    process.env.VERSION = "test-version";
-
-    // @ts-ignore
-    expect(botConnection.commonHeaders()).toEqual({
-        "Authorization": "Bearer secret-token",
-        "User-Agent": `${botAgent} (${window.navigator.userAgent})`,
-        "x-ms-bot-agent": botAgent
+    beforeEach(() => {
+        process.env.VERSION = "test-version";
+        const { DirectLine } = DirectLineExport;
+        botConnection = new DirectLine({ token: "secret-token", botAgent: "custom-bot-agent" });
     });
 
-    // @ts-ignore
-    delete window.navigator
-    // @ts-ignore
-    const os = require('os');
-    const { arch, platform, version } = process;
+    test('appends browser user agent when in a browser', () => {
+        // @ts-ignore
+        expect(botConnection.commonHeaders()).toEqual({
+            "Authorization": "Bearer secret-token",
+            "User-Agent": `${botAgent} (${window.navigator.userAgent})`,
+            "x-ms-bot-agent": botAgent
+        });
+    })
 
-    // @ts-ignore
-    expect(botConnection.commonHeaders()).toEqual({
-        "Authorization": "Bearer secret-token",
-        "User-Agent": `${botAgent} (Node.js,Version=${version}; ${platform} ${os.release()}; ${arch})`,
-        "x-ms-bot-agent": botAgent
-    });
+    test('appends node environment agent when in node', () => {
+        // @ts-ignore
+        delete window.navigator
+        // @ts-ignore
+        const os = require('os');
+        const { arch, platform, version } = process;
+
+        // @ts-ignore
+        expect(botConnection.commonHeaders()).toEqual({
+            "Authorization": "Bearer secret-token",
+            "User-Agent": `${botAgent} (Node.js,Version=${version}; ${platform} ${os.release()}; ${arch})`,
+            "x-ms-bot-agent": botAgent
+        });
+    })
 });
