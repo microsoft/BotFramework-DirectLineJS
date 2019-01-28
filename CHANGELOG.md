@@ -15,7 +15,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 ### Added
-- Adds protection against user-given pollingInterval values [#129](https://github.com/Microsoft/BotFramework-DirectLineJS/pull/129)
+- Added protection against user-given pollingInterval values [#129](https://github.com/Microsoft/BotFramework-DirectLineJS/pull/129)
+- Added custom user agent and header [#148](https://github.com/Microsoft/BotFramework-DirectLineJS/pull/148)
 
 ### Fixed
 - `errorConversationEnded` no longer thrown when calling `DirectLine#end`, by [@orgads](https://github.com/orgads), in PR [#133](https://github.com/Microsoft/BotFramework-DirectLineJS/pull/133)
