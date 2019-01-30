@@ -889,31 +889,14 @@ export class DirectLine implements IBotConnection {
     }
 
     private commonHeaders() {
-        if (!this._userAgent) {
-            try {
-                this._userAgent = window.navigator.userAgent || '';
-            } catch {
-                try {
-                    // set node user agent
-                    // @ts-ignore
-                    const os = require('os');
-                    const { arch, platform, version } = process;
-                    this._userAgent = `Node.js,Version=${version}; ${platform} ${os.release()}; ${arch}`
-                } catch {
-                    // no-op
-                }
-            }
-        }
-
         return {
             "Authorization": `Bearer ${this.token}`,
-            "User-Agent": `${this._botAgent} (${this._userAgent})`,
             "x-ms-bot-agent": this._botAgent
         };
     }
 
     private getBotAgent(customAgent: string = ''): string {
-        let clientAgent = `directlinejs/${process.env.VERSION || '0.0.0'}`
+        let clientAgent = 'directlinejs'
 
         if (customAgent) {
             clientAgent += `; ${customAgent}`
