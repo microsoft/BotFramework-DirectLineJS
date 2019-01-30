@@ -29,7 +29,7 @@ test("#setConnectionStatusFallback", () => {
 });
 
 describe("#commonHeaders", () => {
-    const botAgent = "DirectLine/3.0 (directlinejs/test-version; custom-bot-agent)";
+    const botAgent = "DirectLine/3.0 (directlinejs; custom-bot-agent)";
     let botConnection;
 
     beforeEach(() => {
@@ -42,12 +42,11 @@ describe("#commonHeaders", () => {
         // @ts-ignore
         expect(botConnection.commonHeaders()).toEqual({
             "Authorization": "Bearer secret-token",
-            "User-Agent": `${botAgent} (${window.navigator.userAgent})`,
             "x-ms-bot-agent": botAgent
         });
     })
 
-    test('appends node environment agent when in node', () => {
+    test.skip('appends node environment agent when in node', () => {
         // @ts-ignore
         delete window.navigator
         // @ts-ignore
