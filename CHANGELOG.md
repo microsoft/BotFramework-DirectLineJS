@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.11.1] - 2019-01-31
+### Fixed
+- Fixed an issue causing a header to be incorrectly generated. [#153](https://github.com/Microsoft/BotFramework-DirectLineJS/pull/153)
+
 ## [0.11.0] - 2019-01-28
 ### Added
 - Added protection against user-given pollingInterval values [#129](https://github.com/Microsoft/BotFramework-DirectLineJS/pull/129)
