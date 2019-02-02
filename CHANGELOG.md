@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 -->
 
 ## [Unreleased]
+### Changed
+- Used `@babel/preset-typescript` and `webpack@4` to build, in PR [#XXX](https://github.com/Microsoft/BotFramework-DirectLineJS/pull/XXX)
+   - Moved to inline source map for pre-bundle
+   - Added `.editorconfig` and `.vscode` for new line and tab size rules
 
 ## [0.11.1] - 2019-01-31
 ### Fixed
