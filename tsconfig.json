@@ -4,8 +4,10 @@
   "compilerOptions": {
      // Target latest version of ECMAScript.
     "target": "esnext",
+
     // Search under node_modules for non-relative imports.
     "moduleResolution": "node",
+
     // Enable strictest settings like strictNullChecks & noImplicitAny.
     // TODO: [P1] Re-enable strictest when code is clean
     // "strict": true,
@@ -18,12 +20,12 @@
     "sourceMap": true
   },
   "exclude": [
+    "__tests__/**/*.js",
+    "__tests__/**/*.ts",
     "src/**/*.spec.js",
     "src/**/*.spec.ts",
     "src/**/*.test.js",
-    "src/**/*.test.ts",
-    "src/__tests__/**/*.js",
-    "src/__tests__/**/*.ts"
+    "src/**/*.test.ts"
   ],
   "include": [
     "src/**/*"
