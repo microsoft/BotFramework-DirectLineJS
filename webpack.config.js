@@ -1,41 +1,15 @@
-var webpack = require('webpack');
+const { resolve } = require('path');
+const Visualizer = require('webpack-visualizer-plugin');
 
 module.exports = {
-    entry: {
-        app: ["./built/directLine.js"],
-    },
-    output: {
-        libraryTarget: "umd",
-        library: "DirectLine",
-        filename: "./directLine.js",
-    },
-
-    // Enable sourcemaps for debugging webpack's output.
-    devtool: "source-map",
-
-    resolve: {
-        extensions: ["", ".webpack.js", ".web.js", ".js"]
-    },
-
-    module: {
-        preLoaders: [
-            // All output '.js' files will have any sourcemaps re-processed by 'source-map-loader'.
-            { test: /\.js$/, loader: "source-map-loader" }
-        ]
-    },
-
-    plugins: [
-        new webpack.DefinePlugin({
-            'process.env': {
-                'VERSION': JSON.stringify(process.env.npm_package_version)
-            }
-        })
-    ],
-
-    // When importing a module whose path matches one of the following, just
-    // assume a corresponding global variable exists and use that instead.
-    // This is important because it allows us to avoid bundling all of our
-    // dependencies, which allows browsers to cache those libraries between builds.
-    externals: {
-    },
+  entry: {
+    'directLine': './built/directLine.js'
+  },
+  mode: 'production',
+  output: {
+    filename: '[name].js',
+    libraryTarget: 'umd',
+    path: __dirname
+  },
+  plugins: [new Visualizer()]
 };

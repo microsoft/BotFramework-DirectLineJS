@@ -1,4 +1,4 @@
-import * as DirectLineExport from "../directLine";
+import * as DirectLineExport from "./directLine";
 
 declare var process: {
     arch: string;

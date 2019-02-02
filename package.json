@@ -1,34 +1,54 @@
 {
   "name": "botframework-directlinejs",
   "version": "0.11.2-0",
-  "description": "client library for the Microsoft Bot Framework Direct Line 3.0 protocol",
-  "main": "built/directLine.js",
-  "types": "built/directLine.d.ts",
+  "description": "Client library for the Microsoft Bot Framework Direct Line 3.0 protocol",
+  "files": [
+    "built/**/*",
+    "directLine.js"
+  ],
+  "main": "lib/directLine.js",
+  "types": "lib/directLine.d.ts",
   "scripts": {
-    "build": "tsc && webpack",
-    "watch": "npx npm-run-all -p -r -l tsc-watch webpack-watch",
-    "tsc-watch": "tsc -w",
-    "webpack-watch": "webpack -w",
-    "clean": "rm -rf built",
-    "prepublish": "tsc && webpack --config webpack.production.config.js",
-    "test": "jest"
+    "build": "npm run build:typecheck && npm run build:babel",
+    "build:babel": "babel --extensions .js,.ts,.tsx --ignore **/*.spec.js,**/*.spec.ts,**/*.spec.tsx,**/*.test.js,**/*.test.ts,**/*.test.tsx,__test__/**/*.js,__test__/**/*.ts,__test__/**/*.tsx --out-dir built --source-maps inline --verbose src",
+    "build:babel-instrumented": "npm run build:babel -- --env-name test && npm run build:webpack-instrumented",
+    "build:typecheck": "tsc",
+    "build:webpack": "webpack",
+    "build:webpack-instrumented": "webpack --config webpack-instrumented.config.js",
+    "build:webpack-watch": "webpack --config webpack-watch.config.js --watch",
+    "clean": "rimraf built directLine.js directLine-instrument.js stats.html",
+    "prepublishOnly": "npm run build && npm run build:webpack",
+    "test": "jest",
+    "watch": "concurrently --names \"babel,typecheck,webpack\" \"npm run build:babel-instrumented -- --watch\" \"npm run build:typecheck -- --preserveWatchOutput --watch\" \"npm run build:webpack-watch\""
   },
   "repository": {
     "type": "git",
-    "url": "git://git@github.com/Microsoft/BotFramework-DirectLineJS.git"
+    "url": "git+https://github.com/Microsoft/BotFramework-DirectLineJS.git"
   },
-  "author": "Microsoft Corp",
+  "author": "Microsoft Corporation",
   "license": "MIT",
   "dependencies": {
+    "@babel/runtime": "^7.3.1",
     "rxjs": "^5.0.3"
   },
   "devDependencies": {
+    "@babel/cli": "^7.2.3",
+    "@babel/core": "^7.2.2",
+    "@babel/plugin-proposal-class-properties": "^7.3.0",
+    "@babel/plugin-proposal-object-rest-spread": "^7.3.1",
+    "@babel/plugin-transform-runtime": "^7.2.0",
+    "@babel/preset-env": "^7.3.1",
+    "@babel/preset-typescript": "^7.1.0",
     "@types/jest": "^23.3.10",
-    "jest": "^23.6.0",
-    "source-map-loader": "^0.1.5",
-    "ts-jest": "^23.10.5",
-    "ts-loader": "^1.3.3",
-    "typescript": "^2.3.2",
-    "webpack": "^1.14.0"
+    "@types/node": "^10.12.21",
+    "babel-jest": "^24.0.0",
+    "babel-plugin-istanbul": "^5.1.0",
+    "concurrently": "^4.1.0",
+    "jest": "^24.0.0",
+    "rimraf": "^2.6.3",
+    "typescript": "^3.3.1",
+    "webpack": "^4.29.0",
+    "webpack-cli": "^3.2.1",
+    "webpack-visualizer-plugin": "^0.1.11"
   }
 }
