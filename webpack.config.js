@@ -1,4 +1,5 @@
 const { resolve } = require('path');
+const { DefinePlugin } = require('webpack');
 const Visualizer = require('webpack-visualizer-plugin');
 
 module.exports = {
@@ -8,8 +9,16 @@ module.exports = {
   mode: 'production',
   output: {
     filename: '[name].js',
+    library: 'DirectLine',
     libraryTarget: 'umd',
     path: __dirname
   },
-  plugins: [new Visualizer()]
+  plugins: [
+    new DefinePlugin({
+      'process.env': {
+        'VERSION': JSON.stringify(process.env.npm_package_version)
+      }
+    }),
+    new Visualizer()
+  ]
 };
