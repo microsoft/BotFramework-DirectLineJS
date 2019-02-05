@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Direct Line JS</title>
+    <script src="/directLine.js"></script>
+    <!-- <script src="https://unpkg.com/botframework-directlinejs/directLine.js"></script> -->
+    <style type="text/css">
+    body {
+      font-family: Calibri, 'Helvetica Neue', Arial, sans-serif;
+      margin: 5px;
+    }
+
+    input {
+      box-sizing: border-box;
+      font-size: 2rem;
+      padding: 5px;
+      width: 100%;
+    }
+
+    input::placeholder {
+      color: #CCC;
+    }
+
+    ul#log {
+      list-style-type: none;
+      margin: 5px 0;
+      padding: 0;
+    }
+
+    ul#log > li {
+      border: solid 1px #CCC;
+      margin: 5px 0;
+    }
+
+    ul#log > li > * {
+      margin: 0;
+      padding: 5px;
+    }
+
+    ul#log > li > p:first-child {
+      background-color: #EEE;
+    }
+    </style>
+  </head>
+  <body>
+    <form>
+      <input
+        autofocus
+        placeholder="Type a message"
+        type="text"
+        value="Hello, World!"
+      />
+    </form>
+    <ul id="log"></ul>
+    <script>
+      (async function () {
+        'use strict';
+
+        const { DirectLine } = window.DirectLine;
+        const searchParams = new URLSearchParams(location.search);
+        const secret = searchParams.get('s');
+        let token;
+
+        if (!secret) {
+          const res = await fetch('https://webchat-mockbot.azurewebsites.net/directline/token', { method: 'POST' });
+
+          token = (await res.json()).token;
+        }
+
+        const botConnection = new DirectLine({
+          domain: searchParams.get('domain'),
+          secret,
+          token
+        });
+
+        function log(...messages) {
+          const logElement = document.getElementById('log');
+          const entry = document.createElement('li');
+
+          messages.forEach(message => {
+            if (typeof message === 'string') {
+              const paragraphElement = document.createElement('p');
+
+              paragraphElement.innerText = message;
+              entry.appendChild(paragraphElement);
+            } else {
+              const preformattedElement = document.createElement('pre');
+
+              preformattedElement.innerText = JSON.stringify(message, null, 2);
+              entry.appendChild(preformattedElement);
+            }
+          });
+
+          logElement.appendChild(entry);
+        }
+
+        botConnection.activity$.subscribe({
+          next: activity => log(`Activity`, activity)
+        });
+
+        botConnection.connectionStatus$.subscribe({
+          next: connectionStatus => log('Connection status', connectionStatus)
+        });
+
+        document.getElementsByTagName('form')[0].addEventListener('submit', event => {
+          event.preventDefault();
+
+          const inputElement = document.getElementsByTagName('input')[0];
+          const { value } = inputElement;
+
+          if (value) {
+            inputElement.setAttribute('disabled', 'disabled');
+
+            botConnection.postActivity({
+              from: { id: 'direct-line-user' },
+              type: 'message',
+              value
+            }).subscribe(id => {
+              inputElement.removeAttribute('disabled');
+              inputElement.setAttribute('placeholder', id);
+              inputElement.value = '';
+            });
+          }
+        });
+
+        window.addEventListener('error', ({ error: { message, stack } }) => {
+          stack = stack.split('\n');
+
+          log('Uncaught error', { message, stack });
+        });
+      })().catch(console.error.bind(console));
+    </script>
+  </body>
+</html>
