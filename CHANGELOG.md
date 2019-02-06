@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 -->
 
 ## [Unreleased]
+
+## [0.11.2] - 2019-02-05
 ### Fixed
 - Fixed an issue where `pollingInterval` set to `undefined` would cause high polling rate, by [@cwhitten](https://github.com/cwhitten) and [@compulim](https://github.com/compulim), in PR [#157](https://github.com/Microsoft/BotFramework-DirectLineJS/pull/157)
 
