@@ -435,12 +435,12 @@ export class DirectLine implements IBotConnection {
 
         this._botAgent = this.getBotAgent(options.botAgent);
 
-        const interval = Math.min(~~options.pollingInterval, POLLING_INTERVAL_LOWER_BOUND);
+        const parsedPollingInterval = ~~options.pollingInterval;
 
-        if (options.pollingInterval && interval < POLLING_INTERVAL_LOWER_BOUND) {
-            console.warn(`DirectLineJS: provided pollingInterval (${options.pollingInterval}) is under lower bound (200ms), using default of 1000ms`);
+        if (parsedPollingInterval < POLLING_INTERVAL_LOWER_BOUND) {
+            console.warn(`DirectLineJS: provided pollingInterval (${ options.pollingInterval }) is under lower bound (200ms), using default of 1000ms`);
         } else {
-            this.pollingInterval = options.pollingInterval;
+            this.pollingInterval = parsedPollingInterval;
         }
 
         this.expiredTokenExhaustion = this.setConnectionStatusFallback(
