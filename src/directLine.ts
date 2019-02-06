@@ -439,7 +439,7 @@ export class DirectLine implements IBotConnection {
 
         if (options.pollingInterval && interval < POLLING_INTERVAL_LOWER_BOUND) {
             console.warn(`DirectLineJS: provided pollingInterval (${options.pollingInterval}) is under lower bound (200ms), using default of 1000ms`);
-        } else {
+        } else if (options.pollingInterval) {
             this.pollingInterval = options.pollingInterval;
         }
 
