@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 -->
 
 ## [Unreleased]
+### Fixed
+- Fix [#160](https://github.com/Microsoft/BotFramework-DirectLineJS/issues/160). Removed warning if `pollingInterval` is `undefined`, by [@compulim](https://github.com/compulim) in PR [#161](https://github.com/Microosft/BotFramework-DirectLineJS/pull/161)
 
 ## [0.11.2] - 2019-02-05
 ### Fixed
