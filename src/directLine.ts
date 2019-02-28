@@ -807,9 +807,14 @@ export class DirectLine implements IBotConnection {
             // WebSockets can be closed by the server or the browser. In the former case we need to
             // retrieve a new streamUrl. In the latter case we could first retry with the current streamUrl,
             // but it's simpler just to always fetch a new one.
-            .retryWhen(error$ => error$.delay(3000).mergeMap(error => this.reconnectToConversation()))
+            .retryWhen(error$ => error$.delay(this.getRetryDelay()).mergeMap(error => this.reconnectToConversation()))
         )
         .flatMap(activityGroup => this.observableFromActivityGroup(activityGroup))
+    }
+
+    // Returns the delay duration in milliseconds
+    private getRetryDelay() {
+        return Math.floor(3000 + Math.random() * 12000);
     }
 
     // Originally we used Observable.webSocket, but it's fairly opionated  and I ended up writing
