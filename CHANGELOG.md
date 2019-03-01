@@ -14,6 +14,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 -->
 
 ## [Unreleased]
+
+## [0.11.3] - 2019-03-01
+### Changed
+- Change reconnect delay to be a random amount between 3s and 15s, by [@mingweiw](https://github.com/mingweiw) in PR [#164](https://github.com/Microsoft/BotFramework-DirectLineJS/pull/164)
+
 ### Fixed
 - Fix [#160](https://github.com/Microsoft/BotFramework-DirectLineJS/issues/160). Removed warning if `pollingInterval` is `undefined`, by [@compulim](https://github.com/compulim) in PR [#161](https://github.com/Microosft/BotFramework-DirectLineJS/pull/161)
 
