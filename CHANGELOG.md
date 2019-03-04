@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-## [0.11.3] - 2019-03-01
+## [0.11.4] - 2019-03-04
 ### Changed
 - Change reconnect delay to be a random amount between 3s and 15s, by [@mingweiw](https://github.com/mingweiw) in PR [#164](https://github.com/Microsoft/BotFramework-DirectLineJS/pull/164)
 
