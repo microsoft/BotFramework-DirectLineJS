@@ -849,6 +849,12 @@ export class DirectLine implements IBotConnection {
 
             ws.onmessage = message => message.data && subscriber.next(JSON.parse(message.data));
 
+            ws.onerror = error =>  {
+                konsole.log("WebSocket error", error);
+                if (sub) sub.unsubscribe();
+                subscriber.error(error);
+            }
+
             // This is the 'unsubscribe' method, which is called when this observable is disposed.
             // When the WebSocket closes itself, we throw an error, and this function is eventually called.
             // When the observable is closed first (e.g. when tearing down a WebChat instance) then
