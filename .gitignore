@@ -1,7 +1,7 @@
-node_modules
-built
-.vscode
-/directLine.js
-/directLine.js.map
+/.idea
+/built
+/node_modules
 
-npm-debug.log
+/directLine.js
+/directLine-instrumented.js
+/stats.html

@@ -1,5 +1,7 @@
 # BotFramework-DirectLineJS
 
+[![Build Status](https://travis-ci.org/Microsoft/BotFramework-DirectLineJS.svg?branch=master)](https://travis-ci.org/Microsoft/BotFramework-DirectLineJS)
+
 Client library for the [Microsoft Bot Framework](http://www.botframework.com) *[Direct Line](https://docs.botframework.com/en-us/restapi/directline3/)* protocol.
 
 Used by [WebChat](https://github.com/Microsoft/BotFramework-WebChat) and thus (by extension) [Emulator](https://github.com/Microsoft/BotFramework-Emulator), WebChat channel, and [Azure Bot Service](https://azure.microsoft.com/en-us/services/bot-service/).
@@ -10,7 +12,7 @@ Used by [WebChat](https://github.com/Microsoft/BotFramework-WebChat) and thus (b
 
 Anyone who is building a Bot Framework JavaScript client who does not want to use [WebChat](https://github.com/Microsoft/BotFramework-WebChat).
 
-If you're currently using WebChat, you don't need to make any changes as it includes this package. 
+If you're currently using WebChat, you don't need to make any changes as it includes this package.
 
 ### *What is that funny `subscribe()` method in the samples below?*
 
@@ -37,20 +39,20 @@ That said, the public API is still subject to change.
 There are several ways:
 
 1. Build from scratch and include either `/directLine.js` (webpacked with rxjs) or `built/directline.js` in your app
-2. Use the unpkg CDN, e.g. `<script src="http://unpkg.com/botframework-directlinejs/directLine.js"/>`
-3. `npm install botframework-directlinejs`
+2. `npm install botframework-directlinejs`
 
 ## Using from within a Node environment
 
 This library uses RxJs/AjaxObserverable which is meant for use in a DOM environment. That doesn't mean you can't also use it from Node though, you just need to do a couple of extra things:
 
-1. `npm install --save xhr2`
+1. `npm install --save ws xhr2`
 2. Add the following towards the top of your main application file:
 
 ```typescript
-global.XMLHttpRequest = require("xhr2");
+global.XMLHttpRequest = require('xhr2');
+global.WebSocket = require('ws');
 ```
-    
+
 ## How to create and use a directLine object
 
 ### Obtain security credentials for your bot:
@@ -63,6 +65,8 @@ global.XMLHttpRequest = require("xhr2");
 
 ```typescript
 import { DirectLine } from 'botframework-directlinejs';
+// For Node.js:
+// const { DirectLine } = require('botframework-directlinejs');
 
 var directLine = new DirectLine({
     secret: /* put your Direct Line secret here */,
@@ -143,8 +147,8 @@ directLine.connectionStatus$
 If your app created your DirectLine object by passing a token, DirectLine will refresh that token every 15 minutes.
 Should your client lose connectivity (e.g. close laptop, fail to pay Internet access bill, go under a tunnel), `connectionStatus$`
 will change to `ConnectionStatus.ExpiredToken`. Your app can request a new token from its server, which should call
-the [Reconnect](https://docs.botframework.com/en-us/restapi/directline3/#reconnecting-to-a-conversation) API. 
-The resultant Conversation object can then be passed by the app to DirectLine, which will 
+the [Reconnect](https://docs.botframework.com/en-us/restapi/directline3/#reconnecting-to-a-conversation) API.
+The resultant Conversation object can then be passed by the app to DirectLine.
 
 ```typescript
 var conversation = /* a Conversation object obtained from your app's server */;
@@ -184,7 +188,7 @@ const dl = new DirectLine({
 ```
 
 **Getting any history that Direct Line has cached** : you can retrieve history using watermarks:
-You can see the watermark as an *activity 'bookmark'*. The resuming scenario will replay all the conversation activities from the watermark you specify. For now, this only works when using the polling version of DirectLine.
+You can see the watermark as an *activity 'bookmark'*. The resuming scenario will replay all the conversation activities from the watermark you specify.
 
 ```typescript
 import { DirectLine } from 'botframework-directlinejs';
@@ -198,10 +202,31 @@ const dl = new DirectLine({
 });
 ```
 
-*Watermark with websocket will be supported in the future.*
+## Contributing
 
-## Copyright & License
+This project welcomes contributions and suggestions.  Most contributions require you to agree to a
+Contributor License Agreement (CLA) declaring that you have the right to, and actually do, grant us
+the rights to use your contribution. For details, visit https://cla.microsoft.com.
 
-© 2017 Microsoft Corporation
+When you submit a pull request, a CLA-bot will automatically determine whether you need to provide
+a CLA and decorate the PR appropriately (e.g., label, comment). Simply follow the instructions
+provided by the bot. You will only need to do this once across all repos using our CLA.
 
-[MIT License](/LICENSE)
+When you submit a pull request, a CLA-bot will automatically determine whether you need to provide
+a CLA and decorate the PR appropriately (e.g., label, comment). Simply follow the instructions
+provided by the bot. You will only need to do this once across all repos using our CLA.
+This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/).
+For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or
+contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments.
+
+## Reporting Security Issues
+Security issues and bugs should be reported privately, via email, to the Microsoft Security Response Center (MSRC) at [secure@microsoft.com](mailto:secure@microsoft.com). You should receive a response within 24 hours. If for some reason you do not, please follow up via email to ensure we received your original message. Further information, including the [MSRC PGP](https://technet.microsoft.com/en-us/security/dn606155) key, can be found in the [Security TechCenter](https://technet.microsoft.com/en-us/security/default).
+
+## License
+
+Copyright (c) Microsoft Corporation. All rights reserved.
+
+Licensed under the [MIT](/LICENSE.md) License.
+
+
+This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/). For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments.

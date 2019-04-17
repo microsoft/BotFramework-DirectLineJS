@@ -1,0 +1,9 @@
+{
+  "editor.tabSize": 2,
+  "editor.trimAutoWhitespace": true,
+  "files.trimFinalNewlines": true,
+  "files.trimTrailingWhitespace": true,
+  "search.exclude": {
+    "lib": true
+  }
+}

@@ -1,0 +1,32 @@
+language: node_js
+node_js:
+- "10"
+
+before_install:
+- npm ci
+- npx version-from-git --travis
+
+install:
+- npm run prepublishOnly
+
+deploy:
+- provider: npm
+  api_key: $NPM_TOKEN
+  email: "botframework@microsoft.com"
+  on:
+    branch: master
+  skip_cleanup: true
+  tag: master
+
+- provider: npm
+  api_key: $NPM_TOKEN
+  email: "botframework@microsoft.com"
+  on:
+    tags: true
+  skip_cleanup: true
+
+- provider: releases
+  api_key: $GITHUB_TOKEN
+  on:
+    tags: true
+  skip_cleanup: true
