@@ -5,6 +5,8 @@ import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 import { Observable } from 'rxjs/Observable';
 import { Subscriber } from 'rxjs/Subscriber';
 import { Subscription } from 'rxjs/Subscription';
+import * as BFProtocol from 'microsoft-bot-protocol';
+import * as BFProtocolWebSocket from 'microsoft-bot-protocol-websocket';
 
 import 'rxjs/add/operator/catch';
 import 'rxjs/add/operator/combineLatest';
@@ -387,6 +389,13 @@ export interface IBotConnection {
     getSessionId? : () => Observable<string>
 }
 
+class StreamHandler implements BFProtocol.RequestHandler {
+  processRequestAsync(request: BFProtocol.ReceiveRequest, logger?: any): Promise<BFProtocol.Response> {
+    console.log("processRequestAsync called");
+    throw new Error("Method not implemented.");
+  }
+}
+
 export class DirectLine implements IBotConnection {
     public connectionStatus$ = new BehaviorSubject(ConnectionStatus.Uninitialized);
     public activity$: Observable<Activity>;
@@ -403,6 +412,7 @@ export class DirectLine implements IBotConnection {
     private _botAgent = '';
     private _userAgent: string;
     public referenceGrammarId: string;
+    private streamConnection: BFProtocolWebSocket.Client;
 
     private pollingInterval: number = 1000; //ms
 
@@ -451,10 +461,28 @@ export class DirectLine implements IBotConnection {
             5
         );
 
-        this.activity$ = (this.webSocket
+        if (this.webSocket) {
+          this.streamConnection = new BFProtocolWebSocket.Client({ url: this.streamUrl, requestHandler: new StreamHandler() });
+          this.streamConnection.connectAsync().then(() => {
+            let r = BFProtocol.Request.create('POST', '/v3/directline/conversations');
+            this.streamConnection.sendAsync(r, null);
+
+          }).catch((e) => {
+            console.log(e);
+            this.activity$ = (this.webSocket
+              ? this.webSocketActivity$()
+              : this.pollingGetActivity$()
+            ).share();
+          });
+
+          this.activity$ = this.webSocketActivity$().share();
+
+        } else {
+          this.activity$ = (this.webSocket
             ? this.webSocketActivity$()
             : this.pollingGetActivity$()
-        ).share();
+          ).share();
+        }
     }
 
     // Every time we're about to make a Direct Line REST call, we call this first to see check the current connection status.
