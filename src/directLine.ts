@@ -390,6 +390,12 @@ export interface IBotConnection {
 }
 
 class StreamHandler implements BFProtocol.RequestHandler {
+  public subscriber: Subscriber<ActivityGroup>;
+
+  constructor(s: Subscriber<ActivityGroup>) {
+    this.subscriber = s;
+  }
+
   processRequestAsync(request: BFProtocol.ReceiveRequest, logger?: any): Promise<BFProtocol.Response> {
     console.log("processRequestAsync called");
     throw new Error("Method not implemented.");
@@ -462,20 +468,21 @@ export class DirectLine implements IBotConnection {
         );
 
         if (this.webSocket) {
-          this.streamConnection = new BFProtocolWebSocket.Client({ url: this.streamUrl, requestHandler: new StreamHandler() });
-          this.streamConnection.connectAsync().then(() => {
-            let r = BFProtocol.Request.create('POST', '/v3/directline/conversations');
-            this.streamConnection.sendAsync(r, null);
-
-          }).catch((e) => {
+        let wsUrl = this.domain + '/conversations/connect?token=' + this.token + '&conversationId=' + this.conversationId;
+        let obs$ = Observable.create((subscriber: Subscriber<ActivityGroup>) => {
+            this.streamConnection = new BFProtocolWebSocket.Client({ url: this.streamUrl, requestHandler: new StreamHandler(subscriber) });
+            this.streamConnection.connectAsync().then(() => {
+                console.log("Connection Succeeded");
+            }).catch((e) => {
             console.log(e);
             this.activity$ = (this.webSocket
-              ? this.webSocketActivity$()
-              : this.pollingGetActivity$()
+                ? this.webSocketActivity$()
+                : this.pollingGetActivity$()
             ).share();
-          });
+            });
+        });
 
-          this.activity$ = this.webSocketActivity$().share();
+        this.activity$ = this.streamingWebSocketActivity$(obs$).share();
 
         } else {
           this.activity$ = (this.webSocket
@@ -692,6 +699,16 @@ export class DirectLine implements IBotConnection {
         if (activity.type === "message" && activity.attachments && activity.attachments.length > 0)
             return this.postMessageWithAttachments(activity);
 
+        if (this.webSocket) {
+            let r = BFProtocol.Request.create('POST', '/v3/directline/conversations/' + this.conversationId + '/activities');
+            r.setBody(activity);
+            this.streamConnection.sendAsync(r, null).then((resp) => {
+                console.log("RESPONSE: ")
+                console.log(resp);
+            });
+            return;
+        }
+
         // If we're not connected to the bot, get connected
         // Will throw an error if we are not connected
         konsole.log("postActivity", activity);
@@ -836,6 +853,18 @@ export class DirectLine implements IBotConnection {
             // retrieve a new streamUrl. In the latter case we could first retry with the current streamUrl,
             // but it's simpler just to always fetch a new one.
             .retryWhen(error$ => error$.delay(this.getRetryDelay()).mergeMap(error => this.reconnectToConversation()))
+        )
+        .flatMap(activityGroup => this.observableFromActivityGroup(activityGroup))
+    }
+
+    private streamingWebSocketActivity$(ows$: Observable<ActivityGroup>): Observable<Activity> {
+        return this.checkConnection()
+        .flatMap(_ =>
+            ows$
+            // WebSockets can be closed by the server or the browser. In the former case we need to
+            // retrieve a new streamUrl. In the latter case we could first retry with the current streamUrl,
+            // but it's simpler just to always fetch a new one.
+            //.retryWhen(error$ => error$.delay(this.getRetryDelay()).mergeMap(error => this.reconnectToConversation()))
         )
         .flatMap(activityGroup => this.observableFromActivityGroup(activityGroup))
     }
