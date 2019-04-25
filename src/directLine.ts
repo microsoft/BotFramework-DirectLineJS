@@ -398,9 +398,13 @@ class StreamHandler implements BFProtocol.RequestHandler {
     this.subscriber = s;
   }
 
-  processRequestAsync(request: BFProtocol.ReceiveRequest, logger?: any): Promise<BFProtocol.Response> {
+  async processRequestAsync(request: BFProtocol.ReceiveRequest, logger?: any): Promise<BFProtocol.Response> {
     console.log("processRequestAsync called");
-    throw new Error("Method not implemented.");
+    let resp = await request.Streams[0].readAsString();
+    this.subscriber.next(JSON.parse(resp))
+    let x = new BFProtocol.Response();
+    x.statusCode = 200;
+    return new Promise(r => x);
   }
 }
 
@@ -472,21 +476,33 @@ export class DirectLine implements IBotConnection {
         );
 
         if (this.webSocket) {
-        let wsUrl = this.domain + '/conversations/connect?token=' + this.token + '&conversationId=' + this.conversationId;
-        let obs$ = Observable.create((subscriber: Subscriber<ActivityGroup>) => {
-            this.streamConnection = new BFProtocolWebSocket.Client({ url: this.streamUrl, requestHandler: new StreamHandler(subscriber) });
-            this.streamConnection.connectAsync().then(() => {
-                console.log("Connection Succeeded");
-            }).catch((e) => {
-            console.log(e);
-            this.activity$ = (this.webSocket
-                ? this.webSocketActivity$()
-                : this.pollingGetActivity$()
-            ).share();
-            });
-        });
+            let wsUrl = this.domain + '/conversations/connect?token=' + this.token + '&conversationId=' + this.conversationId;
+            let obs$ = Observable.create((subscriber: Subscriber<ActivityGroup>) => {
+                this.streamConnection = new BFProtocolWebSocket.Client({ url: this.streamUrl, requestHandler: new StreamHandler(subscriber) });
+                this.streamConnection.connectAsync().then(() => {
+                    let r = BFProtocol.Request.create('POST', '/v3/directline/conversations');
 
-        this.activity$ = this.streamingWebSocketActivity$(obs$).share();
+                    console.log("CONNECTING...");
+                    this.streamConnection.sendAsync(r, null).then((resp) => {
+                        console.log("RESPONSE: ")
+                        console.log(resp);
+
+                        console.log("Connection Succeeded");
+                        this.connectionStatus$.next(ConnectionStatus.Connecting);
+                        this.connectionStatus$.next(ConnectionStatus.Online);
+                    });
+
+                }).catch((e) => {
+                console.log(e);
+                this.activity$ = (this.webSocket
+                    ? this.webSocketActivity$()
+                    : this.pollingGetActivity$()
+                ).share();
+                });
+            }).share();
+
+            this.activity$ = this.streamingWebSocketActivity$(obs$);
+            obs$.subscribe((a: Activity) => console.log(a));
 
         } else {
           this.activity$ = (this.webSocket
@@ -708,7 +724,11 @@ export class DirectLine implements IBotConnection {
                 console.log("RESPONSE: ")
                 console.log(resp);
             });
-            return;
+            return this.checkConnection(true).flatMap(_ => {
+                return this.checkConnection(true).map(_ => {
+                    return activity.id as string;
+                })
+            });
         }
 
         // If we're not connected to the bot, get connected
