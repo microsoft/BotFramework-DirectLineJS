@@ -399,12 +399,11 @@ class StreamHandler implements BFProtocol.RequestHandler {
   }
 
   async processRequestAsync(request: BFProtocol.ReceiveRequest, logger?: any): Promise<BFProtocol.Response> {
-    console.log("processRequestAsync called");
     let resp = await request.Streams[0].readAsString();
     this.subscriber.next(JSON.parse(resp))
-    let x = new BFProtocol.Response();
-    x.statusCode = 200;
-    return new Promise(r => x);
+    let r = new BFProtocol.Response();
+    r.statusCode = 200;
+    return r;
   }
 }
 
@@ -476,34 +475,24 @@ export class DirectLine implements IBotConnection {
         );
 
         if (this.webSocket) {
-            let wsUrl = this.domain + '/conversations/connect?token=' + this.token + '&conversationId=' + this.conversationId;
+            let re = new RegExp('^http(s?)');
+            if (!re.test(this.domain)) throw ("Domain must begin with http or https");
+            this.streamUrl = this.domain.replace(re, "ws$1") + '/conversations/connect?token=' + this.token + '&conversationId=' + this.conversationId;
             let obs$ = Observable.create((subscriber: Subscriber<ActivityGroup>) => {
                 this.streamConnection = new BFProtocolWebSocket.Client({ url: this.streamUrl, requestHandler: new StreamHandler(subscriber) });
                 this.streamConnection.connectAsync().then(() => {
                     let r = BFProtocol.Request.create('POST', '/v3/directline/conversations');
-
-                    console.log("CONNECTING...");
-                    this.streamConnection.sendAsync(r, null).then((resp) => {
-                        console.log("RESPONSE: ")
-                        console.log(resp);
-
-                        console.log("Connection Succeeded");
-                        this.connectionStatus$.next(ConnectionStatus.Connecting);
-                        this.connectionStatus$.next(ConnectionStatus.Online);
-                    });
-
+                    this.streamConnection.sendAsync(r, null).then(_ => console.log("WebSocket Connection Succeeded"));
                 }).catch((e) => {
-                console.log(e);
-                this.activity$ = (this.webSocket
-                    ? this.webSocketActivity$()
-                    : this.pollingGetActivity$()
-                ).share();
+                    console.log(e);
+                    this.activity$ = (this.webSocket
+                        ? this.webSocketActivity$()
+                        : this.pollingGetActivity$()
+                    ).share();
                 });
             }).share();
 
             this.activity$ = this.streamingWebSocketActivity$(obs$);
-            obs$.subscribe((a: Activity) => console.log(a));
-
         } else {
           this.activity$ = (this.webSocket
             ? this.webSocketActivity$()
@@ -898,7 +887,7 @@ export class DirectLine implements IBotConnection {
             // WebSockets can be closed by the server or the browser. In the former case we need to
             // retrieve a new streamUrl. In the latter case we could first retry with the current streamUrl,
             // but it's simpler just to always fetch a new one.
-            //.retryWhen(error$ => error$.delay(this.getRetryDelay()).mergeMap(error => this.reconnectToConversation()))
+            .retryWhen(error$ => error$.delay(this.getRetryDelay()).mergeMap(error => this.reconnectToConversation()))
         )
         .flatMap(activityGroup => this.observableFromActivityGroup(activityGroup))
     }
