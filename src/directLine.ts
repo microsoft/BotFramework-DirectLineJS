@@ -437,7 +437,7 @@ export class DirectLine implements IBotConnection {
         this.secret = options.secret;
         this.token = options.secret || options.token;
         this.webSocket = (options.webSocket === undefined ? true : options.webSocket) && typeof WebSocket !== 'undefined' && WebSocket !== undefined;
-        this.streamingWebSocket = options.webSocket;
+        this.streamingWebSocket = options.streamingWebSocket;
 
         if (options.domain) {
             this.domain = options.domain;
@@ -478,7 +478,7 @@ export class DirectLine implements IBotConnection {
         );
 
         this.activity$ = (this.webSocket
-            ? this.webSocketActivity$()
+            ? this.streamingWebSocketActivity$()
             : this.pollingGetActivity$()
         ).share();
     }
@@ -486,18 +486,16 @@ export class DirectLine implements IBotConnection {
     // Every time we're about to make a Direct Line REST call, we call this first to see check the current connection status.
     // Either throws an error (indicating an error state) or emits a null, indicating a (presumably) healthy connection
     private checkConnection(once = false) {
-        console.log("CHECK CONNECTION ---")
         let obs =  this.connectionStatus$
         .flatMap(connectionStatus => {
-            console.log("CHECK CONNECTION 111 " + connectionStatus)
             if (connectionStatus === ConnectionStatus.Uninitialized) {
                 this.connectionStatus$.next(ConnectionStatus.Connecting);
 
-                console.log("this.streamConnection = " + this.streamConnection)
                 if(this.streamConnection) {
                     this.connectionStatus$.next(ConnectionStatus.Online);
                     return Observable.of(connectionStatus);
                 }
+
                 //if token and streamUrl are defined it means reconnect has already been done. Skipping it.
                 if (this.token && this.streamUrl) {
                     this.connectionStatus$.next(ConnectionStatus.Online);
@@ -519,7 +517,6 @@ export class DirectLine implements IBotConnection {
                 }
             }
             else {
-                console.log("GOT A NEW VALUE " + connectionStatus)
                 return Observable.of(connectionStatus);
             }
         })
@@ -699,23 +696,20 @@ export class DirectLine implements IBotConnection {
             return this.postMessageWithAttachments(activity);
 
         if (this.streamConnection) {
-            let r = BFProtocol.Request.create('POST', '/v3/directline/conversations/' + this.conversationId + '/activities');
-            r.setBody(JSON.stringify(activity));
-            this.streamConnection.sendAsync(r, null).then((resp) => {
-                console.log("RESPONSE: ")
-                console.log(resp);
+            let resp$ = Observable.create(subscriber => {
+                let request = BFProtocol.Request.create('POST', '/v3/directline/conversations/' + this.conversationId + '/activities');
+                request.setBody(JSON.stringify(activity));
+                this.streamConnection.sendAsync(request, null)
+                    .then((resp) => {
+                        subscriber.next(resp.StatusCode);
+                    });
             });
-            return this.checkConnection(true).flatMap(_ => {
-                return this.checkConnection(true).map(_ => {
-                    return activity.id as string;
-                })
-            });
+            return resp$;
         }
 
         // If we're not connected to the bot, get connected
         // Will throw an error if we are not connected
         konsole.log("postActivity", activity);
-        console.log(activity)
         return this.checkConnection(true)
         .flatMap(_ =>
             Observable.ajax({
@@ -849,7 +843,7 @@ export class DirectLine implements IBotConnection {
         return Observable.from(activityGroup.activities);
     }
 
-    private webSocketActivity$(): Observable<Activity> {
+    private streamingWebSocketActivity$():  Observable<Activity> {
         let re = new RegExp('^http(s?)');
         if (!re.test(this.domain)) throw ("Domain must begin with http or https");
         let wsUrl = this.domain.replace(re, "ws$1") + '/conversations/connect?token=' + this.token + '&conversationId=' + this.conversationId;
@@ -868,20 +862,19 @@ export class DirectLine implements IBotConnection {
             });
         }).flatMap(activityGroup => this.observableFromActivityGroup(activityGroup)).share();
 
-        let obs2$ = this.checkConnection()
-                .flatMap(_ => {
-                    console.log("SECOND OBSERVABLE")
-                    return this.observableWebSocket<ActivityGroup>()
-                    // WebSockets can be closed by the server or the browser. In the former case we need to
-                    // retrieve a new streamUrl. In the latter case we could first retry with the current streamUrl,
-                    // but it's simpler just to always fetch a new one.
-                    .retryWhen(error$ => error$.delay(this.getRetryDelay()).mergeMap(error => this.reconnectToConversation()))}
-                )
-                .flatMap(activityGroup => this.observableFromActivityGroup(activityGroup));
+        return this.fallback$(obs1$, () => this.streamingWebSocket, this.webSocketActivity$());
+    }
 
-        let obs3$ = this.fb(obs1$, () => {return false}, obs2$);
-
-        return obs3$;
+    private webSocketActivity$(): Observable<Activity> {
+        return this.checkConnection()
+        .flatMap(_ =>
+            this.observableWebSocket<ActivityGroup>()
+            // WebSockets can be closed by the server or the browser. In the former case we need to
+            // retrieve a new streamUrl. In the latter case we could first retry with the current streamUrl,
+            // but it's simpler just to always fetch a new one.
+            .retryWhen(error$ => error$.delay(this.getRetryDelay()).mergeMap(error => this.reconnectToConversation()))
+        )
+        .flatMap(activityGroup => this.observableFromActivityGroup(activityGroup))
     }
 
     // Returns the delay duration in milliseconds
@@ -984,16 +977,16 @@ export class DirectLine implements IBotConnection {
         return `${DIRECT_LINE_VERSION} (${clientAgent})`;
     }
 
-    private fb(o1$, func, o2$) {
+    private fallback$(o1$, retryNeeded, o2$) {
         let rw$ = (attempts: Observable<any>) => {
             return attempts.pipe(
                 mergeMap((error, i) => {
-                    if (func()) {
-                        return timer(1000);
+                    if (retryNeeded()) {
+                        return timer(this.getRetryDelay());
                     }
                     return _throw(error);
                 }),
-                finalize(() => console.log('__________________________________'))
+                finalize(() => console.log('Completed first stream'))
             );
         }
 
