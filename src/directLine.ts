@@ -8,6 +8,10 @@ import { Subscription } from 'rxjs/Subscription';
 import * as BFProtocol from 'microsoft-bot-protocol';
 import * as BFProtocolWebSocket from 'microsoft-bot-protocol-websocket';
 
+import { mergeMap, finalize } from 'rxjs/operators';
+import { _throw} from 'rxjs/observable/throw'
+import { timer} from 'rxjs/observable/timer'
+
 import 'rxjs/add/operator/catch';
 import 'rxjs/add/operator/combineLatest';
 import 'rxjs/add/operator/count';
@@ -358,6 +362,7 @@ export interface DirectLineOptions {
     webSocket?: boolean,
     pollingInterval?: number,
     streamUrl?: string,
+    streamingWebSocket?: boolean,
     // Attached to all requests to identify requesting agent.
     botAgent?: string
 }
@@ -411,6 +416,7 @@ export class DirectLine implements IBotConnection {
 
     private domain = "https://directline.botframework.com/v3/directline";
     private webSocket: boolean;
+    private streamingWebSocket: boolean;
 
     private conversationId: string;
     private expiredTokenExhaustion: Function;
@@ -431,6 +437,7 @@ export class DirectLine implements IBotConnection {
         this.secret = options.secret;
         this.token = options.secret || options.token;
         this.webSocket = (options.webSocket === undefined ? true : options.webSocket) && typeof WebSocket !== 'undefined' && WebSocket !== undefined;
+        this.streamingWebSocket = options.webSocket;
 
         if (options.domain) {
             this.domain = options.domain;
@@ -470,41 +477,27 @@ export class DirectLine implements IBotConnection {
             5
         );
 
-        if (this.webSocket) {
-            let re = new RegExp('^http(s?)');
-            if (!re.test(this.domain)) throw ("Domain must begin with http or https");
-            this.streamUrl = this.domain.replace(re, "ws$1") + '/conversations/connect?token=' + this.token + '&conversationId=' + this.conversationId;
-            let obs$ = Observable.create((subscriber: Subscriber<ActivityGroup>) => {
-                this.streamConnection = new BFProtocolWebSocket.Client({ url: this.streamUrl, requestHandler: new StreamHandler(subscriber) });
-                this.streamConnection.connectAsync().then(() => {
-                    let r = BFProtocol.Request.create('POST', '/v3/directline/conversations');
-                    this.streamConnection.sendAsync(r, null).then(_ => console.log("WebSocket Connection Succeeded"));
-                }).catch((e) => {
-                    console.log(e);
-                    this.activity$ = (this.webSocket
-                        ? this.webSocketActivity$()
-                        : this.pollingGetActivity$()
-                    ).share();
-                });
-            }).share();
-
-            this.activity$ = this.streamingWebSocketActivity$(obs$);
-        } else {
-          this.activity$ = (this.webSocket
+        this.activity$ = (this.webSocket
             ? this.webSocketActivity$()
             : this.pollingGetActivity$()
-          ).share();
-        }
+        ).share();
     }
 
     // Every time we're about to make a Direct Line REST call, we call this first to see check the current connection status.
     // Either throws an error (indicating an error state) or emits a null, indicating a (presumably) healthy connection
     private checkConnection(once = false) {
+        console.log("CHECK CONNECTION ---")
         let obs =  this.connectionStatus$
         .flatMap(connectionStatus => {
+            console.log("CHECK CONNECTION 111 " + connectionStatus)
             if (connectionStatus === ConnectionStatus.Uninitialized) {
                 this.connectionStatus$.next(ConnectionStatus.Connecting);
 
+                console.log("this.streamConnection = " + this.streamConnection)
+                if(this.streamConnection) {
+                    this.connectionStatus$.next(ConnectionStatus.Online);
+                    return Observable.of(connectionStatus);
+                }
                 //if token and streamUrl are defined it means reconnect has already been done. Skipping it.
                 if (this.token && this.streamUrl) {
                     this.connectionStatus$.next(ConnectionStatus.Online);
@@ -526,6 +519,7 @@ export class DirectLine implements IBotConnection {
                 }
             }
             else {
+                console.log("GOT A NEW VALUE " + connectionStatus)
                 return Observable.of(connectionStatus);
             }
         })
@@ -704,9 +698,9 @@ export class DirectLine implements IBotConnection {
         if (activity.type === "message" && activity.attachments && activity.attachments.length > 0)
             return this.postMessageWithAttachments(activity);
 
-        if (this.webSocket) {
+        if (this.streamConnection) {
             let r = BFProtocol.Request.create('POST', '/v3/directline/conversations/' + this.conversationId + '/activities');
-            r.setBody(activity);
+            r.setBody(JSON.stringify(activity));
             this.streamConnection.sendAsync(r, null).then((resp) => {
                 console.log("RESPONSE: ")
                 console.log(resp);
@@ -721,6 +715,7 @@ export class DirectLine implements IBotConnection {
         // If we're not connected to the bot, get connected
         // Will throw an error if we are not connected
         konsole.log("postActivity", activity);
+        console.log(activity)
         return this.checkConnection(true)
         .flatMap(_ =>
             Observable.ajax({
@@ -855,27 +850,38 @@ export class DirectLine implements IBotConnection {
     }
 
     private webSocketActivity$(): Observable<Activity> {
-        return this.checkConnection()
-        .flatMap(_ =>
-            this.observableWebSocket<ActivityGroup>()
-            // WebSockets can be closed by the server or the browser. In the former case we need to
-            // retrieve a new streamUrl. In the latter case we could first retry with the current streamUrl,
-            // but it's simpler just to always fetch a new one.
-            .retryWhen(error$ => error$.delay(this.getRetryDelay()).mergeMap(error => this.reconnectToConversation()))
-        )
-        .flatMap(activityGroup => this.observableFromActivityGroup(activityGroup))
-    }
+        let re = new RegExp('^http(s?)');
+        if (!re.test(this.domain)) throw ("Domain must begin with http or https");
+        let wsUrl = this.domain.replace(re, "ws$1") + '/conversations/connect?token=' + this.token + '&conversationId=' + this.conversationId;
 
-    private streamingWebSocketActivity$(ows$: Observable<ActivityGroup>): Observable<Activity> {
-        return this.checkConnection()
-        .flatMap(_ =>
-            ows$
-            // WebSockets can be closed by the server or the browser. In the former case we need to
-            // retrieve a new streamUrl. In the latter case we could first retry with the current streamUrl,
-            // but it's simpler just to always fetch a new one.
-            .retryWhen(error$ => error$.delay(this.getRetryDelay()).mergeMap(error => this.reconnectToConversation()))
-        )
-        .flatMap(activityGroup => this.observableFromActivityGroup(activityGroup))
+        let obs1$ = Observable.create((subscriber: Subscriber<ActivityGroup>) => {
+            this.streamConnection = new BFProtocolWebSocket.Client({ url: wsUrl, requestHandler: new StreamHandler(subscriber) });
+            this.streamConnection.connectAsync().then(() => {
+                this.connectionStatus$.next(ConnectionStatus.Online);
+                let r = BFProtocol.Request.create('POST', '/v3/directline/conversations');
+                this.streamConnection.sendAsync(r, null).then(_ => console.log("WebSocket Connection Succeeded"));
+            }).catch(e => {
+                this.streamUrl = null;
+                this.streamConnection =null;
+                this.connectionStatus$.next(ConnectionStatus.Uninitialized);
+                subscriber.error(e)
+            });
+        }).flatMap(activityGroup => this.observableFromActivityGroup(activityGroup)).share();
+
+        let obs2$ = this.checkConnection()
+                .flatMap(_ => {
+                    console.log("SECOND OBSERVABLE")
+                    return this.observableWebSocket<ActivityGroup>()
+                    // WebSockets can be closed by the server or the browser. In the former case we need to
+                    // retrieve a new streamUrl. In the latter case we could first retry with the current streamUrl,
+                    // but it's simpler just to always fetch a new one.
+                    .retryWhen(error$ => error$.delay(this.getRetryDelay()).mergeMap(error => this.reconnectToConversation()))}
+                )
+                .flatMap(activityGroup => this.observableFromActivityGroup(activityGroup));
+
+        let obs3$ = this.fb(obs1$, () => {return false}, obs2$);
+
+        return obs3$;
     }
 
     // Returns the delay duration in milliseconds
@@ -976,5 +982,29 @@ export class DirectLine implements IBotConnection {
         }
 
         return `${DIRECT_LINE_VERSION} (${clientAgent})`;
+    }
+
+    private fb(o1$, func, o2$) {
+        let rw$ = (attempts: Observable<any>) => {
+            return attempts.pipe(
+                mergeMap((error, i) => {
+                    if (func()) {
+                        return timer(1000);
+                    }
+                    return _throw(error);
+                }),
+                finalize(() => console.log('__________________________________'))
+            );
+        }
+
+        return Observable.create((s) => {
+            o1$.retryWhen(rw$).subscribe(v => {
+                s.next(v)
+            }, (_) => {
+                o2$.subscribe(v => {
+                    s.next(v);
+                })
+            })
+        });
     }
 }
