@@ -482,7 +482,7 @@ export class DirectLine implements IBotConnection {
         );
 
         this.activity$ = (this.webSocket
-            ? this.streamingWebSocketActivity$()
+            ? this.fallback$(this.streamingWebSocketActivity$(), () => this.streamingWebSocket, this.webSocketActivity$())
             : this.pollingGetActivity$()
         ).share();
     }
@@ -862,7 +862,7 @@ export class DirectLine implements IBotConnection {
         if (!re.test(this.domain)) throw ("Domain must begin with http or https");
         let wsUrl = this.domain.replace(re, "ws$1") + '/conversations/connect?token=' + this.token + '&conversationId=' + this.conversationId;
 
-        let obs1$ = Observable.create((subscriber: Subscriber<ActivityGroup>) => {
+        return Observable.create((subscriber: Subscriber<ActivityGroup>) => {
             this.streamConnection = new BFProtocolWebSocket.Client({ url: wsUrl, requestHandler: new StreamHandler(subscriber) });
             this.streamConnection.connectAsync().then(() => {
                 this.connectionStatus$.next(ConnectionStatus.Online);
@@ -874,9 +874,7 @@ export class DirectLine implements IBotConnection {
                 this.connectionStatus$.next(ConnectionStatus.Uninitialized);
                 subscriber.error(e)
             });
-        }).flatMap(activityGroup => this.observableFromActivityGroup(activityGroup)).share();
-
-        return this.fallback$(obs1$, () => this.streamingWebSocket, this.webSocketActivity$());
+        }).flatMap(activityGroup => this.observableFromActivityGroup(activityGroup));
     }
 
     private webSocketActivity$(): Observable<Activity> {
