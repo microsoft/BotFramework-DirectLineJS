@@ -11,6 +11,7 @@
   "scripts": {
     "build": "npm run build:typecheck && npm run build:babel",
     "build:babel": "babel --extensions .js,.ts,.tsx --ignore **/*.spec.js,**/*.spec.ts,**/*.spec.tsx,**/*.test.js,**/*.test.ts,**/*.test.tsx,__test__/**/*.js,__test__/**/*.ts,__test__/**/*.tsx --out-dir built --source-maps inline --verbose src",
+    "build:babelwatch": "babel --extensions .js,.ts,.tsx --ignore **/*.spec.js,**/*.spec.ts,**/*.spec.tsx,**/*.test.js,**/*.test.ts,**/*.test.tsx,__test__/**/*.js,__test__/**/*.ts,__test__/**/*.tsx --out-dir built --source-maps inline --verbose src --watch",
     "build:babel-instrumented": "npm run build:babel -- --env-name test && npm run build:webpack-instrumented",
     "build:typecheck": "tsc",
     "build:webpack": "webpack",
@@ -19,7 +20,7 @@
     "clean": "rimraf built directLine.js directLine-instrument.js stats.html",
     "prepublishOnly": "npm run build && npm run build:webpack",
     "test": "jest",
-    "watch": "concurrently --names \"babel,typecheck,webpack\" \"npm run build:babel-instrumented -- --watch\" \"npm run build:typecheck -- --preserveWatchOutput --watch\" \"npm run build:webpack-watch\""
+    "watch": "concurrently --names \"build,webpack\"  \"npm run build:babel --  --watch\" \"npm run build:webpack-watch\""
   },
   "repository": {
     "type": "git",
@@ -29,8 +30,8 @@
   "license": "MIT",
   "dependencies": {
     "@babel/runtime": "^7.3.1",
-    "microsoft-bot-protocol": "^1.0.0",
-    "microsoft-bot-protocol-websocket": "^1.0.0",
+    "microsoft-bot-protocol": "^0.0.1",
+    "microsoft-bot-protocol-websocket": "^0.0.1",
     "rxjs": "^5.0.3"
   },
   "devDependencies": {
