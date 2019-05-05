@@ -61,7 +61,7 @@ global.WebSocket = require('ws');
 
 ### Obtain security credentials for your bot:
 
-1. If you haven't already, [register your bot](https://dev.botframework.com/bots/new).
+1. If you haven't already, [register your bot](https://azure.microsoft.com/en-us/services/bot-service/).
 2. Add a DirectLine (**not WebChat**) channel, and generate a Direct Line Secret. Make sure Direct Line 3.0 is enabled.
 3. For testing you can use your Direct Line Secret as a security token, but for production you will likely want to exchange that Secret for a Token as detailed in the Direct Line [documentation](https://docs.botframework.com/en-us/restapi/directline3/).
 
