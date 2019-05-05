@@ -1,4 +1,8 @@
-# BotFramework-DirectLineJS
+![Bot Framework DirectLineJS](./docs/media/FrameWorkDirectLineJS@1x.png)
+
+### [Click here to find out what's new in Bot Framework for //build2019!](https://github.com/Microsoft/botframework/blob/master/whats-new.md#whats-new)
+
+# Microsoft Bot Framework Direct Line JS Client
 
 [![Build Status](https://travis-ci.org/Microsoft/BotFramework-DirectLineJS.svg?branch=master)](https://travis-ci.org/Microsoft/BotFramework-DirectLineJS)
 
