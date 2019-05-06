@@ -846,14 +846,14 @@ export class DirectLine implements IBotConnection {
     private streamingWebSocketActivity$():  Observable<Activity> {
         let re = new RegExp('^http(s?)');
         if (!re.test(this.domain)) throw ("Domain must begin with http or https");
-        let wsUrl = this.domain.replace(re, "ws$1") + '/conversations/connect?token=' + this.token + '&conversationId=' + this.conversationId;
+        let wsUrl = this.domain.replace(re, "ws$1") + '/conversations/connect?token=' + this.token;
 
         return Observable.create((subscriber: Subscriber<ActivityGroup>) => {
             this.streamConnection = new BFProtocolWebSocket.Client({ url: wsUrl, requestHandler: new StreamHandler(subscriber) });
             this.streamConnection.connectAsync().then(() => {
                 this.connectionStatus$.next(ConnectionStatus.Online);
                 let r = BFProtocol.Request.create('POST', '/v3/directline/conversations');
-                this.streamConnection.sendAsync(r, null).then(_ => console.log("WebSocket Connection Succeeded"));
+                this.streamConnection.sendAsync(r, null).then(resp => console.log("WebSocket Connection Succeeded " + resp));
             }).catch(e => {
                 this.streamUrl = null;
                 this.streamConnection =null;
