@@ -30,6 +30,7 @@ import 'rxjs/add/observable/from';
 import 'rxjs/add/observable/interval';
 import 'rxjs/add/observable/of';
 import 'rxjs/add/observable/throw';
+import { HttpContent, Stream } from 'microsoft-bot-protocol';
 
 const DIRECT_LINE_VERSION = 'DirectLine/3.0';
 
@@ -478,7 +479,7 @@ export class DirectLine implements IBotConnection {
         );
 
         this.activity$ = (this.webSocket
-            ? this.fallback$(this.streamingWebSocketActivity$(), () => this.streamingWebSocket, this.webSocketActivity$())
+            ? this.streamingWebSocketActivity$()
             : this.pollingGetActivity$()
         ).share();
     }
@@ -729,8 +730,46 @@ export class DirectLine implements IBotConnection {
     }
 
     private postMessageWithAttachments({ attachments, ... messageWithoutAttachments }: Message) {
-        let formData: FormData;
+        if (this.streamConnection) {
+            let httpContentList = [];
+            return Observable.create(subscriber => {
+                return Observable.from(attachments || [])
+                    .flatMap((media: Media) =>
+                        Observable.ajax({
+                            method: "GET",
+                            url: media.contentUrl,
+                            responseType: 'arraybuffer'
+                        })
+                        .do(ajaxResponse => {
+                            let buffer = new Buffer(ajaxResponse.response);
+                            let stream = new Stream();
+                            stream.write(buffer);
+                            let httpContent = new BFProtocol.HttpContent({contentType: media.contentType, contentLength: buffer.length}, stream);
+                            httpContentList.push(httpContent);
+                        }))
+                        .count()
+                    .flatMap(_ => {
+                        let url = `${this.domain}/conversations/${this.conversationId}/users/${messageWithoutAttachments.from.id}/upload`;
+                        let request = BFProtocol.Request.create('PUT', url);
+                        request.setBody(JSON.stringify(messageWithoutAttachments));
+                        httpContentList.forEach(e => request.addStream(e));
+                        return this.streamConnection.sendAsync(request, null);
+                    })
+                    .do (resp => {
+                        if (resp.Streams || resp.Streams.length != 1 ) {
+                            subscriber.error("Invalid stream count " + resp.Streams.length);
+                        } else {
+                            resp.Streams[0].readAsJson()
+                            .then(json => {
+                                subscriber.next(json['Id'])
+                            })
+                        }
+                    })
+                    .subscribe(_ => _) // force execution
+            })
+        }
 
+        let formData: FormData;
         // If we're not connected to the bot, get connected
         // Will throw an error if we are not connected
         return this.checkConnection(true)
@@ -846,21 +885,23 @@ export class DirectLine implements IBotConnection {
     private streamingWebSocketActivity$():  Observable<Activity> {
         let re = new RegExp('^http(s?)');
         if (!re.test(this.domain)) throw ("Domain must begin with http or https");
-        let wsUrl = this.domain.replace(re, "ws$1") + '/conversations/connect?token=' + this.token;
+        let wsUrl = this.domain.replace(re, "ws$1") + '/conversations/connect?token=' + this.token + '&conversationId=' + this.conversationId;
 
-        return Observable.create((subscriber: Subscriber<ActivityGroup>) => {
+        let obs1$ = Observable.create((subscriber: Subscriber<ActivityGroup>) => {
             this.streamConnection = new BFProtocolWebSocket.Client({ url: wsUrl, requestHandler: new StreamHandler(subscriber) });
             this.streamConnection.connectAsync().then(() => {
                 this.connectionStatus$.next(ConnectionStatus.Online);
                 let r = BFProtocol.Request.create('POST', '/v3/directline/conversations');
-                this.streamConnection.sendAsync(r, null).then(resp => console.log("WebSocket Connection Succeeded " + resp));
+                this.streamConnection.sendAsync(r, null).then(_ => console.log("WebSocket Connection Succeeded"));
             }).catch(e => {
                 this.streamUrl = null;
                 this.streamConnection =null;
                 this.connectionStatus$.next(ConnectionStatus.Uninitialized);
                 subscriber.error(e)
             });
-        }).flatMap(activityGroup => this.observableFromActivityGroup(activityGroup));
+        }).flatMap(activityGroup => this.observableFromActivityGroup(activityGroup)).share();
+
+        return this.fallback$(obs1$, () => this.streamingWebSocket, this.webSocketActivity$());
     }
 
     private webSocketActivity$(): Observable<Activity> {
