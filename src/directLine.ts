@@ -30,7 +30,6 @@ import 'rxjs/add/observable/from';
 import 'rxjs/add/observable/interval';
 import 'rxjs/add/observable/of';
 import 'rxjs/add/observable/throw';
-import { HttpContent, Stream } from 'microsoft-bot-protocol';
 
 const DIRECT_LINE_VERSION = 'DirectLine/3.0';
 
@@ -742,7 +741,7 @@ export class DirectLine implements IBotConnection {
                         })
                         .do(ajaxResponse => {
                             let buffer = new Buffer(ajaxResponse.response);
-                            let stream = new Stream();
+                            let stream = new BFProtocol.Stream();
                             stream.write(buffer);
                             let httpContent = new BFProtocol.HttpContent({contentType: media.contentType, contentLength: buffer.length}, stream);
                             httpContentList.push(httpContent);
