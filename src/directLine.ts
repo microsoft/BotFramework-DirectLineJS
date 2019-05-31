@@ -5,8 +5,8 @@ import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 import { Observable } from 'rxjs/Observable';
 import { Subscriber } from 'rxjs/Subscriber';
 import { Subscription } from 'rxjs/Subscription';
-import * as BFProtocol from 'microsoft-bot-protocol';
-import * as BFProtocolWebSocket from 'microsoft-bot-protocol-websocket';
+import * as BFProtocol from 'botframework-streaming-extensions-protocol';
+import * as BFProtocolWebSocket from 'botframework-streaming-extensions-protocol-websocket';
 
 import { mergeMap, finalize } from 'rxjs/operators';
 import { _throw} from 'rxjs/observable/throw'
@@ -397,19 +397,39 @@ export interface IBotConnection {
 }
 
 class StreamHandler implements BFProtocol.RequestHandler {
-  public subscriber: Subscriber<ActivityGroup>;
+    public subscriber: Subscriber<ActivityGroup>;
 
-  constructor(s: Subscriber<ActivityGroup>) {
-    this.subscriber = s;
-  }
+    constructor(s: Subscriber<ActivityGroup>) {
+        this.subscriber = s;
+    }
 
-  async processRequestAsync(request: BFProtocol.ReceiveRequest, logger?: any): Promise<BFProtocol.Response> {
-    let resp = await request.Streams[0].readAsString();
-    this.subscriber.next(JSON.parse(resp))
-    let r = new BFProtocol.Response();
-    r.statusCode = 200;
-    return r;
-  }
+    async processRequestAsync(request: BFProtocol.ReceiveRequest, logger?: any): Promise<BFProtocol.Response> {
+        let stream0 = request.Streams.shift();
+        let activitySetJson = await stream0.readAsString();
+        let activitySet = JSON.parse(activitySetJson);
+
+        if (activitySet.activities.length != 1) {
+            // Only one activity is expected in a set in streaming
+            this.subscriber.error(activitySet)
+            let r = new BFProtocol.Response();
+            r.statusCode = 500;
+            return r;
+        }
+
+        var attachments = []
+        let stream: BFProtocol.ContentStream;
+        while (stream = request.Streams.shift()) {
+            let atch = await stream.readAsBuffer();
+            var dataUri = "data:text/plain;base64," + atch.toString('base64');
+            attachments.push({ contentType: stream.type, contentUrl: dataUri });
+        }
+        activitySet.activities[0].attachments = attachments;
+
+        this.subscriber.next(activitySet)
+        let r = new BFProtocol.Response();
+        r.statusCode = 200;
+        return r;
+    }
 }
 
 export class DirectLine implements IBotConnection {
