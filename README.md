@@ -1,4 +1,8 @@
-# BotFramework-DirectLineJS
+![Bot Framework DirectLineJS](./docs/media/FrameWorkDirectLineJS@1x.png)
+
+### [Click here to find out what's new in Bot Framework for //build2019!](https://github.com/Microsoft/botframework/blob/master/whats-new.md#whats-new)
+
+# Microsoft Bot Framework Direct Line JS Client
 
 [![Build Status](https://travis-ci.org/Microsoft/BotFramework-DirectLineJS.svg?branch=master)](https://travis-ci.org/Microsoft/BotFramework-DirectLineJS)
 
@@ -57,9 +61,9 @@ global.WebSocket = require('ws');
 
 ### Obtain security credentials for your bot:
 
-1. If you haven't already, [register your bot](https://dev.botframework.com/bots/new).
+1. If you haven't already, [register your bot](https://azure.microsoft.com/en-us/services/bot-service/).
 2. Add a DirectLine (**not WebChat**) channel, and generate a Direct Line Secret. Make sure Direct Line 3.0 is enabled.
-3. For testing you can use your Direct Line Secret as a security token, but for production you will likely want to exchange that Secret for a Token as detailed in the Direct Line [documentation](https://docs.botframework.com/en-us/restapi/directline3/).
+3. For testing you can use your Direct Line Secret as a security token, but for production you will likely want to exchange that Secret for a Token as detailed in the Direct Line [documentation](https://docs.microsoft.com/en-us/azure/bot-service/bot-service-channel-directline?view=azure-bot-service-4.0).
 
 ### Create a DirectLine object:
 
@@ -147,7 +151,7 @@ directLine.connectionStatus$
 If your app created your DirectLine object by passing a token, DirectLine will refresh that token every 15 minutes.
 Should your client lose connectivity (e.g. close laptop, fail to pay Internet access bill, go under a tunnel), `connectionStatus$`
 will change to `ConnectionStatus.ExpiredToken`. Your app can request a new token from its server, which should call
-the [Reconnect](https://docs.botframework.com/en-us/restapi/directline3/#reconnecting-to-a-conversation) API.
+the [Reconnect](https://docs.microsoft.com/en-us/azure/bot-service/rest-api/bot-framework-rest-direct-line-3-0-reconnect-to-conversation?view=azure-bot-service-4.0) API.
 The resultant Conversation object can then be passed by the app to DirectLine.
 
 ```typescript
@@ -222,11 +226,4 @@ contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additio
 ## Reporting Security Issues
 Security issues and bugs should be reported privately, via email, to the Microsoft Security Response Center (MSRC) at [secure@microsoft.com](mailto:secure@microsoft.com). You should receive a response within 24 hours. If for some reason you do not, please follow up via email to ensure we received your original message. Further information, including the [MSRC PGP](https://technet.microsoft.com/en-us/security/dn606155) key, can be found in the [Security TechCenter](https://technet.microsoft.com/en-us/security/default).
 
-## License
-
 Copyright (c) Microsoft Corporation. All rights reserved.
-
-Licensed under the [MIT](/LICENSE.md) License.
-
-
-This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/). For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments.
