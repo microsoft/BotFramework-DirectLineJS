@@ -36,7 +36,7 @@ That said, the public API is still subject to change.
 
 0. Clone this repo
 1. `npm install`
-2. `npm run build` (or `npm run watch` to rebuild on every change, or `npm run prepublish` to build production)
+2. `npm run build` (or `npm run watch` to rebuild on every change, or `npm run prepublishOnly` to build production)
 
 ## How to include in your app
 
