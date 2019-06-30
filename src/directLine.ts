@@ -6,7 +6,6 @@ import { Observable } from 'rxjs/Observable';
 import { Subscriber } from 'rxjs/Subscriber';
 import { Subscription } from 'rxjs/Subscription';
 import * as BFProtocol from 'botframework-streaming-extensions-protocol';
-import * as BFProtocolWebSocket from 'botframework-streaming-extensions-protocol-websocket';
 
 import { mergeMap, finalize } from 'rxjs/operators';
 import { _throw} from 'rxjs/observable/throw'
@@ -449,7 +448,7 @@ export class DirectLine implements IBotConnection {
     private _botAgent = '';
     private _userAgent: string;
     public referenceGrammarId: string;
-    private streamConnection: BFProtocolWebSocket.Client;
+    private streamConnection: BFProtocol.WebSocketClient;
 
     private pollingInterval: number = 1000; //ms
 
@@ -922,7 +921,7 @@ export class DirectLine implements IBotConnection {
         let wsUrl = this.domain.replace(re, "ws$1") + '/conversations/connect?token=' + this.token + '&conversationId=' + this.conversationId;
 
         let obs1$ = Observable.create((subscriber: Subscriber<ActivityGroup>) => {
-            this.streamConnection = new BFProtocolWebSocket.Client({ url: wsUrl, requestHandler: new StreamHandler(subscriber) });
+            this.streamConnection = new BFProtocol.WebSocketClient({ url: wsUrl, requestHandler: new StreamHandler(subscriber) });
             this.streamConnection.connectAsync().then(() => {
                 this.connectionStatus$.next(ConnectionStatus.Online);
                 let r = BFProtocol.Request.create('POST', '/v3/directline/conversations');
