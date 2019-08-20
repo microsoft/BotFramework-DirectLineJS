@@ -5,7 +5,7 @@ import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 import { Observable } from 'rxjs/Observable';
 import { Subscriber } from 'rxjs/Subscriber';
 import { Subscription } from 'rxjs/Subscription';
-import * as BFProtocol from 'botframework-streaming-extensions-protocol';
+import * as BFSE from 'botframework-streaming-extensions';
 
 import { mergeMap, finalize } from 'rxjs/operators';
 import { _throw} from 'rxjs/observable/throw'
@@ -393,37 +393,37 @@ export interface IBotConnection {
     getSessionId? : () => Observable<string>
 }
 
-class StreamHandler implements BFProtocol.RequestHandler {
+class StreamHandler implements BFSE.RequestHandler {
     public subscriber: Subscriber<ActivityGroup>;
 
     constructor(s: Subscriber<ActivityGroup>) {
         this.subscriber = s;
     }
 
-    async processRequestAsync(request: BFProtocol.ReceiveRequest, logger?: any): Promise<BFProtocol.Response> {
-        let stream0 = request.Streams.shift();
+    async processRequest(request: BFSE.IReceiveRequest, logger?: any): Promise<BFSE.StreamingResponse> {
+        let stream0 = request.streams.shift();
         let activitySetJson = await stream0.readAsString();
         let activitySet = JSON.parse(activitySetJson);
 
         if (activitySet.activities.length != 1) {
             // Only one activity is expected in a set in streaming
             this.subscriber.error(activitySet)
-            let r = new BFProtocol.Response();
+            let r = new BFSE.StreamingResponse();
             r.statusCode = 500;
             return r;
         }
 
         var attachments = []
-        let stream: BFProtocol.ContentStream;
-        while (stream = request.Streams.shift()) {
-            let atch = await stream.readAsBuffer();
-            var dataUri = "data:text/plain;base64," + atch.toString('base64');
-            attachments.push({ contentType: stream.type, contentUrl: dataUri });
+        let stream: BFSE.ContentStream;
+        while (stream = request.streams.shift()) {
+            let atch = await stream.readAsString();
+            var dataUri = "data:text/plain;base64," + atch;
+            attachments.push({ contentType: stream.contentType, contentUrl: dataUri });
         }
-        activitySet.activities[0].attachments = attachments;
 
+        activitySet.activities[0].attachments = attachments;
         this.subscriber.next(activitySet)
-        let r = new BFProtocol.Response();
+        let r = new BFSE.StreamingResponse();
         r.statusCode = 200;
         return r;
     }
@@ -446,7 +446,7 @@ export class DirectLine implements IBotConnection {
     private _botAgent = '';
     private _userAgent: string;
     public referenceGrammarId: string;
-    private streamConnection: BFProtocol.WebSocketClient;
+    private streamConnection: BFSE.WebSocketClient;
 
     private pollingInterval: number = 1000; //ms
 
@@ -716,11 +716,11 @@ export class DirectLine implements IBotConnection {
 
         if (this.streamConnection) {
             let resp$ = Observable.create(subscriber => {
-                let request = BFProtocol.Request.create('POST', '/v3/directline/conversations/' + this.conversationId + '/activities');
+                let request = BFSE.StreamingRequest.create('POST', '/v3/directline/conversations/' + this.conversationId + '/activities');
                 request.setBody(JSON.stringify(activity));
-                this.streamConnection.sendAsync(request, null)
+                this.streamConnection.send(request)
                     .then((resp) => {
-                        subscriber.next(resp.StatusCode);
+                        subscriber.next(resp.statusCode);
                     });
             });
             return resp$;
@@ -760,24 +760,24 @@ export class DirectLine implements IBotConnection {
                         })
                         .do(ajaxResponse => {
                             let buffer = new Buffer(ajaxResponse.response);
-                            let stream = new BFProtocol.Stream();
+                            let stream = new BFSE.SubscribableStream();
                             stream.write(buffer);
-                            let httpContent = new BFProtocol.HttpContent({contentType: media.contentType, contentLength: buffer.length}, stream);
+                            let httpContent = new BFSE.HttpContent({contentType: media.contentType, contentLength: buffer.length}, stream);
                             httpContentList.push(httpContent);
                         }))
                         .count()
                     .flatMap(_ => {
                         let url = `${this.domain}/conversations/${this.conversationId}/users/${messageWithoutAttachments.from.id}/upload`;
-                        let request = BFProtocol.Request.create('PUT', url);
+                        let request = BFSE.StreamingRequest.create('PUT', url);
                         request.setBody(JSON.stringify(messageWithoutAttachments));
                         httpContentList.forEach(e => request.addStream(e));
-                        return this.streamConnection.sendAsync(request, null);
+                        return this.streamConnection.send(request);
                     })
                     .do (resp => {
-                        if (resp.Streams || resp.Streams.length != 1 ) {
-                            subscriber.error("Invalid stream count " + resp.Streams.length);
+                        if (resp.streams || resp.streams.length != 1 ) {
+                            subscriber.error("Invalid stream count " + resp.streams.length);
                         } else {
-                            resp.Streams[0].readAsJson()
+                            resp.streams[0].readAsJson()
                             .then(json => {
                                 subscriber.next(json['Id'])
                             })
@@ -906,11 +906,11 @@ export class DirectLine implements IBotConnection {
         let wsUrl = this.domain.replace(re, "ws$1") + '/conversations/connect?token=' + this.token + '&conversationId=' + this.conversationId;
 
         let obs1$ = Observable.create((subscriber: Subscriber<ActivityGroup>) => {
-            this.streamConnection = new BFProtocol.WebSocketClient({ url: wsUrl, requestHandler: new StreamHandler(subscriber) });
-            this.streamConnection.connectAsync().then(() => {
+            this.streamConnection = new BFSE.WebSocketClient({ url: wsUrl, requestHandler: new StreamHandler(subscriber) });
+            this.streamConnection.connect().then(() => {
                 this.connectionStatus$.next(ConnectionStatus.Online);
-                let r = BFProtocol.Request.create('POST', '/v3/directline/conversations');
-                this.streamConnection.sendAsync(r, null).then(_ => console.log("WebSocket Connection Succeeded"));
+                let r = BFSE.StreamingRequest.create('POST', '/v3/directline/conversations');
+                this.streamConnection.send(r).then(_ => console.log("WebSocket Connection Succeeded"));
             }).catch(e => {
                 this.streamUrl = null;
                 this.streamConnection =null;
