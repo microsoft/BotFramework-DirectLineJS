@@ -1,4 +1,3 @@
-const { resolve } = require('path');
 const { DefinePlugin } = require('webpack');
 const Visualizer = require('webpack-visualizer-plugin');
 

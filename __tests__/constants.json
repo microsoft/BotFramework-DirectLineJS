@@ -1,0 +1,6 @@
+{
+  "timeouts": {
+    "default": 5000,
+    "rest": 10000
+  }
+}
