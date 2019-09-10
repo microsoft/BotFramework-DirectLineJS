@@ -9,10 +9,6 @@ import postActivity from './setup/postActivity';
 import waitForBotEcho from './setup/waitForBotEcho';
 import waitForConnected from './setup/waitForConnected';
 
-function sleep(ms = 1000) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
 describe('Happy path', () => {
   let unsubscribes;
 
@@ -56,8 +52,6 @@ describe('Happy path', () => {
       if (!directLine) { return; }
 
       unsubscribes.push(await waitForConnected(directLine));
-
-      // await sleep(100);
 
       await Promise.all([
         postActivity(directLine, { text: 'Hello, World!', type: 'message' }),

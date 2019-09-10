@@ -14,7 +14,7 @@ export default async function waitForObservable(observable, target) {
 
       if (error) {
         throw error;
-      } else if (typeof target === 'function' ? target(next) : Object.is(next, target)) {
+      } else if (typeof target === 'function' ? await target(next) : Object.is(next, target)) {
         return next;
       }
     }

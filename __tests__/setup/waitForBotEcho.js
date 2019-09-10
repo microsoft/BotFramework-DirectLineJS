@@ -2,9 +2,9 @@ import getEchoActivity from './getEchoActivity';
 import waitForObservable from './waitForObservable';
 
 export default function waitForBotEcho(directLine, equalityFn) {
-  return waitForObservable(directLine.activity$, activity => {
+  return waitForObservable(directLine.activity$, async activity => {
     const echoActivity = getEchoActivity(activity);
 
-    return echoActivity && equalityFn(echoActivity);
+    return echoActivity && await equalityFn(echoActivity);
   });
 }
