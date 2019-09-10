@@ -1,6 +1,8 @@
 {
   "timeouts": {
     "default": 5000,
-    "rest": 10000
+    "rest": 10000,
+    "streamingExtensions": 10000,
+    "webSocket": 10000
   }
 }

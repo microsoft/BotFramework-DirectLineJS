@@ -11,19 +11,6 @@ import waitForConnected from './setup/waitForConnected';
 
 beforeAll(() => {
   jest.setTimeout(timeouts.default);
-
-  const { ResourceLoader } = require('jsdom');
-  const { HTTP_PROXY } = process.env;
-
-  const resources = new ResourceLoader({
-    proxy: HTTP_PROXY,
-    strictSSL: !HTTP_PROXY
-  });
-
-  // HACK: We cannot set ResourceLoader thru testEnvironmentOptions.resources.
-  //       This is because the ResourceLoader instance constructor is of "slightly" different type when on runtime (probably Jest magic).
-  //       Thus, when we set it thru testEnvironmentOptions.resources, it will fail on "--watch" but succeeded when running without watch.
-  window._resourceLoader = resources;
 });
 
 function sleep(ms = 1000) {
@@ -43,7 +30,7 @@ describe('Happy path', () => {
       if (directLine) {
         unsubscribes.push(await waitForConnected(directLine));
 
-        await sleep(100);
+        // await sleep(100);
 
         await Promise.all([
           postActivity(directLine, { text: 'Hello, World!', type: 'message' }),
@@ -65,10 +52,13 @@ describe('Happy path', () => {
     });
 
     // test('using Streaming Extensions', async () => {
+    //   jest.setTimeout(timeouts.webSocket);
     //   directLine = new DirectLine(await createDirectLineOptions.forStreamingExtensions());
     // });
 
     describe('using Web Socket', () => {
+      beforeEach(() => jest.setTimeout(timeouts.webSocket));
+
       test('with secret', async () => {
         directLine = new DirectLine(await createDirectLineOptions.forWebSocket({ token: false }));
       });
