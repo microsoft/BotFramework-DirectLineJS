@@ -9,10 +9,6 @@ import postActivity from './setup/postActivity';
 import waitForBotEcho from './setup/waitForBotEcho';
 import waitForConnected from './setup/waitForConnected';
 
-beforeAll(() => {
-  jest.setTimeout(timeouts.default);
-});
-
 function sleep(ms = 1000) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -23,21 +19,8 @@ describe('Happy path', () => {
   beforeEach(() => unsubscribes = []);
   afterEach(() => unsubscribes.forEach(fn => onErrorResumeNext(fn)));
 
-  describe('should connect, send messaage, and receive echo from bot', () => {
+  describe('should connect, send message, and receive echo from bot', () => {
     let directLine;
-
-    afterEach(async () => {
-      if (directLine) {
-        unsubscribes.push(await waitForConnected(directLine));
-
-        // await sleep(100);
-
-        await Promise.all([
-          postActivity(directLine, { text: 'Hello, World!', type: 'message' }),
-          waitForBotEcho(directLine, ({ text }) => text === 'Hello, World!')
-        ]);
-      }
-    });
 
     describe('using REST', () => {
       beforeEach(() => jest.setTimeout(timeouts.rest));
@@ -66,6 +49,20 @@ describe('Happy path', () => {
       test('with token', async () => {
         directLine = new DirectLine(await createDirectLineOptions.forWebSocket({ token: false }));
       });
+    });
+
+    afterEach(async () => {
+      // If directLine object is undefined, that means the test is failing.
+      if (!directLine) { return; }
+
+      unsubscribes.push(await waitForConnected(directLine));
+
+      // await sleep(100);
+
+      await Promise.all([
+        postActivity(directLine, { text: 'Hello, World!', type: 'message' }),
+        waitForBotEcho(directLine, ({ text }) => text === 'Hello, World!')
+      ]);
     });
   });
 });

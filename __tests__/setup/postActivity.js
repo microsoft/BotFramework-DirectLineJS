@@ -6,12 +6,18 @@ import waitForObservable from './waitForObservable';
 const DEFAULT_USER_ID = 'u-12345';
 
 export default async function postActivity(directLine, activity) {
-  const activityId = await waitForObservable(
-    directLine.postActivity(
-      updateIn(activity, ['from', 'id'], userId => userId || DEFAULT_USER_ID)
-    ),
-    () => true
-  );
+  // We need to use channelData.clientActivityId because postActivity could come later than the activity$ observable.
+  // Thus, when we receive the activity ID for the "just posted" activity, it might be already too late.
 
-  await waitForActivity(directLine, ({ id }) => id === activityId);
+  const targetClientActivityId = Math.random().toString(36).substr(2);
+
+  activity = updateIn(activity, ['from', 'id'], userId => userId || DEFAULT_USER_ID);
+  activity = updateIn(activity, ['channelData', 'clientActivityId'], () => targetClientActivityId);
+
+  const [activityId] = await Promise.all([
+    waitForObservable(directLine.postActivity(activity), () => true),
+    waitForActivity(directLine, ({ channelData: { clientActivityId } = {} }) => clientActivityId === targetClientActivityId)
+  ]);
+
+  return activityId;
 }
