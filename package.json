@@ -13,7 +13,7 @@
     "build:babel": "babel --extensions .js,.ts --ignore src/**/*.spec.js,src/**/*.spec.ts,src/**/*.test.js,src/**/*.test.ts --out-dir lib src",
     "build:typecheck": "tsc",
     "build:webpack": "webpack",
-    "clean": "rimraf lib directLine.js stats.html",
+    "clean": "rimraf dist lib",
     "prepublishOnly": "npm run build:typecheck && npm run build:babel && npm run build:webpack",
     "start": "npm run build && concurrently --names \"babel,typecheck,webpack\" \"npm run build:babel -- --watch\" \"npm run build:typecheck -- --preserveWatchOutput --watch\" \"npm run build:webpack -- --config webpack-watch.config.js --watch\"",
     "test": "jest",
