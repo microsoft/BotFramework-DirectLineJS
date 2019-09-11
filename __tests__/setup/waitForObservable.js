@@ -7,12 +7,15 @@ export default async function waitForObservable(observable, target) {
 
   try {
     for (;;) {
-      const { error, next } = await promiseRaceMap({
+      const { complete, error, next } = await promiseRaceMap({
+        complete: observer.complete(),
         error: observer.error(),
         next: observer.next()
       });
 
-      if (error) {
+      if (complete) {
+        return;
+      } else if (error) {
         throw error;
       } else if (typeof target === 'function' ? await target(next) : Object.is(next, target)) {
         return next;

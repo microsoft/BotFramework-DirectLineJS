@@ -13,23 +13,24 @@ import postActivity from './setup/postActivity';
 import waitForBotEcho from './setup/waitForBotEcho';
 import waitForConnected from './setup/waitForConnected';
 
-async function setupDirectLineForwarder(target = 'https://directline.botframework.com/') {
+async function setupDirectLineForwarder(port, handler, target = 'https://directline.botframework.com/') {
   // We need a reverse proxy (a.k.a. forwarder) to control the network traffic.
   // This is because we need to modify the HTTP header by changing its host header (directline.botframework.com do not like "Host: localhost").
 
-  const proxyPort = await getPort();
   const proxy = createProxyServer({
     changeOrigin: true,
     rejectUnauthorized: false,
     target
   });
 
-  const proxyServer = createServer((req, res) => proxy.web(req, res));
+  const proxyServer = createServer((req, res) => {
+    handler(req, res, () => proxy.web(req, res));
+  });
 
-  await promisify(proxyServer.listen.bind(proxyServer))(proxyPort);
+  await promisify(proxyServer.listen.bind(proxyServer))(port);
 
   return {
-    domain: `http://localhost:${ proxyPort }/v3/directline`,
+    domain: `http://localhost:${ port }/v3/directline`,
     unsubscribe: promisify(proxyServer.close.bind(proxyServer))
   };
 }
@@ -40,32 +41,30 @@ describe('Unhappy path', () => {
   beforeEach(() => unsubscribes = []);
   afterEach(() => unsubscribes.forEach(fn => onErrorResumeNext(fn)));
 
-  describe('turn on airplane mode after connected', () => {
+  describe('channel returned 404 on post activity after connected', () => {
     let directLine;
+    let proxyDomain;
+    let proxyPort;
+
+    beforeEach(async () => {
+      proxyPort = await getPort();
+      proxyDomain = `http://localhost:${ proxyPort }/v3/directline`;
+    });
 
     describe('using REST', () => {
-      let domain;
-
-      beforeEach(async () => {
-        jest.setTimeout(timeouts.rest);
-
-        const { domain: forwarderDomain, unsubscribe } = await setupDirectLineForwarder();
-
-        unsubscribes.push(unsubscribe);
-        domain = forwarderDomain;
-      });
+      beforeEach(() => jest.setTimeout(timeouts.rest));
 
       test('with secret', async () => {
         directLine = new DirectLine({
           ...await createDirectLineOptions.forREST({ token: false }),
-          domain
+          domain: proxyDomain
         });
       });
 
       test('with token', async () => {
         directLine = new DirectLine({
           ...await createDirectLineOptions.forREST({ token: true }),
-          domain
+          domain: proxyDomain
         });
       });
     });
@@ -76,28 +75,19 @@ describe('Unhappy path', () => {
     // });
 
     describe('using Web Socket', () => {
-      let domain;
-
-      beforeEach(async () => {
-        jest.setTimeout(timeouts.webSocket);
-
-        const { domain: forwarderDomain, unsubscribe } = await setupDirectLineForwarder();
-
-        unsubscribes.push(unsubscribe);
-        domain = forwarderDomain;
-      });
+      beforeEach(() => jest.setTimeout(timeouts.webSocket));
 
       test('with secret', async () => {
         directLine = new DirectLine({
           ...await createDirectLineOptions.forWebSocket({ token: false }),
-          domain
+          domain: proxyDomain
         });
       });
 
       test('with token', async () => {
         directLine = new DirectLine({
           ...await createDirectLineOptions.forWebSocket({ token: false }),
-          domain
+          domain: proxyDomain
         });
       });
     });
@@ -106,6 +96,29 @@ describe('Unhappy path', () => {
       // If directLine object is undefined, that means the test is failing.
       if (!directLine) { return; }
 
+      let lastConnectionStatus;
+
+      const connectionStatusSubscription = directLine.connectionStatus$.subscribe({
+        next(value) { lastConnectionStatus = value; }
+      });
+
+      unsubscribes.push(connectionStatusSubscription.unsubscribe.bind(connectionStatusSubscription));
+
+      let alwaysReturn404;
+
+      const { unsubscribe } = await setupDirectLineForwarder(proxyPort, (req, res, next) => {
+        if (
+          req.method !== 'OPTIONS'
+          && alwaysReturn404
+        ) {
+          res.statusCode = 404;
+          res.end();
+        } else {
+          next();
+        }
+      });
+
+      unsubscribes.push(unsubscribe);
       unsubscribes.push(directLine.end.bind(directLine));
       unsubscribes.push(await waitForConnected(directLine));
 
@@ -114,7 +127,14 @@ describe('Unhappy path', () => {
         waitForBotEcho(directLine, ({ text }) => text === 'Hello, World!')
       ]);
 
-      // TODO: Kill the connection and test
+      alwaysReturn404 = true;
+
+      await expect(postActivity(directLine, { text: 'Hello, World!', type: 'message' })).rejects.toThrow();
+
+      // After post failed, it should stop polling and end all connections
+
+      // TODO: Currently not working on REST/WS
+      // expect(lastConnectionStatus).not.toBe(2);
     });
   });
 });
