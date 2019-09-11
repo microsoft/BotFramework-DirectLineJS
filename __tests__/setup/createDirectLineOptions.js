@@ -25,7 +25,7 @@ async function generateDirectLineToken(domain = DEFAULT_DOMAIN) {
     const json = await res.json();
 
     if ('error' in json) {
-      throw new Error(`Direct Line service responded ${ JSON.stringify(json.error) } while generating new token`);
+      throw new Error(`Direct Line service responded with ${ JSON.stringify(json.error) } while generating a new token`);
     } else {
       return json;
     }

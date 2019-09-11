@@ -12,7 +12,7 @@ class JSDOMEnvironmentWithProxy extends JSDOMEnvironment {
 
       // HACK: We cannot set ResourceLoader thru testEnvironmentOptions.resources.
       //       This is because the ResourceLoader instance constructor is of "slightly" different type when on runtime (probably Jest magic).
-      //       Thus, when we set it thru testEnvironmentOptions.resources, it will fail on "--watch" but succeeded when running without watch.
+      //       Thus, when we set it thru testEnvironmentOptions.resources, it will fail on "--watch" but succeed when running without watch.
       this.global._resourceLoader = resources;
 
       return super.setup();
