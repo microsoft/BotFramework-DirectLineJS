@@ -15,7 +15,7 @@
     "esModuleInterop": true,
 
     "declaration": true,
-    "declarationDir": "built",
+    "declarationDir": "lib",
     "emitDeclarationOnly": true,
     "sourceMap": true
   },
