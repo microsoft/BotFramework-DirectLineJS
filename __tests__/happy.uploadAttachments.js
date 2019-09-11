@@ -59,11 +59,9 @@ describe('Happy path', () => {
         // DirectLine.postActivityWithAttachments support "contentUrl" only but not "content"
         attachments: [{
           contentType: 'image/png',
-          // contentUrl: 'http://localhost:3978/public/surfacelogo.png'
           contentUrl: 'https://webchat-waterbottle.azurewebsites.net/public/surfacelogo.png'
         }, {
           contentType: 'image/png',
-          // contentUrl: 'http://localhost:3978/public/xboxlogo.png'
           contentUrl: 'https://webchat-waterbottle.azurewebsites.net/public/xboxlogo.png'
         }],
         text: 'Hello, World!',
