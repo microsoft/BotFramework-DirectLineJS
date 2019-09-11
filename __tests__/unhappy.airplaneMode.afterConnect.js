@@ -2,6 +2,7 @@ import 'dotenv/config';
 
 import { createProxyServer } from 'http-proxy';
 import { createServer } from 'http';
+import { promisify } from 'util';
 import getPort from 'get-port';
 import onErrorResumeNext from 'on-error-resume-next';
 
@@ -12,6 +13,27 @@ import postActivity from './setup/postActivity';
 import waitForBotEcho from './setup/waitForBotEcho';
 import waitForConnected from './setup/waitForConnected';
 
+async function setupDirectLineForwarder(target = 'https://directline.botframework.com/') {
+  // We need a reverse proxy (a.k.a. forwarder) to control the network traffic.
+  // This is because we need to modify the HTTP header by changing its host header (directline.botframework.com do not like "Host: localhost").
+
+  const proxyPort = await getPort();
+  const proxy = createProxyServer({
+    changeOrigin: true,
+    rejectUnauthorized: false,
+    target
+  });
+
+  const proxyServer = createServer((req, res) => proxy.web(req, res));
+
+  await promisify(proxyServer.listen.bind(proxyServer))(proxyPort);
+
+  return {
+    domain: `http://localhost:${ proxyPort }/v3/directline`,
+    unsubscribe: promisify(proxyServer.close.bind(proxyServer))
+  };
+}
+
 describe('Unhappy path', () => {
   let unsubscribes;
 
@@ -20,41 +42,30 @@ describe('Unhappy path', () => {
 
   describe('turn on airplane mode after connected', () => {
     let directLine;
-    let proxy;
-    let proxyPort;
-    let proxyServer;
-
-    beforeEach(async () => {
-      // We need a reverse proxy (a.k.a. forwarder) to control the network traffic.
-      // This is because we need to modify the HTTP header by changing its host header (directline.botframework.com do not like "Host: localhost").
-
-      proxyPort = await getPort();
-      proxyPort = 8889;
-
-      proxy = createProxyServer({
-        changeOrigin: true,
-        rejectUnauthorized: false,
-        target: 'https://directline.botframework.com/'
-      });
-
-      proxyServer = createServer((req, res) => proxy.web(req, res));
-
-      await (new Promise(resolve => proxyServer.listen(proxyPort, resolve)));
-    });
-
-    afterEach(() => new Promise(resolve => proxyServer.close(resolve)));
 
     describe('using REST', () => {
-      beforeEach(() => jest.setTimeout(timeouts.rest));
+      let domain;
+
+      beforeEach(async () => {
+        jest.setTimeout(timeouts.rest);
+
+        const { domain: forwarderDomain, unsubscribe } = await setupDirectLineForwarder();
+
+        unsubscribes.push(unsubscribe);
+        domain = forwarderDomain;
+      });
 
       test('with secret', async () => {
-        directLine = new DirectLine(await createDirectLineOptions.forREST({ token: false }));
+        directLine = new DirectLine({
+          ...await createDirectLineOptions.forREST({ token: false }),
+          domain
+        });
       });
 
       test('with token', async () => {
         directLine = new DirectLine({
           ...await createDirectLineOptions.forREST({ token: true }),
-          domain: 'http://localhost:8889/v3/directline'
+          domain
         });
       });
     });
@@ -65,14 +76,29 @@ describe('Unhappy path', () => {
     // });
 
     describe('using Web Socket', () => {
-      beforeEach(() => jest.setTimeout(timeouts.webSocket));
+      let domain;
+
+      beforeEach(async () => {
+        jest.setTimeout(timeouts.webSocket);
+
+        const { domain: forwarderDomain, unsubscribe } = await setupDirectLineForwarder();
+
+        unsubscribes.push(unsubscribe);
+        domain = forwarderDomain;
+      });
 
       test('with secret', async () => {
-        directLine = new DirectLine(await createDirectLineOptions.forWebSocket({ token: false }));
+        directLine = new DirectLine({
+          ...await createDirectLineOptions.forWebSocket({ token: false }),
+          domain
+        });
       });
 
       test('with token', async () => {
-        directLine = new DirectLine(await createDirectLineOptions.forWebSocket({ token: false }));
+        directLine = new DirectLine({
+          ...await createDirectLineOptions.forWebSocket({ token: false }),
+          domain
+        });
       });
     });
 
@@ -80,6 +106,7 @@ describe('Unhappy path', () => {
       // If directLine object is undefined, that means the test is failing.
       if (!directLine) { return; }
 
+      unsubscribes.push(directLine.end.bind(directLine));
       unsubscribes.push(await waitForConnected(directLine));
 
       await Promise.all([

@@ -22,7 +22,7 @@ describe('Happy path', () => {
     describe('using REST', () => {
       beforeEach(() => jest.setTimeout(timeouts.rest));
 
-      test.only('with secret', async () => {
+      test('with secret', async () => {
         directLine = new DirectLine(await createDirectLineOptions.forREST({ token: false }));
       });
 
@@ -52,6 +52,7 @@ describe('Happy path', () => {
       // If directLine object is undefined, that means the test is failing.
       if (!directLine) { return; }
 
+      unsubscribes.push(directLine.end.bind(directLine));
       unsubscribes.push(await waitForConnected(directLine));
 
       const sendingActivity = {

@@ -51,6 +51,7 @@ describe('Happy path', () => {
       // If directLine object is undefined, that means the test is failing.
       if (!directLine) { return; }
 
+      unsubscribes.push(directLine.end.bind(directLine));
       unsubscribes.push(await waitForConnected(directLine));
 
       await Promise.all([
