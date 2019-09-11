@@ -55,7 +55,7 @@ describe('Happy path', () => {
       unsubscribes.push(directLine.end.bind(directLine));
       unsubscribes.push(await waitForConnected(directLine));
 
-      const sendingActivity = {
+      const activityFromUser = {
         // DirectLine.postActivityWithAttachments support "contentUrl" only but not "content"
         attachments: [{
           contentType: 'image/png',
@@ -69,7 +69,7 @@ describe('Happy path', () => {
       };
 
       await Promise.all([
-        postActivity(directLine, sendingActivity),
+        postActivity(directLine, activityFromUser),
         waitForBotEcho(directLine, async ({ attachments, text }) => {
           if (text === 'Hello, World!') {
             // Bug #194 is causing trouble on the order of attachments sent.
@@ -79,8 +79,8 @@ describe('Happy path', () => {
 
             const [expecteds, actuals] = await Promise.all([
               Promise.all([
-                fetchAsBase64(sendingActivity.attachments[0].contentUrl),
-                fetchAsBase64(sendingActivity.attachments[1].contentUrl)
+                fetchAsBase64(activityFromUser.attachments[0].contentUrl),
+                fetchAsBase64(activityFromUser.attachments[1].contentUrl)
               ]),
               Promise.all([
                 fetchAsBase64(attachments[0].contentUrl),
@@ -95,8 +95,8 @@ describe('Happy path', () => {
             // Use the commented code below after bug #194 is fixed.
             // https://github.com/microsoft/BotFramework-DirectLineJS/issues/194
 
-            // await expect(fetchAsBase64(attachments[0].contentUrl)).resolves.toBe(await fetchAsBase64(sendingActivity.attachments[0].contentUrl));
-            // await expect(fetchAsBase64(attachments[1].contentUrl)).resolves.toBe(await fetchAsBase64(sendingActivity.attachments[1].contentUrl));
+            // await expect(fetchAsBase64(attachments[0].contentUrl)).resolves.toBe(await fetchAsBase64(activityFromUser.attachments[0].contentUrl));
+            // await expect(fetchAsBase64(attachments[1].contentUrl)).resolves.toBe(await fetchAsBase64(activityFromUser.attachments[1].contentUrl));
 
             return true;
           }
