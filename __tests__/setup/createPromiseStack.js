@@ -1,6 +1,6 @@
 import createDeferred from 'p-defer';
 
-export default function createPromiseQueue() {
+export default function createPromiseStack() {
   const deferreds = [];
   const queue = [];
   const processOne = () => {

@@ -1,9 +1,9 @@
-import createPromiseQueue from './createPromiseQueue';
+import createPromiseStack from './createPromiseStack';
 
 export default function observableToPromise(observable) {
-  let errors = createPromiseQueue();
-  let completes = createPromiseQueue();
-  let nexts = createPromiseQueue();
+  let errors = createPromiseStack();
+  let completes = createPromiseStack();
+  let nexts = createPromiseStack();
   const subscription = observable.subscribe({
     complete: completes.push,
     error: errors.push,
