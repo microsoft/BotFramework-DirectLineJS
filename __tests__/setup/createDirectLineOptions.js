@@ -30,7 +30,7 @@ async function generateDirectLineToken(domain = DEFAULT_DOMAIN) {
       return json;
     }
   } else {
-    throw new Error(`Direct Line service returned ${ res.status } while generating new token`);
+    throw new Error(`Direct Line service returned ${ res.status } while generating a new token`);
   }
 }
 
