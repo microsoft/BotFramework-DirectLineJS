@@ -3,7 +3,7 @@ import updateIn from 'simple-update-in';
 import waitForActivity from './waitForActivity';
 import waitForObservable from './waitForObservable';
 
-const DEFAULT_USER_ID = 'u-12345';
+const DEFAULT_USER_ID = 'dl_12345';
 
 export default async function postActivity(directLine, activity) {
   // We need to use channelData.clientActivityId because postActivity could come later than the activity$ observable.
