@@ -10,9 +10,9 @@ const {
 const DEFAULT_DOMAIN = 'https://directline.botframework.com/v3/directline';
 
 async function generateDirectLineToken(domain = DEFAULT_DOMAIN) {
-  let cres;
+  let res;
 
-  cres = await fetch(`${ domain }/tokens/generate`, {
+  res = await fetch(`${ domain }/tokens/generate`, {
     body: JSON.stringify({ User: { Id: DEFAULT_USER_ID } }),
     headers: {
       authorization: `Bearer ${ DIRECT_LINE_SECRET }`,
@@ -21,8 +21,8 @@ async function generateDirectLineToken(domain = DEFAULT_DOMAIN) {
     method: 'POST'
   });
 
-  if (cres.status === 200) {
-    const json = await cres.json();
+  if (res.status === 200) {
+    const json = await res.json();
 
     if ('error' in json) {
       throw new Error(`Direct Line service responded ${ JSON.stringify(json.error) } while generating new token`);
@@ -30,7 +30,7 @@ async function generateDirectLineToken(domain = DEFAULT_DOMAIN) {
       return json;
     }
   } else {
-    throw new Error(`Direct Line service returned ${ cres.status } while generating new token`);
+    throw new Error(`Direct Line service returned ${ res.status } while generating new token`);
   }
 }
 
