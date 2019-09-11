@@ -42,7 +42,7 @@ That said, the public API is still subject to change.
 
 There are several ways:
 
-1. Build from scratch and include either `/directLine.js` (webpacked with rxjs) or `built/directline.js` in your app
+1. Build from scratch and include either `/directLine.js` (webpacked with rxjs) or `lib/directline.js` in your app
 2. `npm install botframework-directlinejs`
 
 ## Using from within a Node environment

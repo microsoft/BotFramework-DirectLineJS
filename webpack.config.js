@@ -3,7 +3,7 @@ const Visualizer = require('webpack-visualizer-plugin');
 
 module.exports = {
   entry: {
-    'directLine': './built/directLine.js'
+    'directLine': './lib/directLine.js'
   },
   mode: 'production',
   output: {

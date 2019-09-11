@@ -1,5 +1,5 @@
 /.env
-/built
+/lib
 /node_modules
 
 /directLine.js
