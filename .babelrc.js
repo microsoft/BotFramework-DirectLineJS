@@ -6,12 +6,6 @@ module.exports = {
       ]
     }
   },
-  ignore: [
-    './src/*.spec.js',
-    './src/*.spec.ts',
-    './src/*.test.js',
-    './src/*.test.ts'
-  ],
   plugins: [
     '@babel/plugin-proposal-class-properties',
     '@babel/plugin-proposal-object-rest-spread',
