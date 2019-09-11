@@ -3,14 +3,14 @@
   "version": "0.11.5-0",
   "description": "Client library for the Microsoft Bot Framework Direct Line 3.0 protocol",
   "files": [
-    "directLine.js",
+    "dist/**/*",
     "lib/**/*"
   ],
   "main": "lib/directLine.js",
   "types": "lib/directLine.d.ts",
   "scripts": {
     "build": "npm run build:typecheck && npm run build:babel -- --env-name test && npm run build:webpack -- --config webpack-development.config.js",
-    "build:babel": "babel --extensions .js,.ts --out-dir lib src",
+    "build:babel": "babel --extensions .js,.ts --ignore src/**/*.spec.js,src/**/*.spec.ts,src/**/*.test.js,src/**/*.test.ts --out-dir lib src",
     "build:typecheck": "tsc",
     "build:webpack": "webpack",
     "clean": "rimraf lib directLine.js stats.html",
