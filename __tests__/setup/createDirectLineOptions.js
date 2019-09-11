@@ -35,17 +35,17 @@ async function generateDirectLineToken(domain = DEFAULT_DOMAIN) {
 }
 
 export async function forREST({ token } = {}) {
-  token = token && (await generateDirectLineToken()).token;
-
   return {
-    ...token ? {} : { secret: DIRECT_LINE_SECRET },
-    ...token ? { token } : {},
+    ...token ?
+      { token: (await generateDirectLineToken()).token }
+    :
+      { secret: DIRECT_LINE_SECRET },
     webSocket: false
   };
 }
 
 export async function forStreamingExtensions() {
-  const { conversationId, token } = (await generateDirectLineToken(STREAMING_EXTENSIONS_DOMAIN));
+  const { conversationId, token } = await generateDirectLineToken(STREAMING_EXTENSIONS_DOMAIN);
 
   return {
     conversationId,
@@ -57,11 +57,11 @@ export async function forStreamingExtensions() {
 }
 
 export async function forWebSocket({ token } = {}) {
-  token = token && (await generateDirectLineToken()).token;
-
   return {
-    ...token ? {} : { secret: DIRECT_LINE_SECRET },
-    ...token ? { token } : {},
+    ...token ?
+      { token: (await generateDirectLineToken()).token }
+    :
+      { secret: DIRECT_LINE_SECRET },
     webSocket: true
   };
 }
