@@ -67,7 +67,7 @@ export async function forREST({ token } = {}, mergeOptions = {}) {
   } else if (DIRECT_LINE_SECRET) {
     options = { ...options, secret: DIRECT_LINE_SECRET };
   } else {
-    console.warn('Tests using secret are skipped because DIRECT_LINE_SECRET environment variable is not defined.');
+    return console.warn('Tests using secret are skipped because DIRECT_LINE_SECRET environment variable is not defined.');
   }
 
   return new DirectLine({ ...options, ...mergeOptions });
