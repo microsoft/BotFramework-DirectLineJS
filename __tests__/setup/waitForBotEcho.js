@@ -1,8 +1,8 @@
 import getEchoActivity from './getEchoActivity';
-import waitForObservable from './waitForObservable';
+import waitForActivity from './waitForActivity';
 
 export default function waitForBotEcho(directLine, predicate) {
-  return waitForObservable(directLine.activity$, async activity => {
+  return waitForActivity(directLine, async activity => {
     const echoActivity = getEchoActivity(activity);
 
     return echoActivity && await predicate(echoActivity);

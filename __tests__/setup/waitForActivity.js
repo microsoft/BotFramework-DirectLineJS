@@ -1,5 +1,5 @@
 import waitForObservable from './waitForObservable';
 
-export default function waitForBotRespond(directLine, predicate) {
-  return waitForObservable(directLine.activity$, activity => predicate(activity));
+export default async function waitForBotRespond(directLine, predicate) {
+  return await waitForObservable(directLine.activity$, activity => await predicate(activity));
 }
