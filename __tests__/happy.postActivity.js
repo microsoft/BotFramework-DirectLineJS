@@ -2,9 +2,8 @@ import 'dotenv/config';
 
 import onErrorResumeNext from 'on-error-resume-next';
 
-import { DirectLine } from '../src/directLine';
 import { timeouts } from './constants.json';
-import * as createDirectLineOptions from './setup/createDirectLineOptions';
+import * as createDirectLine from './setup/createDirectLine';
 import postActivity from './setup/postActivity';
 import waitForBotToEcho from './setup/waitForBotToEcho';
 import waitForConnected from './setup/waitForConnected';
@@ -22,28 +21,28 @@ describe('Happy path', () => {
       beforeEach(() => jest.setTimeout(timeouts.rest));
 
       test('with secret', async () => {
-        directLine = new DirectLine(await createDirectLineOptions.forREST({ token: false }));
+        directLine = await createDirectLine.forREST({ token: false });
       });
 
       test('with token', async () => {
-        directLine = new DirectLine(await createDirectLineOptions.forREST({ token: true }));
+        directLine = await createDirectLine.forREST({ token: true });
       });
     });
 
     // test('using Streaming Extensions', async () => {
     //   jest.setTimeout(timeouts.webSocket);
-    //   directLine = new DirectLine(await createDirectLineOptions.forStreamingExtensions());
+    //   directLine = await createDirectLine.forStreamingExtensions();
     // });
 
     describe('using Web Socket', () => {
       beforeEach(() => jest.setTimeout(timeouts.webSocket));
 
       test('with secret', async () => {
-        directLine = new DirectLine(await createDirectLineOptions.forWebSocket({ token: false }));
+        directLine = await createDirectLine.forWebSocket({ token: false });
       });
 
       test('with token', async () => {
-        directLine = new DirectLine(await createDirectLineOptions.forWebSocket({ token: false }));
+        directLine = await createDirectLine.forWebSocket({ token: false });
       });
     });
 
