@@ -8,7 +8,7 @@ import { timeouts } from './constants.json';
 import * as createDirectLineOptions from './setup/createDirectLineOptions';
 import createDirectLineForwarder from './setup/createDirectLineForwarder';
 import postActivity from './setup/postActivity';
-import waitForBotEcho from './setup/waitForBotEcho';
+import waitForBotToEcho from './setup/waitForBotToEcho';
 import waitForConnected from './setup/waitForConnected';
 
 describe('Unhappy path', () => {
@@ -100,7 +100,7 @@ describe('Unhappy path', () => {
 
       await Promise.all([
         postActivity(directLine, { text: 'Hello, World!', type: 'message' }),
-        waitForBotEcho(directLine, ({ text }) => text === 'Hello, World!')
+        waitForBotToEcho(directLine, ({ text }) => text === 'Hello, World!')
       ]);
 
       alwaysReturn404 = true;

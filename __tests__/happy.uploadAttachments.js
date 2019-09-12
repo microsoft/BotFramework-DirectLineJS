@@ -7,7 +7,7 @@ import { timeouts } from './constants.json';
 import * as createDirectLineOptions from './setup/createDirectLineOptions';
 import fetchAsBase64 from './setup/fetchAsBase64';
 import postActivity from './setup/postActivity';
-import waitForBotEcho from './setup/waitForBotEcho';
+import waitForBotToEcho from './setup/waitForBotToEcho';
 import waitForConnected from './setup/waitForConnected';
 
 describe('Happy path', () => {
@@ -70,7 +70,7 @@ describe('Happy path', () => {
 
       await Promise.all([
         postActivity(directLine, activityFromUser),
-        waitForBotEcho(directLine, async ({ attachments, text }) => {
+        waitForBotToEcho(directLine, async ({ attachments, text }) => {
           if (text === 'Hello, World!') {
             // Bug #194 is causing trouble on the order of attachments sent.
             // https://github.com/microsoft/BotFramework-DirectLineJS/issues/194

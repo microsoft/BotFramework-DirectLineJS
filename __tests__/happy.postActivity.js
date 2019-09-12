@@ -6,7 +6,7 @@ import { DirectLine } from '../src/directLine';
 import { timeouts } from './constants.json';
 import * as createDirectLineOptions from './setup/createDirectLineOptions';
 import postActivity from './setup/postActivity';
-import waitForBotEcho from './setup/waitForBotEcho';
+import waitForBotToEcho from './setup/waitForBotToEcho';
 import waitForConnected from './setup/waitForConnected';
 
 describe('Happy path', () => {
@@ -56,7 +56,7 @@ describe('Happy path', () => {
 
       await Promise.all([
         postActivity(directLine, { text: 'Hello, World!', type: 'message' }),
-        waitForBotEcho(directLine, ({ text }) => text === 'Hello, World!')
+        waitForBotToEcho(directLine, ({ text }) => text === 'Hello, World!')
       ]);
     });
   });
