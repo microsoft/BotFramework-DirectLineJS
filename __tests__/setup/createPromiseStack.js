@@ -1,24 +1,21 @@
-import createDeferred from 'p-defer';
-
 export default function createPromiseStack() {
-  const deferreds = [];
-  const queue = [];
-  const processOne = () => {
-    deferreds.length && queue.length && deferreds.shift().resolve(queue.shift());
+  const resolves = [];
+  const stack = [];
+  const trigger = () => {
+    resolves.length && stack.length && resolves.shift()(stack.shift());
   };
 
   return {
     pop() {
-      const deferred = createDeferred();
+      const promise = new Promise(resolve => resolves.push(resolve));
 
-      deferreds.push(deferred);
-      processOne();
+      trigger();
 
-      return deferred.promise;
+      return promise;
     },
     push(value) {
-      queue.push(value);
-      processOne();
+      stack.push(value);
+      trigger();
     }
   };
 }
