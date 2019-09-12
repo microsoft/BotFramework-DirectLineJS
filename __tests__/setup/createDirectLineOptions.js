@@ -3,7 +3,6 @@ import fetch from 'node-fetch';
 const {
   DEFAULT_USER_ID = 'dl_12345',
   DIRECT_LINE_SECRET,
-  // STREAMING_EXTENSIONS_DOMAIN = 'http://localhost:5002/.bot/v3/directline'
   STREAMING_EXTENSIONS_DOMAIN = 'https://webchat-waterbottle.azurewebsites.net/.bot/v3/directline'
 } = process.env;
 
