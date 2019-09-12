@@ -1,17 +1,11 @@
-import promiseRaceMap from 'promise-race-map';
-
 import observableToPromise from './observableToPromise';
 
 export default async function waitForObservable(observable, target) {
-  const observer = observableToPromise(observable);
+  const { shift, unsubscribe } = observableToPromise(observable);
 
   try {
     for (;;) {
-      const { complete, error, next } = await promiseRaceMap({
-        complete: observer.complete(),
-        error: observer.error(),
-        next: observer.next()
-      });
+      const { complete, error, next } = await shift();
 
       if (complete) {
         return;
@@ -22,6 +16,6 @@ export default async function waitForObservable(observable, target) {
       }
     }
   } finally {
-    observer.unsubscribe();
+    unsubscribe();
   }
 }
