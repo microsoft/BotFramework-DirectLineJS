@@ -1,9 +1,9 @@
 import fetch from 'node-fetch';
 
 import { DirectLine } from '../../src/directLine';
+import { userId as DEFAULT_USER_ID } from '../constants.json';
 
 const {
-  DEFAULT_USER_ID = 'dl_12345',
   DIRECT_LINE_SECRET,
   STREAMING_EXTENSIONS_DOMAIN = 'https://webchat-waterbottle.azurewebsites.net/.bot/v3/directline'
 } = process.env;
@@ -55,25 +55,25 @@ async function generateDirectLineToken(domain = DEFAULT_DOMAIN) {
   }
 }
 
-export async function forREST({ token } = {}, directLineOptions = {}) {
-  if (token || DIRECT_LINE_SECRET) {
-    return new DirectLine({
-      ...token ?
-        DIRECT_LINE_SECRET ?
-          { token: (await generateDirectLineToken()).token }
-        :
-          { token: (await fetchDirectLineToken()).token }
-      :
-        { secret: DIRECT_LINE_SECRET },
-      webSocket: false,
-      ...directLineOptions
-    });
+export async function forREST({ token } = {}, mergeOptions = {}) {
+  let options = { webSocket: false };
+
+  if (token && DIRECT_LINE_SECRET) {
+    options = { ...options, token: (await generateDirectLineToken()).token };
+  } else if (token) {
+    // Probably via PR validation on Travis, or run by a contributing developer.
+    // We still want to let the developer to test majority of stuff without deploying their own bot server.
+    options = { token: (await fetchDirectLineToken()).token };
+  } else if (DIRECT_LINE_SECRET) {
+    options = { secret: DIRECT_LINE_SECRET };
   } else {
     console.warn('Tests using secret are skipped because DIRECT_LINE_SECRET environment variable is not defined.');
   }
+
+  return new DirectLine({ ...options, ...mergeOptions });
 }
 
-export async function forStreamingExtensions(directLineOptions = {}) {
+export async function forStreamingExtensions(mergeOptions = {}) {
   const { conversationId, token } = DIRECT_LINE_SECRET ?
     await generateDirectLineToken(STREAMING_EXTENSIONS_DOMAIN)
   :
@@ -85,24 +85,16 @@ export async function forStreamingExtensions(directLineOptions = {}) {
     streamingWebSocket: true,
     token,
     webSocket: true,
-    ...directLineOptions
+    ...mergeOptions
   });
 }
 
-export async function forWebSocket({ token } = {}, directLineOptions = {}) {
-  if (token || DIRECT_LINE_SECRET) {
-    return new DirectLine({
-      ...token ?
-        DIRECT_LINE_SECRET ?
-          { token: (await generateDirectLineToken()).token }
-        :
-          { token: (await fetchDirectLineToken()).token }
-      :
-        { secret: DIRECT_LINE_SECRET },
-      webSocket: true,
-      ...directLineOptions
-    });
-  } else {
-    console.warn('Tests using secret are skipped because DIRECT_LINE_SECRET environment variable is not defined.');
-  }
+export async function forWebSocket({ token } = {}, mergeOptions = {}) {
+  return await forREST(
+    { token },
+    {
+      webSocket: false,
+      ...mergeOptions
+    }
+  );
 }

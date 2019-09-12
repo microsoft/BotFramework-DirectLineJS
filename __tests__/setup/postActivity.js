@@ -1,9 +1,9 @@
 import updateIn from 'simple-update-in';
 
-import waitForBotToResponse from './waitForBotToResponse';
+import waitForBotToRespond from './waitForBotToRespond';
 import waitForObservable from './waitForObservable';
 
-const DEFAULT_USER_ID = 'dl_12345';
+import { userId as DEFAULT_USER_ID } from '../constants.json';
 
 export default async function postActivity(directLine, activity) {
   // We need to use channelData.clientActivityId because postActivity could come later than the activity$ observable.
@@ -16,7 +16,7 @@ export default async function postActivity(directLine, activity) {
 
   const [activityId] = await Promise.all([
     waitForObservable(directLine.postActivity(activity), () => true),
-    waitForBotToResponse(directLine, ({ channelData: { clientActivityId } = {} }) => clientActivityId === targetClientActivityId)
+    waitForBotToRespond(directLine, ({ channelData: { clientActivityId } = {} }) => clientActivityId === targetClientActivityId)
   ]);
 
   return activityId;
