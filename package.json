@@ -54,7 +54,6 @@
     "jsdom": "^14.1.0",
     "node-fetch": "^2.6.0",
     "on-error-resume-next": "^1.1.0",
-    "promise-race-map": "^1.0.0",
     "restify": "^8.4.0",
     "rimraf": "^3.0.0",
     "simple-update-in": "^2.1.1",

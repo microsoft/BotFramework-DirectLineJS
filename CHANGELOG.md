@@ -54,7 +54,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
    - [`jsdom@14.1.0`](https://npmjs.com/package/jsdom)
    - [`node-fetch@2.6.0`](https://npmjs.com/package/node-fetch)
    - [`on-error-resume-next@1.1.0`](https://npmjs.com/package/on-error-resume-next)
-   - [`promise-race-map@1.0.0`](https://npmjs.com/package/promise-race-map)
    - [`restify@8.4.0`](https://npmjs.com/package/restify)
    - [`rimraf@3.0.0`](https://npmjs.com/package/rimraf)
    - [`simple-update-in@2.1.1`](https://npmjs.com/package/simple-update-in)
