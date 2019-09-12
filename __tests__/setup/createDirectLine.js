@@ -63,9 +63,9 @@ export async function forREST({ token } = {}, mergeOptions = {}) {
   } else if (token) {
     // Probably via PR validation on Travis, or run by a contributing developer.
     // We still want to let the developer to test majority of stuff without deploying their own bot server.
-    options = { token: (await fetchDirectLineToken()).token };
+    options = { ...options, token: (await fetchDirectLineToken()).token };
   } else if (DIRECT_LINE_SECRET) {
-    options = { secret: DIRECT_LINE_SECRET };
+    options = { ...options, secret: DIRECT_LINE_SECRET };
   } else {
     console.warn('Tests using secret are skipped because DIRECT_LINE_SECRET environment variable is not defined.');
   }
@@ -93,7 +93,7 @@ export async function forWebSocket({ token } = {}, mergeOptions = {}) {
   return await forREST(
     { token },
     {
-      webSocket: false,
+      webSocket: true,
       ...mergeOptions
     }
   );
