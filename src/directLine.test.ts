@@ -33,7 +33,7 @@ describe("#commonHeaders", () => {
     let botConnection;
 
     beforeEach(() => {
-        process.env.VERSION = "test-version";
+        global.process.env.VERSION = "test-version";
         const { DirectLine } = DirectLineExport;
         botConnection = new DirectLine({ token: "secret-token", botAgent: "custom-bot-agent" });
     });

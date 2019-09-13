@@ -1,12 +1,13 @@
 module.exports = {
-  "testMatch": [
-    "**/__tests__/**/*.[jt]s?(x)",
-    "**/?(*.)(spec|test).[jt]s?(x)"
+  testEnvironment: './__tests__/setup/jsdomEnvironmentWithProxy',
+  testMatch: [
+    '**/__tests__/**/*.[jt]s?(x)',
+    '**/?(*.)(spec|test).[jt]s?(x)'
   ],
-  "testPathIgnorePatterns": [
-    "<rootDir>/__tests__/setup/"
+  testPathIgnorePatterns: [
+    '<rootDir>/__tests__/setup/'
   ],
-  "transform": {
-    "^.+\\.[jt]sx?$": "babel-jest"
+  transform: {
+    '^.+\\.[jt]sx?$': 'babel-jest'
   }
 };

@@ -15,6 +15,52 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Breaking Changes
+
+- Build folders updated
+   - `/dist/` contains JavaScript bundle
+       - `/dist/directline.js` is now in lowercase
+   - `/lib/` contains ES modules and type definitions
+- Build scripts updated
+   - `npm run build`: Development build, with instrumentation code, one-off
+   - `npm run start`: Development build, with instrumentation code, with watch
+   - `npm run prepublishOnly`: Production build, minified, one-off
+
+### Changed
+- Bumped dependencies, by [@compulim](https://github.com/compulim), in PR [#195](https://github.com/Microsoft/BotFramework-DirectLineJS/pull/195)
+   - [`@babel/runtime@7.6.0`](https://npmjs.com/package/@babel/runtime)
+   - [`rxjs@5.0.3`](https://npmjs.com/package/rxjs)
+- Bumped dev dependencies, by [@compulim](https://github.com/compulim), in PR [#195](https://github.com/Microsoft/BotFramework-DirectLineJS/pull/195)
+   - [`@babel/cli@7.6.0`](https://npmjs.com/package/@babel/cli)
+   - [`@babel/core@7.6.0`](https://npmjs.com/package/@babel/core)
+   - [`@babel/plugin-proposal-class-properties@7.5.5`](https://npmjs.com/package/@babel/plugin-proposal-class-properties)
+   - [`@babel/plugin-proposal-object-rest-spread@7.5.5`](https://npmjs.com/package/@babel/plugin-proposal-object-rest-spread)
+   - [`@babel/plugin-transform-runtime@7.6.0`](https://npmjs.com/package/@babel/plugin-transform-runtime)
+   - [`@babel/preset-env@7.6.0`](https://npmjs.com/package/@babel/preset-env)
+   - [`@babel/preset-typescript@7.6.0`](https://npmjs.com/package/@babel/preset-typescript)
+   - [`@types/jest@24.0.18`](https://npmjs.com/package/@types/jest)
+   - [`@types/node@12.7.4`](https://npmjs.com/package/@types/node)
+   - [`@types/p-defer@2.0.0`](https://npmjs.com/package/@types/p-defer)
+   - [`babel-jest@24.9.0`](https://npmjs.com/package/babel-jest)
+   - [`babel-plugin-istanbul@5.2.0`](https://npmjs.com/package/babel-plugin-istanbul)
+   - [`babel-plugin-transform-inline-environment-variables@0.4.3`](https://npmjs.com/package/babel-plugin-transform-inline-environment-variables)
+   - [`concurrently@4.1.2`](https://npmjs.com/package/concurrently)
+   - [`dotenv@8.1.0`](https://npmjs.com/package/dotenv)
+   - [`get-port@5.0.0`](https://npmjs.com/package/get-port)
+   - [`global-agent@2.0.2`](https://npmjs.com/package/global-agent)
+   - [`http-proxy@1.17.0`](https://npmjs.com/package/http-proxy)
+   - [`jest@24.9.0`](https://npmjs.com/package/jest)
+   - [`jest-environment-jsdom-fourteen@0.1.0`](https://npmjs.com/package/jest-environment-jsdom-fourteen)
+   - [`jsdom@14.1.0`](https://npmjs.com/package/jsdom)
+   - [`node-fetch@2.6.0`](https://npmjs.com/package/node-fetch)
+   - [`on-error-resume-next@1.1.0`](https://npmjs.com/package/on-error-resume-next)
+   - [`restify@8.4.0`](https://npmjs.com/package/restify)
+   - [`rimraf@3.0.0`](https://npmjs.com/package/rimraf)
+   - [`simple-update-in@2.1.1`](https://npmjs.com/package/simple-update-in)
+   - [`typescript@3.6.2`](https://npmjs.com/package/typescript)
+   - [`webpack@4.39.3`](https://npmjs.com/package/webpack)
+   - [`webpack-cli@3.3.8`](https://npmjs.com/package/webpack-cli)
+
 ## [0.11.4] - 2019-03-04
 ### Changed
 - Change reconnect delay to be a random amount between 3s and 15s, by [@mingweiw](https://github.com/mingweiw) in PR [#164](https://github.com/Microsoft/BotFramework-DirectLineJS/pull/164)

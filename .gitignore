@@ -1,7 +1,4 @@
-/.idea
-/built
+/.env
+/dist
+/lib
 /node_modules
-
-/directLine.js
-/directLine-instrumented.js
-/stats.html
