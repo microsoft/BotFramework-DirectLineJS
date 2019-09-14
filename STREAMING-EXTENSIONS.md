@@ -48,12 +48,12 @@ For latest build status, navigate to https://travis-ci.org/microsoft/BotFramewor
 
 ### Test in Web Chat
 
-The latest successful build can be tested with Web Chat and MockBot.
+The last successful build can be tested with Web Chat and MockBot.
 
 - Navigate to https://compulim.github.io/webchat-loader/
-- Click "Dev" or select "<Latest development bit>" from the dropdown list
-- Click "[Public] MockBot with Streaming Extensions"
-- Click "Open Web Chat in a new window"
+- Click `Dev` or select `<Latest development bit>` from the dropdown list
+- Click `[Public] MockBot with Streaming Extensions`
+- Click `Open Web Chat in a new window`
 
 Type `help` to MockBot for list of commands.
 
@@ -61,7 +61,7 @@ Type `help` to MockBot for list of commands.
 
 After successful build, artifacts are published to https://github.com/microsoft/BotFramework-DirectLineJS/releases/tag/dev-streamingextensions.
 
-For easier consumption, in the assets, [`directline.js`](https://github.com/microsoft/BotFramework-DirectLineJS/releases/download/dev-streamingextensions/directline.js) is the bundle from latest build. You can use the HTML code below:
+For easier consumption, in the assets, [`directline.js`](https://github.com/microsoft/BotFramework-DirectLineJS/releases/download/dev-streamingextensions/directline.js) is the bundle from last successful build. You can use the HTML code below to use latest DirectLineJS with Web Chat 4.5.2:
 
 ```html
 <!DOCTYPE html>
@@ -98,4 +98,4 @@ For easier consumption, in the assets, [`directline.js`](https://github.com/micr
 
 ### Source code
 
-Run `git checkout dev-streamingextensions` to checkout the source code of the latest successful build.
+Run `git checkout dev-streamingextensions` to checkout the source code of the last successful build.
