@@ -12,9 +12,6 @@ before_install:
 install:
 - npm run prepublishOnly
 
-script:
-- echo Tests disabled
-
 before_deploy:
 - npm pack
 - git config --local user.name "William Wong"
