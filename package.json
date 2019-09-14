@@ -27,7 +27,7 @@
   "license": "MIT",
   "dependencies": {
     "@babel/runtime": "^7.6.0",
-    "botframework-streaming-extensions": "file:external/botframework-streaming-extensions-0.0.1.b0793cea52b8307dd5737a98c924995bc1766ec4.tgz",
+    "botframework-streaming-extensions": "file:external/botframework-streaming-extensions-0.0.1-8bd254a-pr1132.tgz",
     "rxjs": "^5.0.3"
   },
   "devDependencies": {
