@@ -1,5 +1,7 @@
 language: node_js
 
+if: branch = ckk/protocoljs
+
 node_js:
 - "12"
 
@@ -26,7 +28,7 @@ deploy:
   api_key: $GITHUB_TOKEN
   body: "This build will be updated on every push. Please do not use it in production environment."
   file:
-  - dist/directLine-*.js
+  - dist/directline-*.js
   - botframework-directlinejs-*.tgz
   file_glob: true
   name: "Continuous integration build for Direct Line Streaming Extensions"
