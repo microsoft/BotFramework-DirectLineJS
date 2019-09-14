@@ -17,8 +17,8 @@ before_deploy:
 - npm pack
 - git config --local user.name "William Wong"
 - git config --local user.email "compulim@hotmail.com"
-# - export TRAVIS_TAG=dev
-# - git tag -f $TRAVIS_TAG
+- export TRAVIS_TAG=dev-streamingextensions
+- git tag -f $TRAVIS_TAG
 - mv dist/directline.js dist/directline-`cat package.json | jq -r .version`.js
 
 deploy:
