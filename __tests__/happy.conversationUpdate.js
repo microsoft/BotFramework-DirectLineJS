@@ -52,9 +52,7 @@ describe('Happy path', () => {
       unsubscribes.push(directLine.end.bind(directLine));
       unsubscribes.push(await waitForConnected(directLine));
 
-      await Promise.all([
-        waitForBotToRespond(directLine, ({ text }) => text === 'Welcome')
-      ]);
+      await waitForBotToRespond(directLine, ({ text }) => text === 'Welcome')
     });
   });
 });
