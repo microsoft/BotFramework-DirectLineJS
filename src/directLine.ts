@@ -415,7 +415,7 @@ class StreamHandler implements BFSE.RequestHandler {
             return r;
         }
 
-        var attachments = []
+        var attachments = activitySet.activities[0].attachments;
         let stream: BFSE.ContentStream;
         while (stream = request.streams.shift()) {
             let atch = await stream.readAsString();
@@ -771,7 +771,7 @@ export class DirectLine implements IBotConnection {
                         }))
                         .count()
                     .flatMap(_ => {
-                        let url = `${this.domain}/conversations/${this.conversationId}/users/${messageWithoutAttachments.from.id}/upload`;
+                        let url = `/v3/directline/conversations/${this.conversationId}/users/${messageWithoutAttachments.from.id}/upload`;
                         let request = BFSE.StreamingRequest.create('PUT', url);
                         request.setBody(JSON.stringify(messageWithoutAttachments));
                         httpContentList.forEach(e => request.addStream(e));
