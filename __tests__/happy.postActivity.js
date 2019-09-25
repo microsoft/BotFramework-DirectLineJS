@@ -29,10 +29,10 @@ describe('Happy path', () => {
       });
     });
 
-    test('using Streaming Extensions', async () => {
-      jest.setTimeout(timeouts.webSocket);
-      directLine = await createDirectLine.forStreamingExtensions();
-    });
+    // test('using Streaming Extensions', async () => {
+    //   jest.setTimeout(timeouts.webSocket);
+    //   directLine = await createDirectLine.forStreamingExtensions();
+    // });
 
     describe('using Web Socket', () => {
       beforeEach(() => jest.setTimeout(timeouts.webSocket));
