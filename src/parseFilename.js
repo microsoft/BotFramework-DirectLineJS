@@ -1,5 +1,10 @@
 export default function parseFilename(filename) {
-    if (~filename.indexOf('.')) {
+    if (!filename) {
+        return {
+            extname: '',
+            name: ''
+        };
+    } else if (~filename.indexOf('.')) {
         const [extensionWithoutDot, ...nameSegments] = filename.split('.').reverse();
 
         return {

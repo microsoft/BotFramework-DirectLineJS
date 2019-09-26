@@ -31,3 +31,9 @@ test('Deduping "Dockerfile", "Dockerfile"', () => {
 
   expect(actual).toEqual(['Dockerfile', 'Dockerfile (1)']);
 });
+
+test('Deduping "", ""', () => {
+  const actual = dedupeFilenames(['', '']);
+
+  expect(actual).toEqual(['', '(1)']);
+});
