@@ -58,10 +58,12 @@ describe('Happy path', () => {
         // DirectLine.postActivityWithAttachments support "contentUrl" only but not "content"
         attachments: [{
           contentType: 'image/png',
-          contentUrl: 'https://webchat-waterbottle.azurewebsites.net/public/surfacelogo.png'
+          contentUrl: 'https://webchat-waterbottle.azurewebsites.net/public/surfacelogo.png',
+          thumbnailUrl: 'data:image/png;base64,===surfacelogo.png'
         }, {
           contentType: 'image/png',
-          contentUrl: 'https://webchat-waterbottle.azurewebsites.net/public/xboxlogo.png'
+          contentUrl: 'https://webchat-waterbottle.azurewebsites.net/public/xboxlogo.png',
+          thumbnailUrl: 'data:image/png;base64,===xboxlogo.png'
         }],
         text: 'Hello, World!',
         type: 'message'
@@ -76,7 +78,7 @@ describe('Happy path', () => {
 
             // Until the bug is fixed, we will not check the order.
 
-            const [expecteds, actuals] = await Promise.all([
+            const [expectedContents, actualContents] = await Promise.all([
               Promise.all([
                 fetchAsBase64(activityFromUser.attachments[0].contentUrl),
                 fetchAsBase64(activityFromUser.attachments[1].contentUrl)
@@ -87,17 +89,25 @@ describe('Happy path', () => {
               ])
             ]);
 
-            expect(attachments[0]).not.toBe(attachments[1]);
-            expect(~actuals.indexOf(expecteds[0])).toBeTruthy();
-            expect(~actuals.indexOf(expecteds[1])).toBeTruthy();
+            const actualThumbnailUrls = attachments.map(({ thumbnailUrl }) => thumbnailUrl);
+
+            return (
+              attachments[0] !== attachments[1]
+              && actualContents.includes(expectedContents[0])
+              && actualContents.includes(expectedContents[1])
+              && actualThumbnailUrls.includes(activityFromUser.attachments[0].thumbnailUrl)
+              && actualThumbnailUrls.includes(activityFromUser.attachments[1].thumbnailUrl)
+            );
 
             // Use the commented code below after bug #194 is fixed.
             // https://github.com/microsoft/BotFramework-DirectLineJS/issues/194
 
-            // await expect(fetchAsBase64(attachments[0].contentUrl)).resolves.toBe(await fetchAsBase64(activityFromUser.attachments[0].contentUrl));
-            // await expect(fetchAsBase64(attachments[1].contentUrl)).resolves.toBe(await fetchAsBase64(activityFromUser.attachments[1].contentUrl));
-
-            return true;
+            // return (
+            //   await fetchAsBase64(attachments[0].contentUrl) === await fetchAsBase64(activityFromUser.attachments[0].contentUrl)
+            //   && await fetchAsBase64(attachments[1].contentUrl) === await fetchAsBase64(activityFromUser.attachments[1].contentUrl)
+            //   && attachments[0].thumbnailUrl === activityFromUser.attachments[0].thumbnailUrl
+            //   && attachments[1].thumbnailUrl === activityFromUser.attachments[1].thumbnailUrl
+            // );
           }
         })
       ]);

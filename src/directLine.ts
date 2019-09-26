@@ -689,8 +689,9 @@ export class DirectLine implements IBotConnection {
 
     private postMessageWithAttachments(message: Message) {
         const { attachments } = message;
-        // We clean the attachments but making sure every attachment has unique name
-        const attachmentNames: string[] = dedupeFilenames(attachments.map((media: Media) => media.name));
+        // We clean the attachments but making sure every attachment has unique name.
+        // If the file do not have a name, Chrome will assign "blob" when it is appended to FormData.
+        const attachmentNames: string[] = dedupeFilenames(attachments.map((media: Media) => media.name || 'blob'));
         const cleansedAttachments = attachments.map((attachment: Media, index: number) => ({
             ...attachment,
             name: attachmentNames[index]
