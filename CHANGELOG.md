@@ -61,6 +61,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
    - [`webpack@4.39.3`](https://npmjs.com/package/webpack)
    - [`webpack-cli@3.3.8`](https://npmjs.com/package/webpack-cli)
 
+### Added
+- Fix [#235](https://github.com/Microsoft/BotFramework-DirectLineJS/issues/235). Fix Added metadata when uploading attachments, including `thumbnailUrl`, by [@compulim](https://github.com/compulim), in PR [#236](https://github.com/Microsoft/BotFramework-DirectLineJS/pull/236)
+
 ## [0.11.4] - 2019-03-04
 ### Changed
 - Change reconnect delay to be a random amount between 3s and 15s, by [@mingweiw](https://github.com/mingweiw) in PR [#164](https://github.com/Microsoft/BotFramework-DirectLineJS/pull/164)
