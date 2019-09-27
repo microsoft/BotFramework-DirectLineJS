@@ -410,6 +410,8 @@ export class DirectLine implements IBotConnection {
 
     private tokenRefreshSubscription: Subscription;
 
+    private ending: boolean;
+
     constructor(options: DirectLineOptions) {
         this.secret = options.secret;
         this.token = options.secret || options.token;
@@ -495,7 +497,10 @@ export class DirectLine implements IBotConnection {
         .flatMap(connectionStatus => {
             switch (connectionStatus) {
                 case ConnectionStatus.Ended:
-                    return Observable.throw(errorConversationEnded);
+                    if (this.ending)
+                        return Observable.of(connectionStatus);
+                    else
+                        return Observable.throw(errorConversationEnded);
 
                 case ConnectionStatus.FailedToConnect:
                     return Observable.throw(errorFailedToConnect);
@@ -619,13 +624,8 @@ export class DirectLine implements IBotConnection {
     end() {
         if (this.tokenRefreshSubscription)
             this.tokenRefreshSubscription.unsubscribe();
-        try {
-            this.connectionStatus$.next(ConnectionStatus.Ended);
-        } catch (e) {
-            if (e === errorConversationEnded)
-                return;
-            throw(e);
-        }
+        this.ending = true;
+        this.connectionStatus$.next(ConnectionStatus.Ended);
     }
 
     getSessionId(): Observable<string> {
