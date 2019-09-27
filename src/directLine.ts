@@ -25,6 +25,8 @@ import 'rxjs/add/observable/interval';
 import 'rxjs/add/observable/of';
 import 'rxjs/add/observable/throw';
 
+import dedupeFilenames from './dedupeFilenames';
+
 const DIRECT_LINE_VERSION = 'DirectLine/3.0';
 
 declare var process: {
@@ -685,7 +687,15 @@ export class DirectLine implements IBotConnection {
         .catch(error => this.catchExpiredToken(error));
     }
 
-    private postMessageWithAttachments({ attachments, ... messageWithoutAttachments }: Message) {
+    private postMessageWithAttachments(message: Message) {
+        const { attachments } = message;
+        // We clean the attachments but making sure every attachment has unique name.
+        // If the file do not have a name, Chrome will assign "blob" when it is appended to FormData.
+        const attachmentNames: string[] = dedupeFilenames(attachments.map((media: Media) => media.name || 'blob'));
+        const cleansedAttachments = attachments.map((attachment: Media, index: number) => ({
+            ...attachment,
+            name: attachmentNames[index]
+        }));
         let formData: FormData;
 
         // If we're not connected to the bot, get connected
@@ -695,9 +705,13 @@ export class DirectLine implements IBotConnection {
             // To send this message to DirectLine we need to deconstruct it into a "template" activity
             // and one blob for each attachment.
             formData = new FormData();
-            formData.append('activity', new Blob([JSON.stringify(messageWithoutAttachments)], { type: 'application/vnd.microsoft.activity' }));
+            formData.append('activity', new Blob([JSON.stringify({
+                ...message,
+                // Removing contentUrl from attachment, we will send it via multipart
+                attachments: cleansedAttachments.map(({ contentUrl: string, ...others }) => ({ ...others }))
+            })], { type: 'application/vnd.microsoft.activity' }));
 
-            return Observable.from(attachments || [])
+            return Observable.from(cleansedAttachments)
             .flatMap((media: Media) =>
                 Observable.ajax({
                     method: "GET",
@@ -713,7 +727,7 @@ export class DirectLine implements IBotConnection {
         .flatMap(_ =>
             Observable.ajax({
                 method: "POST",
-                url: `${this.domain}/conversations/${this.conversationId}/upload?userId=${messageWithoutAttachments.from.id}`,
+                url: `${this.domain}/conversations/${this.conversationId}/upload?userId=${message.from.id}`,
                 body: formData,
                 timeout,
                 headers: {
