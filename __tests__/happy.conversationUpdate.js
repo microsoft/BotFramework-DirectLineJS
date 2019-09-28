@@ -19,10 +19,6 @@ describe('Happy path', () => {
     describe('using REST', () => {
       beforeEach(() => jest.setTimeout(timeouts.rest));
 
-      test('with secret', async () => {
-        directLine = await createDirectLine.forREST({ token: false });
-      });
-
       test('with token', async () => {
         directLine = await createDirectLine.forREST({ token: true });
       });
@@ -36,12 +32,8 @@ describe('Happy path', () => {
     describe('using Web Socket', () => {
       beforeEach(() => jest.setTimeout(timeouts.webSocket));
 
-      test('with secret', async () => {
-        directLine = await createDirectLine.forWebSocket({ token: false });
-      });
-
       test('with token', async () => {
-        directLine = await createDirectLine.forWebSocket({ token: false });
+        directLine = await createDirectLine.forWebSocket({ token: true });
       });
     });
 
@@ -52,8 +44,7 @@ describe('Happy path', () => {
       unsubscribes.push(directLine.end.bind(directLine));
       unsubscribes.push(await waitForConnected(directLine));
 
-      //await waitForBotToRespond(directLine, ({ text }) => text === 'Welcome')
-      await waitForBotToRespond(directLine, ({ text }) => true) // TODO: Just to test CI
+      await waitForBotToRespond(directLine, ({ text }) => text === 'Welcome')
     });
   });
 });
