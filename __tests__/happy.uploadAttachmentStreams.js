@@ -49,35 +49,15 @@ describe('Happy path', () => {
       await Promise.all([
         postActivity(directLine, activityFromUser),
         waitForBotToEcho(directLine, async ({ attachments, text }) => {
-          if (text === 'Hello, World!') {
-            // Bug #194 is causing trouble on the order of attachments sent.
-            // https://github.com/microsoft/BotFramework-DirectLineJS/issues/194
-
-            // Until the bug is fixed, we will not check the order.
-
-            const [expecteds, actuals] = await Promise.all([
+            const [expectedContents, actualContents] = await Promise.all([
               Promise.all([
                 fetchAsBase64(activityFromUser.attachments[0].contentUrl),
                 fetchAsBase64(activityFromUser.attachments[1].contentUrl)
               ]),
-              Promise.all([
-                fetchAsBase64(attachments[0].contentUrl),
-                fetchAsBase64(attachments[1].contentUrl)
-              ])
             ]);
 
-            expect(attachments[0]).not.toBe(attachments[1]);
-            expect(~actuals.indexOf(expecteds[0])).toBeTruthy();
-            expect(~actuals.indexOf(expecteds[1])).toBeTruthy();
-
-            // Use the commented code below after bug #194 is fixed.
-            // https://github.com/microsoft/BotFramework-DirectLineJS/issues/194
-
-            // await expect(fetchAsBase64(attachments[0].contentUrl)).resolves.toBe(await fetchAsBase64(activityFromUser.attachments[0].contentUrl));
-            // await expect(fetchAsBase64(attachments[1].contentUrl)).resolves.toBe(await fetchAsBase64(activityFromUser.attachments[1].contentUrl));
-
-            return true;
-          }
+            return (expectedContents[0] == attachments[0].contentUrl &&
+                   expectedContents[1] == attachments[1].contentUrl);
         })
       ]);
     });
