@@ -766,13 +766,16 @@ export class DirectLine implements IBotConnection {
                             let buffer = new Buffer(ajaxResponse.response);
                             let stream = new BFSE.SubscribableStream();
                             stream.write(buffer);
-                            let httpContent = new BFSE.HttpContent({contentType: media.contentType, contentLength: buffer.length}, stream);
+                            let httpContent = new BFSE.HttpContent({type: media.contentType, contentLength: buffer.length}, stream);
                             httpContentList.push(httpContent);
                         }))
                         .count()
                     .flatMap(_ => {
                         let url = `/v3/directline/conversations/${this.conversationId}/users/${messageWithoutAttachments.from.id}/upload`;
                         let request = BFSE.StreamingRequest.create('PUT', url);
+                        var activityStream = new BFSE.SubscribableStream();
+                        activityStream.write(JSON.stringify(messageWithoutAttachments), 'utf-8');
+                        request.addStream(new BFSE.HttpContent({type: "application/vnd.microsoft.activity", contentLength: activityStream.length}, activityStream));
                         httpContentList.forEach(e => request.addStream(e));
                         return this.streamConnection.send(request);
                     })
