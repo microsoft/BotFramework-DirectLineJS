@@ -8,6 +8,7 @@ import fetchAsBase64 from './setup/fetchAsBase64';
 import postActivity from './setup/postActivity';
 import waitForBotToEcho from './setup/waitForBotToEcho';
 import waitForConnected from './setup/waitForConnected';
+import waitForBotToRespond from './setup/waitForBotToRespond.js';
 
 describe('Happy path', () => {
   let unsubscribes;
@@ -15,7 +16,7 @@ describe('Happy path', () => {
   beforeEach(() => unsubscribes = []);
   afterEach(() => unsubscribes.forEach(fn => onErrorResumeNext(fn)));
 
-  describe('upload 2 attachments with text messages', () => {
+  describe('receive attachments', () => {
     let directLine;
 
     test('using Streaming Extensions', async () => {
@@ -30,16 +31,11 @@ describe('Happy path', () => {
       unsubscribes.push(directLine.end.bind(directLine));
       unsubscribes.push(await waitForConnected(directLine));
 
+      let url1 = 'https://webchat-waterbottle.azurewebsites.net/public/surfacelogo.png';
+      let url2 = 'https://webchat-waterbottle.azurewebsites.net/public/xboxlogo.png';
+
       const activityFromUser = {
-        // DirectLine.postActivityWithAttachments support "contentUrl" only but not "content"
-        attachments: [{
-          contentType: 'image/png',
-          contentUrl: 'https://webchat-waterbottle.azurewebsites.net/public/surfacelogo.png'
-        }, {
-          contentType: 'image/png',
-          contentUrl: 'https://webchat-waterbottle.azurewebsites.net/public/xboxlogo.png'
-        }],
-        text: 'Hello, World!',
+        text: 'attach ' + url1 + ' ' + url2,
         type: 'message',
         channelData: {
           testType: "streaming"
@@ -48,16 +44,15 @@ describe('Happy path', () => {
 
       await Promise.all([
         postActivity(directLine, activityFromUser),
-        waitForBotToEcho(directLine, async ({ attachments, text }) => {
-            const [expectedContents, actualContents] = await Promise.all([
-              Promise.all([
-                fetchAsBase64(activityFromUser.attachments[0].contentUrl),
-                fetchAsBase64(activityFromUser.attachments[1].contentUrl)
-              ]),
-            ]);
-
-            return (expectedContents[0] === attachments[0].contentUrl &&
-                   expectedContents[1] === attachments[1].contentUrl);
+        waitForBotToRespond(directLine, async (activity) => {
+          if (!activity.channelData){
+            return false;
+          }
+          let attachmentContents1 = await fetchAsBase64(url1);
+          let attachmentContents2 = await fetchAsBase64(url2);
+          return (activity.attachments.length == 2 &&
+             attachmentContents1 == activity.attachments[0].contentUrl.substr(23) &&
+             attachmentContents2 == activity.attachments[1].contentUrl.substr(23));
         })
       ]);
     });
