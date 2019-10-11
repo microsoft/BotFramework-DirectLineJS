@@ -42,13 +42,13 @@ interface ActivityGroup {
 }
 
 class StreamHandler implements BFSE.RequestHandler {
-    public subscriber: Subscriber<ActivityGroup>;
+    public subscriber: Subscriber<Activity>;
 
-    constructor(s: Subscriber<ActivityGroup>) {
+    constructor(s: Subscriber<Activity>) {
         this.subscriber = s;
     }
 
-    public setSubscriber(s: Subscriber<ActivityGroup>){
+    public setSubscriber(s: Subscriber<Activity>){
       this.subscriber = s;
     }
 
@@ -74,7 +74,7 @@ class StreamHandler implements BFSE.RequestHandler {
         }
 
         activitySet.activities[0].attachments = attachments;
-        this.subscriber.next(activitySet)
+        this.subscriber.next(activitySet.activities[0])
         let r = new BFSE.StreamingResponse();
         r.statusCode = 200;
         return r;
@@ -87,7 +87,7 @@ export class DirectLineStreaming implements IBotConnection {
     public activity$: Observable<Activity>;
 
 
-    private theSubscriber : Subscriber<ActivityGroup>;
+    private theSubscriber : Subscriber<Activity>;
     private theStreamHandler : StreamHandler;
 
     private domain = "https://directline.botframework.com/v3/directline";
@@ -247,7 +247,7 @@ export class DirectLineStreaming implements IBotConnection {
 
         }
         else {
-          let obs1$ = Observable.create((subscriber: Subscriber<ActivityGroup>) => {
+          let obs1$ = Observable.create((subscriber: Subscriber<Activity>) => {
             this.theSubscriber = subscriber;
             this.theStreamHandler = new StreamHandler(subscriber);
             this.streamConnection = new BFSE.WebSocketClient({ url: wsUrl, requestHandler: this.theStreamHandler, disconnectionHandler: this.errorHandler.bind(this) });
@@ -262,9 +262,9 @@ export class DirectLineStreaming implements IBotConnection {
               this.connectionStatus$.next(ConnectionStatus.Uninitialized);
               subscriber.error(e)
             });
-          }).flatMap(activityGroup => this.observableFromActivityGroup(activityGroup)).share();
+          });
 
-          return this.fallback$(obs1$, () => this.streamingWebSocket, obs1$);
+          return obs1$;
         }
     }
 
