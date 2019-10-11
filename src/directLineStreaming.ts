@@ -212,52 +212,23 @@ export class DirectLineStreaming implements IBotConnection {
 
 
     private errorHandler(e:any) {
-          this.connectionStatus$.next(ConnectionStatus.Connecting);
+      this.connectionStatus$.next(ConnectionStatus.Connecting);
       this.streamingWebSocketActivity$();
     }
 
     private streamingWebSocketActivity$():  Observable<Activity> {
-        let re = new RegExp('^http(s?)');
-        if (!re.test(this.domain)) throw ("Domain must begin with http or https");
-        let wsUrl = this.domain.replace(re, "ws$1") + '/conversations/connect?token=' + this.token + '&conversationId=' + this.conversationId;
-
-        if (this.activitySubscriber)
-        {
-
+        if (this.activitySubscriber) {
           this.theStreamHandler.setSubscriber(this.activitySubscriber);
-            this.streamConnection = new BFSE.WebSocketClient({ url: wsUrl, requestHandler: this.theStreamHandler, disconnectionHandler: this.errorHandler.bind(this) });
-            this.streamConnection.connect().then(() => {
-              //this.connectionStatus$.next(ConnectionStatus.Online);
-              let r = BFSE.StreamingRequest.create('POST', '/v3/directline/conversations');
-              this.streamConnection.send(r).then(_ => console.log("WebSocket Connection Succeeded"));
-            }).catch(e => {
-              console.log(e);
-              setTimeout(() => this.errorHandler(e), 1000);
-            });
-
-        }
-        else {
-          let obs1$ = Observable.create((subscriber: Subscriber<Activity>) => {
+          this.connect();
+        } else {
+          return Observable.create((subscriber: Subscriber<Activity>) => {
             this.activitySubscriber = subscriber;
             this.theStreamHandler = new StreamHandler(subscriber);
-            // this.streamConnection = new BFSE.WebSocketClient({ url: wsUrl, requestHandler: this.theStreamHandler, disconnectionHandler: this.errorHandler.bind(this) });
-            // this.streamConnection.connect().then(() => {
-            //   this.connectionStatus$.next(ConnectionStatus.Online);
-            //   let r = BFSE.StreamingRequest.create('POST', '/v3/directline/conversations');
-            //   this.streamConnection.send(r).then(_ => console.log("WebSocket Connection Succeeded"));
-            // }).catch(e => {
-            //   console.log(e);
-            //   this.streamUrl = null;
-            //   this.streamConnection = null;
-            //   this.connectionStatus$.next(ConnectionStatus.Uninitialized);
-            //   subscriber.error(e)
-            // });
             this.connect();
           });
-
-          return obs1$;
         }
     }
+
     private connect() {
       let re = new RegExp('^http(s?)');
       if (!re.test(this.domain)) throw ("Domain must begin with http or https");
@@ -267,10 +238,10 @@ export class DirectLineStreaming implements IBotConnection {
       this.streamConnection.connect().then(() => {
         this.connectionStatus$.next(ConnectionStatus.Online);
         let r = BFSE.StreamingRequest.create('POST', '/v3/directline/conversations');
-        this.streamConnection.send(r).then(_ => console.log("WebSocket Connection Succeeded"));
+        this.streamConnection.send(r);
       }).catch(e => {
         console.log(e);
-        setTimeout(this.connect.bind(this), 1000);
+        setTimeout(this.connect.bind(this), 10);
       });
     }
 
