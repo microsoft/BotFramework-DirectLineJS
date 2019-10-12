@@ -240,11 +240,21 @@ export class DirectLineStreaming implements IBotConnection {
     if (!re.test(this.domain)) throw ("Domain must begin with http or https");
     let wsUrl = this.domain.replace(re, "ws$1") + '/conversations/connect?token=' + this.token + '&conversationId=' + this.conversationId;
 
-    this.streamConnection = new BFSE.WebSocketClient({ url: wsUrl, requestHandler: this.theStreamHandler, disconnectionHandler: this.errorHandler.bind(this) });
+    this.streamConnection = new BFSE.WebSocketClient({
+      url: wsUrl,
+      requestHandler: this.theStreamHandler,
+      disconnectionHandler: this.errorHandler.bind(this)
+    });
     this.streamConnection.connect().then(() => {
       this.connectionStatus$.next(ConnectionStatus.Online);
       let r = BFSE.StreamingRequest.create('POST', '/v3/directline/conversations');
-      this.streamConnection.send(r);
+      this.streamConnection.send(r).then((v) => {
+        v.streams[0].readAsString().then((s) => {
+          let conversation = JSON.parse(s);
+          this.conversationId = conversation.conversationId;
+          this.referenceGrammarId = conversation.referenceGrammarId;
+        })
+      })
     }).catch(e => {
       console.warn(e);
       setTimeout(this.connect.bind(this), 1000);
