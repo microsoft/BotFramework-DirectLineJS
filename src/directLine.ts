@@ -464,7 +464,10 @@ export class DirectLine implements IBotConnection {
             this.connectionStatus$ = DLS.connectionStatus$;
             this.postActivity = DLS.postActivity.bind(DLS);
         } else {
-            this.activity$ = this.pollingGetActivity$().share();
+            this.activity$ = (this.webSocket
+                        ? this.webSocketActivity$()
+                        : this.pollingGetActivity$()
+                    ).share();
         }
     }
 

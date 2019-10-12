@@ -145,27 +145,32 @@ export class DirectLineStreaming implements IBotConnection {
       });
     }
 
-    postActivity(activity: Activity) {
-        // Use postMessageWithAttachments for messages with attachments that are local files (e.g. an image to upload)
-        // Technically we could use it for *all* activities, but postActivity is much lighter weight
-        // So, since WebChat is partially a reference implementation of Direct Line, we implement both.
-        if (activity.type === "message" && activity.attachments && activity.attachments.length > 0)
-            return this.postMessageWithAttachments(activity);
+  postActivity(activity: Activity) {
+    if (activity.type === "message" && activity.attachments && activity.attachments.length > 0)
+      return this.postMessageWithAttachments(activity);
 
-            let resp$ = Observable.create(subscriber => {
-                let request = BFSE.StreamingRequest.create('POST', '/v3/directline/conversations/' + this.conversationId + '/activities');
-                request.setBody(JSON.stringify(activity));
-                this.streamConnection.send(request)
-                    .then((resp) => {
-                        subscriber.next(resp.statusCode);
-                    })
-                    .catch((e) => {
-                        this.connectionStatus$.next(ConnectionStatus.Connecting);
-
-                    });
-            });
-            return resp$;
-    }
+    let resp$ = Observable.create(subscriber => {
+      let request = BFSE.StreamingRequest.create('POST', '/v3/directline/conversations/' + this.conversationId + '/activities');
+      request.setBody(JSON.stringify(activity));
+      this.streamConnection.send(request)
+        .then((resp) => {
+          let numberOfStreams = resp.streams.length;
+          if (numberOfStreams != 1) throw new Error("Expected one stream but got " + numberOfStreams)
+          if (resp.statusCode != 200) console.error("Post activity returned " + resp.statusCode);
+          resp.streams[0].readAsString().then((idString) => {
+            let idObj = JSON.parse(idString);
+            return subscriber.next(idObj.Id)
+          });
+        })
+        .catch((e) => {
+          // If there is a network issue then its handled by
+          // the disconnectionHandler. Everything else should
+          // be retried
+          return Observable.of("retry");
+        });
+    });
+    return resp$;
+  }
 
   private postMessageWithAttachments(message: Message) {
     const { attachments, ...messageWithoutAttachments } = message;
@@ -241,7 +246,7 @@ export class DirectLineStreaming implements IBotConnection {
         this.streamConnection.send(r);
       }).catch(e => {
         console.log(e);
-        setTimeout(this.connect.bind(this), 10);
+        setTimeout(this.connect.bind(this), 1000);
       });
     }
 
