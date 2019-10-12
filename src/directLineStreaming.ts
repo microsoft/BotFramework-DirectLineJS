@@ -154,9 +154,9 @@ export class DirectLineStreaming implements IBotConnection {
       request.setBody(JSON.stringify(activity));
       this.streamConnection.send(request)
         .then((resp) => {
+          if (resp.statusCode != 200) throw new Error("PostActivity returned " + resp.statusCode);
           let numberOfStreams = resp.streams.length;
           if (numberOfStreams != 1) throw new Error("Expected one stream but got " + numberOfStreams)
-          if (resp.statusCode != 200) console.error("Post activity returned " + resp.statusCode);
           resp.streams[0].readAsString().then((idString) => {
             let idObj = JSON.parse(idString);
             return subscriber.next(idObj.Id)
@@ -164,9 +164,10 @@ export class DirectLineStreaming implements IBotConnection {
         })
         .catch((e) => {
           // If there is a network issue then its handled by
-          // the disconnectionHandler. Everything else should
+          // the disconnectionHandler. Everything else can
           // be retried
-          return Observable.of("retry");
+          console.warn(e);
+          return subscriber.error(e);
         });
     });
     return resp$;
@@ -245,7 +246,7 @@ export class DirectLineStreaming implements IBotConnection {
         let r = BFSE.StreamingRequest.create('POST', '/v3/directline/conversations');
         this.streamConnection.send(r);
       }).catch(e => {
-        console.log(e);
+        console.warn(e);
         setTimeout(this.connect.bind(this), 1000);
       });
     }
