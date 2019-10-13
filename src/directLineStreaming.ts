@@ -32,7 +32,7 @@ class StreamHandler implements BFSE.RequestHandler {
     let activitySetJson = await stream0.readAsString();
     let activitySet = JSON.parse(activitySetJson);
 
-    if (activitySet.activities.length != 1) {
+    if (activitySet.activities.length !== 1) {
       // Only one activity is expected in a set in streaming
       this.subscriber.error(activitySet)
       let r = new BFSE.StreamingResponse();
@@ -52,7 +52,7 @@ class StreamHandler implements BFSE.RequestHandler {
 
 
     let activity = activitySet.activities[0];
-    if (this.connectionStatus$.value == ConnectionStatus.Online) {
+    if (this.connectionStatus$.value === ConnectionStatus.Online) {
       this.subscriber.next(activity);
     } else {
       this.activityQueue.push(activity);
@@ -182,9 +182,9 @@ export class DirectLineStreaming implements IBotConnection {
       request.setBody(JSON.stringify(activity));
       this.streamConnection.send(request)
         .then((resp) => {
-          if (resp.statusCode != 200) throw new Error("PostActivity returned " + resp.statusCode);
+          if (resp.statusCode !== 200) throw new Error("PostActivity returned " + resp.statusCode);
           let numberOfStreams = resp.streams.length;
-          if (numberOfStreams != 1) throw new Error("Expected one stream but got " + numberOfStreams)
+          if (numberOfStreams !== 1) throw new Error("Expected one stream but got " + numberOfStreams)
           resp.streams[0].readAsString().then((idString) => {
             let idObj = JSON.parse(idString);
             return subscriber.next(idObj.Id)
@@ -231,7 +231,7 @@ export class DirectLineStreaming implements IBotConnection {
           return this.streamConnection.send(request);
         })
         .do(resp => {
-          if (resp.streams && resp.streams.length != 1) {
+          if (resp.streams && resp.streams.length !== 1) {
             subscriber.error("Invalid stream count " + resp.streams.length);
           } else {
             resp.streams[0].readAsJson()
@@ -246,11 +246,11 @@ export class DirectLineStreaming implements IBotConnection {
 
 
   private disconnectionHandler(e: any) {
-    if (this.connectionStatus$.value == ConnectionStatus.Connecting) {
+    if (this.connectionStatus$.value === ConnectionStatus.Connecting) {
       return;
     }
 
-    if (this.token == null) {
+    if (this.token === null) {
       this.activitySubscriber.error("Token unavailable");
       return;
     }
@@ -281,7 +281,7 @@ export class DirectLineStreaming implements IBotConnection {
   private async waitUntilOnline() {
     return new Promise<void>((resolve, reject) => {
       this.connectionStatus$.subscribe((cs) => {
-        if (cs == ConnectionStatus.Online) return resolve();
+        if (cs === ConnectionStatus.Online) return resolve();
       },
         (e) => reject(e));
     })
