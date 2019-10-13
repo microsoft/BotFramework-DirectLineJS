@@ -12,7 +12,6 @@ const MAX_RETRY_COUNT = 3;
 const refreshTokenLifetime = 30 * 60 * 1000;
 const timeout = 20 * 1000;
 const refreshTokenInterval = refreshTokenLifetime / 2;
-const retries = (refreshTokenLifetime - refreshTokenInterval) / timeout;
 
 class StreamHandler implements BFSE.RequestHandler {
   private connectionStatus$;
@@ -143,9 +142,9 @@ export class DirectLineStreaming implements IBotConnection {
     return `${DIRECT_LINE_VERSION} (${clientAgent})`;
   }
 
-  private async refreshToken(firstCall = true) {
+  private async refreshToken(firstCall = true, retryCount = 0) {
     if (firstCall) {
-      setTimeout(async () => await this.refreshToken(false), refreshTokenLifetime);
+      setTimeout(async () => await this.refreshToken(false, 0), refreshTokenInterval);
       return;
     }
 
@@ -162,10 +161,19 @@ export class DirectLineStreaming implements IBotConnection {
       .subscribe(
         (ajaxResponse) => {
           this.token = ajaxResponse.response.token as string;
-          setTimeout(() => this.refreshToken(false), refreshTokenInterval);
+          setTimeout(() => this.refreshToken(false, MAX_RETRY_COUNT), refreshTokenInterval);
         },
         (e) => {
-          console.warn("GOT ERROR " + e.status);
+          if (e.status === 403 || e.status === 404) {
+            console.warn("Error refreshing token " + e.status);
+          }else{
+            if (retryCount > 0) {
+              console.warn("Error refreshing token " + e.status + " " + retryCount + " retries left");
+              this.refreshToken(false, retryCount-1);
+            }else{
+              console.warn("Error refreshing token " + e.status + " Retries exhausted");
+            }
+          }
         })
   }
 
