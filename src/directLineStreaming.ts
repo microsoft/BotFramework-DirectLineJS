@@ -5,7 +5,7 @@ import { Observable } from 'rxjs/Observable';
 import { Subscriber } from 'rxjs/Subscriber';
 import * as BFSE from 'botframework-streaming-extensions';
 
-import { Media, Activity, Message, IBotConnection, Conversation, ConnectionStatus, DirectLineOptions } from './directLine';
+import { Media, Activity, Message, IBotConnection, Conversation, ConnectionStatus, DirectLine, DirectLineOptions } from './directLine';
 
 const DIRECT_LINE_VERSION = 'DirectLine/3.0';
 const MAX_RETRY_COUNT = 3;
@@ -76,6 +76,7 @@ export class DirectLineStreaming implements IBotConnection {
 
   private activitySubscriber: Subscriber<Activity>;
   private theStreamHandler: StreamHandler;
+  private parentDirectLine: DirectLine;
 
   private retryCount = MAX_RETRY_COUNT;
 
@@ -83,13 +84,11 @@ export class DirectLineStreaming implements IBotConnection {
 
   private conversationId: string;
   private token: string;
-  public referenceGrammarId: string;
   private streamConnection: BFSE.WebSocketClient;
 
-  private ending: boolean;
   private _botAgent = '';
 
-  constructor(options: DirectLineOptions) {
+  constructor(options: DirectLineOptions, parentDirectLine: DirectLine) {
     this.token = options.secret || options.token;
 
     if (options.token) {
@@ -104,6 +103,8 @@ export class DirectLineStreaming implements IBotConnection {
       this.conversationId = options.conversationId;
     }
 
+    this.parentDirectLine = parentDirectLine;
+
     this._botAgent = this.getBotAgent(options.botAgent);
 
     this.activity$ = this.streamingWebSocketActivity$().share();
@@ -117,12 +118,6 @@ export class DirectLineStreaming implements IBotConnection {
 
   end() {
     this.connectionStatus$.next(ConnectionStatus.Ended);
-  }
-
-  getSessionId(): Observable<string> {
-    return Observable.create((s) => {
-      s.next(100);
-    });
   }
 
   private commonHeaders() {
@@ -171,6 +166,7 @@ export class DirectLineStreaming implements IBotConnection {
               console.warn("Error refreshing token " + e.status + " " + retryCount + " retries left");
               this.refreshToken(false, retryCount-1);
             }else{
+              this.token = null;
               console.warn("Error refreshing token " + e.status + " Retries exhausted");
             }
           }
@@ -254,6 +250,11 @@ export class DirectLineStreaming implements IBotConnection {
       return;
     }
 
+    if (this.token == null) {
+      this.activitySubscriber.error("Token unavailable");
+      return;
+    }
+
     this.connectionStatus$.next(ConnectionStatus.Connecting);
     this.retryCount--;
     if (this.retryCount > 0) {
@@ -306,7 +307,7 @@ export class DirectLineStreaming implements IBotConnection {
       let responseString = await response.streams[0].readAsString();
       let conversation = JSON.parse(responseString);
       this.conversationId = conversation.conversationId;
-      this.referenceGrammarId = conversation.referenceGrammarId;
+      this.parentDirectLine.referenceGrammarId = conversation.referenceGrammarId;
       this.connectionStatus$.next(ConnectionStatus.Online);
 
       // Wait until DL consumers have had a chance to be notified
