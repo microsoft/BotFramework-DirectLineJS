@@ -1,34 +1,9 @@
 // In order to keep file size down, only import the parts of rxjs that we use
 
-import { AjaxResponse, AjaxRequest } from 'rxjs/observable/dom/AjaxObservable';
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 import { Observable } from 'rxjs/Observable';
 import { Subscriber } from 'rxjs/Subscriber';
-import { Subscription } from 'rxjs/Subscription';
 import * as BFSE from 'botframework-streaming-extensions';
-
-import { _throw } from 'rxjs/observable/throw'
-
-import 'rxjs/add/operator/catch';
-import 'rxjs/add/operator/combineLatest';
-import 'rxjs/add/operator/count';
-import 'rxjs/add/operator/delay';
-import 'rxjs/add/operator/do';
-import 'rxjs/add/operator/filter';
-import 'rxjs/add/operator/map';
-import 'rxjs/add/operator/mergeMap';
-import 'rxjs/add/operator/retryWhen';
-import 'rxjs/add/operator/share';
-import 'rxjs/add/operator/take';
-
-import 'rxjs/add/observable/dom/ajax';
-import 'rxjs/add/observable/empty';
-import 'rxjs/add/observable/from';
-import 'rxjs/add/observable/interval';
-import 'rxjs/add/observable/of';
-import 'rxjs/add/observable/throw';
-
-import dedupeFilenames from './dedupeFilenames';
 
 import { Media, Activity, Message, IBotConnection, Conversation, ConnectionStatus, DirectLineOptions } from './directLine';
 
@@ -112,8 +87,6 @@ export class DirectLineStreaming implements IBotConnection {
   public referenceGrammarId: string;
   private streamConnection: BFSE.WebSocketClient;
 
-  private tokenRefreshSubscription: Subscription;
-
   private ending: boolean;
   private _botAgent = '';
 
@@ -144,9 +117,6 @@ export class DirectLineStreaming implements IBotConnection {
   }
 
   end() {
-    if (this.tokenRefreshSubscription)
-      this.tokenRefreshSubscription.unsubscribe();
-    this.ending = true;
     this.connectionStatus$.next(ConnectionStatus.Ended);
   }
 
@@ -175,7 +145,7 @@ export class DirectLineStreaming implements IBotConnection {
 
   private async refreshToken(firstCall = true) {
     if (firstCall) {
-      setTimeout(async () => await this.refreshToken(false), 1000);
+      setTimeout(async () => await this.refreshToken(false), refreshTokenLifetime);
       return;
     }
 
@@ -192,10 +162,10 @@ export class DirectLineStreaming implements IBotConnection {
       .subscribe(
         (ajaxResponse) => {
           this.token = ajaxResponse.response.token as string;
-          setTimeout(() => this.refreshToken(false), 1000);
+          setTimeout(() => this.refreshToken(false), refreshTokenInterval);
         },
         (e) => {
-          console.log("GOT ERROR " + e.status);
+          console.warn("GOT ERROR " + e.status);
         })
   }
 
@@ -271,7 +241,7 @@ export class DirectLineStreaming implements IBotConnection {
   }
 
 
-  private errorHandler(e: any) {
+  private disconnectionHandler(e: any) {
     if (this.connectionStatus$.value == ConnectionStatus.Connecting) {
       return;
     }
@@ -317,7 +287,7 @@ export class DirectLineStreaming implements IBotConnection {
       this.streamConnection = new BFSE.WebSocketClient({
         url: wsUrl,
         requestHandler: this.theStreamHandler,
-        disconnectionHandler: this.errorHandler.bind(this)
+        disconnectionHandler: this.disconnectionHandler.bind(this)
       });
 
       await this.streamConnection.connect();
