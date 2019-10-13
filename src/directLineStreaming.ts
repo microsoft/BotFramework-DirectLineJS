@@ -34,11 +34,17 @@ import dedupeFilenames from './dedupeFilenames';
 
 import { Media, Activity, Message, IBotConnection, Conversation, ConnectionStatus, DirectLineOptions } from './directLine';
 
-class StreamHandler implements BFSE.RequestHandler {
-  public subscriber: Subscriber<Activity>;
+const MAX_RETRY_COUNT = 3;
 
-  constructor(s: Subscriber<Activity>) {
+
+class StreamHandler implements BFSE.RequestHandler {
+  private connectionStatus$;
+  private subscriber: Subscriber<Activity>;
+  private activityQueue: Array<Activity> = [];
+
+  constructor(s: Subscriber<Activity>, c$: Observable<ConnectionStatus>) {
     this.subscriber = s;
+    this.connectionStatus$ = c$;
   }
 
   public setSubscriber(s: Subscriber<Activity>) {
@@ -67,33 +73,40 @@ class StreamHandler implements BFSE.RequestHandler {
     }
 
     activitySet.activities[0].attachments = attachments;
-    this.subscriber.next(activitySet.activities[0])
+
+
+    let activity = activitySet.activities[0];
+    if (this.connectionStatus$.value == ConnectionStatus.Online) {
+      this.subscriber.next(activity);
+    } else {
+      this.activityQueue.push(activity);
+    }
+
     let r = new BFSE.StreamingResponse();
     r.statusCode = 200;
     return r;
+  }
+
+  public flush() {
+    this.connectionStatus$.subscribe(cs => {})
+    this.activityQueue.forEach((a) => this.subscriber.next(a));
+    this.activityQueue = [];
   }
 }
 
 export class DirectLineStreaming implements IBotConnection {
   public connectionStatus$ = new BehaviorSubject(ConnectionStatus.Uninitialized);
-  private socketStatus$ = new BehaviorSubject(ConnectionStatus.Uninitialized);
   public activity$: Observable<Activity>;
-
 
   private activitySubscriber: Subscriber<Activity>;
   private theStreamHandler: StreamHandler;
 
+  private retryCount = MAX_RETRY_COUNT;
+
   private domain = "https://directline.botframework.com/v3/directline";
-  private webSocket: boolean;
-  private streamingWebSocket: boolean;
 
   private conversationId: string;
-  private expiredTokenExhaustion: Function;
-  private secret: string;
   private token: string;
-  private streamUrl: string;
-  private _botAgent = '';
-  private _userAgent: string;
   public referenceGrammarId: string;
   private streamConnection: BFSE.WebSocketClient;
 
@@ -102,10 +115,7 @@ export class DirectLineStreaming implements IBotConnection {
   private ending: boolean;
 
   constructor(options: DirectLineOptions) {
-    this.secret = options.secret;
     this.token = options.secret || options.token;
-    this.webSocket = (options.webSocket === undefined ? true : options.webSocket) && typeof WebSocket !== 'undefined' && WebSocket !== undefined;
-    this.streamingWebSocket = options.streamingWebSocket;
 
     if (options.domain) {
       this.domain = options.domain;
@@ -115,20 +125,13 @@ export class DirectLineStreaming implements IBotConnection {
       this.conversationId = options.conversationId;
     }
 
-    if (options.streamUrl) {
-      if (options.token && options.conversationId) {
-        this.streamUrl = options.streamUrl;
-      } else {
-        console.warn('DirectLineJS: streamUrl was ignored: you need to provide a token and a conversationid');
-      }
-    }
-
     this.activity$ = this.streamingWebSocketActivity$().share();
   }
 
-
-
   public reconnect(conversation: Conversation) {
+    this.conversationId = conversation.conversationId;
+    this.token = conversation.token;
+    this.connectAsync().then(_ => _);
   }
 
   end() {
@@ -218,19 +221,30 @@ export class DirectLineStreaming implements IBotConnection {
 
 
   private errorHandler(e: any) {
+    if (this.connectionStatus$.value == ConnectionStatus.Connecting) {
+      return;
+    }
+
     this.connectionStatus$.next(ConnectionStatus.Connecting);
-    this.streamingWebSocketActivity$();
+    this.retryCount--;
+    if (this.retryCount > 0) {
+      setTimeout(this.streamingWebSocketActivity$.bind(this), this.getRetryDelay());
+    }else{
+      console.warn("Exhausted retries");
+      this.activitySubscriber.error(e);
+    }
   }
+
 
   private streamingWebSocketActivity$(): Observable<Activity> {
     if (this.activitySubscriber) {
       this.theStreamHandler.setSubscriber(this.activitySubscriber);
-      this.connect();
+      this.connectAsync().then(_ => _);
     } else {
-      return Observable.create((subscriber: Subscriber<Activity>) => {
+      return Observable.create(async (subscriber: Subscriber<Activity>) => {
         this.activitySubscriber = subscriber;
-        this.theStreamHandler = new StreamHandler(subscriber);
-        this.connect();
+        this.theStreamHandler = new StreamHandler(subscriber, this.connectionStatus$);
+        await this.connectAsync();
       });
     }
   }
@@ -246,19 +260,60 @@ export class DirectLineStreaming implements IBotConnection {
       disconnectionHandler: this.errorHandler.bind(this)
     });
     this.streamConnection.connect().then(() => {
-      this.connectionStatus$.next(ConnectionStatus.Online);
       let r = BFSE.StreamingRequest.create('POST', '/v3/directline/conversations');
       this.streamConnection.send(r).then((v) => {
         v.streams[0].readAsString().then((s) => {
           let conversation = JSON.parse(s);
           this.conversationId = conversation.conversationId;
           this.referenceGrammarId = conversation.referenceGrammarId;
+          console.log("REFERENCE ID = " + this.referenceGrammarId)
+          this.connectionStatus$.next(ConnectionStatus.Online);
         })
       })
     }).catch(e => {
       console.warn(e);
-      setTimeout(this.connect.bind(this), 1000);
+      setTimeout(this.connect.bind(this), 1);
     });
+  }
+
+  private async waitUntilOnline() {
+    return new Promise<void>((resolve, reject) => {
+      this.connectionStatus$.subscribe((cs) => {
+        if (cs == ConnectionStatus.Online) return resolve();
+      },
+      (e) => reject(e));
+    })
+  }
+
+  private async connectAsync() {
+    let re = new RegExp('^http(s?)');
+    if (!re.test(this.domain)) throw ("Domain must begin with http or https");
+    let wsUrl = this.domain.replace(re, "ws$1") + '/conversations/connect?token=' + this.token + '&conversationId=' + this.conversationId;
+
+    try {
+      this.streamConnection = new BFSE.WebSocketClient({
+        url: wsUrl,
+        requestHandler: this.theStreamHandler,
+        disconnectionHandler: this.errorHandler.bind(this)
+      });
+
+      await this.streamConnection.connect();
+      let r = BFSE.StreamingRequest.create('POST', '/v3/directline/conversations');
+      let v = await this.streamConnection.send(r);
+      if (v.statusCode !== 200) throw new Error("Connection response code " + v.statusCode);
+      if (v.streams.length !== 1) throw new Error("Expected 1 stream but got " + v.streams.length);
+      let s = await v.streams[0].readAsString();
+      let conversation = JSON.parse(s);
+      this.conversationId = conversation.conversationId;
+      this.referenceGrammarId = conversation.referenceGrammarId;
+      this.connectionStatus$.next(ConnectionStatus.Online);
+      await this.waitUntilOnline();
+      this.theStreamHandler.flush();
+      this.retryCount = MAX_RETRY_COUNT;
+    }catch(e) {
+      console.warn(e);
+      this.streamConnection.disconnect();
+    }
   }
 
   // Returns the delay duration in milliseconds
