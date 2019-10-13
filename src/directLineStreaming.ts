@@ -5,7 +5,16 @@ import { Observable } from 'rxjs/Observable';
 import { Subscriber } from 'rxjs/Subscriber';
 import * as BFSE from 'botframework-streaming-extensions';
 
-import { Media, Activity, Message, IBotConnection, Conversation, ConnectionStatus, DirectLine, DirectLineOptions } from './directLine';
+import {
+  Activity,
+  ConnectionStatus,
+  Conversation,
+  DirectLine,
+  DirectLineOptions,
+  IBotConnection,
+  Media,
+  Message
+  } from './directLine';
 
 const DIRECT_LINE_VERSION = 'DirectLine/3.0';
 const MAX_RETRY_COUNT = 3;
