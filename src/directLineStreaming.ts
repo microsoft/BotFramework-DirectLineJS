@@ -253,7 +253,6 @@ export class DirectLineStreaming implements IBotConnection {
     })
   }
 
-
   private disconnectionHandler(e: any) {
     if (this.connectionStatus$.value === ConnectionStatus.Connecting) {
       return;
