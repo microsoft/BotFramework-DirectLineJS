@@ -249,33 +249,6 @@ export class DirectLineStreaming implements IBotConnection {
     }
   }
 
-  private connect() {
-    let re = new RegExp('^http(s?)');
-    if (!re.test(this.domain)) throw ("Domain must begin with http or https");
-    let wsUrl = this.domain.replace(re, "ws$1") + '/conversations/connect?token=' + this.token + '&conversationId=' + this.conversationId;
-
-    this.streamConnection = new BFSE.WebSocketClient({
-      url: wsUrl,
-      requestHandler: this.theStreamHandler,
-      disconnectionHandler: this.errorHandler.bind(this)
-    });
-    this.streamConnection.connect().then(() => {
-      let r = BFSE.StreamingRequest.create('POST', '/v3/directline/conversations');
-      this.streamConnection.send(r).then((v) => {
-        v.streams[0].readAsString().then((s) => {
-          let conversation = JSON.parse(s);
-          this.conversationId = conversation.conversationId;
-          this.referenceGrammarId = conversation.referenceGrammarId;
-          console.log("REFERENCE ID = " + this.referenceGrammarId)
-          this.connectionStatus$.next(ConnectionStatus.Online);
-        })
-      })
-    }).catch(e => {
-      console.warn(e);
-      setTimeout(this.connect.bind(this), 1);
-    });
-  }
-
   private async waitUntilOnline() {
     return new Promise<void>((resolve, reject) => {
       this.connectionStatus$.subscribe((cs) => {
