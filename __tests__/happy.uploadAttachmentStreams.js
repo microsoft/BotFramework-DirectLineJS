@@ -49,17 +49,20 @@ describe('Happy path', () => {
       await Promise.all([
         postActivity(directLine, activityFromUser),
         waitForBotToEcho(directLine, async ({ attachments, text }) => {
-          // if (text === 'Hello, World!' && attachments) {
-          //   const [expectedContents, actualContents] = await Promise.all([
-          //     Promise.all([
-          //       fetchAsBase64(activityFromUser.attachments[0].contentUrl),
-          //       fetchAsBase64(activityFromUser.attachments[1].contentUrl)
-          //     ]),
-          //   ]);
+          if (text === 'Hello, World!' && attachments) {
+            const [expectedContents, actualContents] = await Promise.all([
+              Promise.all([
+                fetchAsBase64(activityFromUser.attachments[0].contentUrl),
+                fetchAsBase64(activityFromUser.attachments[1].contentUrl)
+              ]),
+            ]);
 
-          //   return (expectedContents[0] === attachments[0].contentUrl &&
-          //          expectedContents[1] === attachments[1].contentUrl);
-          // }
+            return ((expectedContents[0] === attachments[0].contentUrl &&
+                   expectedContents[1] === attachments[1].contentUrl) ||
+                   (expectedContents[1] === attachments[0].contentUrl &&
+                     expectedContents[0] === attachments[1].contentUrl))
+
+          }
           return true;
         })
       ]);
