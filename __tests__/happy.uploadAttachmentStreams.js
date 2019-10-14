@@ -49,6 +49,7 @@ describe('Happy path', () => {
       await Promise.all([
         postActivity(directLine, activityFromUser),
         waitForBotToEcho(directLine, async ({ attachments, text }) => {
+          if (text === 'Hello, World!' && attachments) {
             const [expectedContents, actualContents] = await Promise.all([
               Promise.all([
                 fetchAsBase64(activityFromUser.attachments[0].contentUrl),
@@ -56,9 +57,9 @@ describe('Happy path', () => {
               ]),
             ]);
 
-
             return (expectedContents[0] === attachments[0].contentUrl &&
                    expectedContents[1] === attachments[1].contentUrl);
+          }
         })
       ]);
     });
