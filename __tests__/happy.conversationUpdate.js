@@ -42,7 +42,6 @@ describe('Happy path', () => {
       if (!directLine) { return; }
 
       unsubscribes.push(directLine.end.bind(directLine));
-      unsubscribes.push(await waitForConnected(directLine));
 
       await waitForBotToRespond(directLine, ({ text }) => text === 'Welcome')
     });

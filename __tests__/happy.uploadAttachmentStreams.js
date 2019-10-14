@@ -33,11 +33,11 @@ describe('Happy path', () => {
       const activityFromUser = {
         // DirectLine.postActivityWithAttachments support "contentUrl" only but not "content"
         attachments: [{
-          contentType: 'image/png',
-          contentUrl: 'https://webchat-waterbottle.azurewebsites.net/public/surfacelogo.png'
+          contentType: 'image/jpg',
+          contentUrl: 'http://myasebot.azurewebsites.net/177KB.jpg'
         }, {
-          contentType: 'image/png',
-          contentUrl: 'https://webchat-waterbottle.azurewebsites.net/public/xboxlogo.png'
+          contentType: 'image/jpg',
+          contentUrl: 'http://myasebot.azurewebsites.net/100KB.jpg'
         }],
         text: 'Hello, World!',
         type: 'message',
@@ -55,6 +55,7 @@ describe('Happy path', () => {
                 fetchAsBase64(activityFromUser.attachments[1].contentUrl)
               ]),
             ]);
+
 
             return (expectedContents[0] === attachments[0].contentUrl &&
                    expectedContents[1] === attachments[1].contentUrl);

@@ -31,8 +31,8 @@ describe('Happy path', () => {
       unsubscribes.push(directLine.end.bind(directLine));
       unsubscribes.push(await waitForConnected(directLine));
 
-      let url1 = 'https://webchat-waterbottle.azurewebsites.net/public/surfacelogo.png';
-      let url2 = 'https://webchat-waterbottle.azurewebsites.net/public/xboxlogo.png';
+      let url1 = 'http://myasebot.azurewebsites.net/177KB.jpg';
+      let url2 = 'http://myasebot.azurewebsites.net/100KB.jpg';
 
       const activityFromUser = {
         text: 'attach ' + url1 + ' ' + url2,

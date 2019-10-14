@@ -5,13 +5,13 @@ import { userId as DEFAULT_USER_ID } from '../constants.json';
 
 const {
   DIRECT_LINE_SECRET,
-  STREAMING_EXTENSIONS_DOMAIN = 'https://webchat-waterbottle.azurewebsites.net/.bot/v3/directline'
+  STREAMING_EXTENSIONS_DOMAIN = 'https://myasebot.azurewebsites.net/.bot/v3/directline'
 } = process.env;
 
 const DEFAULT_DOMAIN = 'https://directline.botframework.com/v3/directline';
 
 async function fetchDirectLineToken() {
-  const res = await fetch('https://webchat-waterbottle.azurewebsites.net/token/directline');
+  const res = await fetch('https://myasebot.azurewebsites.net/token/directline');
 
   if (res.ok) {
     return await res.json();
@@ -21,7 +21,7 @@ async function fetchDirectLineToken() {
 }
 
 async function fetchDirectLineStreamingExtensionsToken() {
-  const res = await fetch(`${ STREAMING_EXTENSIONS_DOMAIN }/token/directline`);
+  const res = await fetch(`https://myasebot.azurewebsites.net/token/directlinease`);
 
   if (res.ok) {
     return await res.json();
