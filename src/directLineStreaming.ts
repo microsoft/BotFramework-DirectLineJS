@@ -117,6 +117,10 @@ export class DirectLineStreaming implements IBotConnection {
     this._botAgent = this.getBotAgent(options.botAgent);
 
     this.activity$ = this.streamingWebSocketActivity$().share();
+      this.parentDirectLine.activity$ = this.activity$;
+      this.parentDirectLine.connectionStatus$ = this.connectionStatus$;
+      this.parentDirectLine.postActivity = this.postActivity.bind(this);
+      this.parentDirectLine.end = this.end.bind(this);
   }
 
   public reconnect(conversation: Conversation) {

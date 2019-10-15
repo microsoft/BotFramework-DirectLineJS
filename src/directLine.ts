@@ -460,10 +460,6 @@ export class DirectLine implements IBotConnection {
 
         if (options.streamingWebSocket) {
             var DLS = new DirectLineStreaming(options, this);
-            this.activity$ = DLS.activity$;
-            this.connectionStatus$ = DLS.connectionStatus$;
-            this.postActivity = DLS.postActivity.bind(DLS);
-            this.end = DLS.end.bind(DLS);
         } else {
             this.activity$ = (this.webSocket
                         ? this.webSocketActivity$()
