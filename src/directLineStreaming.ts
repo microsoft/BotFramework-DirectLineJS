@@ -57,10 +57,9 @@ class StreamHandler implements BFSE.RequestHandler {
       attachments.push({ contentType: stream.contentType, contentUrl: dataUri });
     }
 
-    activitySet.activities[0].attachments = attachments;
-
-
     let activity = activitySet.activities[0];
+    activity.attachments = attachments;
+
     if (this.connectionStatus$.value === ConnectionStatus.Online) {
       this.subscriber.next(activity);
     } else {
@@ -131,6 +130,7 @@ export class DirectLineStreaming implements IBotConnection {
 
   end() {
     this.connectionStatus$.next(ConnectionStatus.Ended);
+    this.streamConnection.disconnect();
   }
 
   private commonHeaders() {
@@ -153,6 +153,10 @@ export class DirectLineStreaming implements IBotConnection {
   private async refreshToken(firstCall = true, retryCount = 0) {
     if (firstCall) {
       setTimeout(async () => await this.refreshToken(false, 0), refreshTokenInterval);
+      return;
+    }
+
+    if (this.connectionStatus$.value === ConnectionStatus.Ended) {
       return;
     }
 
@@ -258,7 +262,8 @@ export class DirectLineStreaming implements IBotConnection {
   }
 
   private disconnectionHandler(e: any) {
-    if (this.connectionStatus$.value === ConnectionStatus.Connecting) {
+    if (this.connectionStatus$.value === ConnectionStatus.Connecting ||
+        this.connectionStatus$.value === ConnectionStatus.Ended) {
       return;
     }
 
