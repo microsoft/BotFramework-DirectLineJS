@@ -410,8 +410,6 @@ export class DirectLine implements IBotConnection {
 
     private tokenRefreshSubscription: Subscription;
 
-    private ending: boolean;
-
     constructor(options: DirectLineOptions) {
         this.secret = options.secret;
         this.token = options.secret || options.token;
@@ -497,10 +495,7 @@ export class DirectLine implements IBotConnection {
         .flatMap(connectionStatus => {
             switch (connectionStatus) {
                 case ConnectionStatus.Ended:
-                    if (this.ending)
-                        return Observable.of(connectionStatus);
-                    else
-                        return Observable.throw(errorConversationEnded);
+                    return Observable.throw(errorConversationEnded);
 
                 case ConnectionStatus.FailedToConnect:
                     return Observable.throw(errorFailedToConnect);
@@ -624,8 +619,13 @@ export class DirectLine implements IBotConnection {
     end() {
         if (this.tokenRefreshSubscription)
             this.tokenRefreshSubscription.unsubscribe();
-        this.ending = true;
-        this.connectionStatus$.next(ConnectionStatus.Ended);
+        try {
+            this.connectionStatus$.next(ConnectionStatus.Ended);
+        } catch (e) {
+            if (e === errorConversationEnded)
+                return;
+            throw(e);
+        }
     }
 
     getSessionId(): Observable<string> {
@@ -862,12 +862,6 @@ export class DirectLine implements IBotConnection {
             }
 
             ws.onmessage = message => message.data && subscriber.next(JSON.parse(message.data));
-
-            ws.onerror = error =>  {
-                konsole.log("WebSocket error", error);
-                if (sub) sub.unsubscribe();
-                subscriber.error(error);
-            }
 
             // This is the 'unsubscribe' method, which is called when this observable is disposed.
             // When the WebSocket closes itself, we throw an error, and this function is eventually called.
