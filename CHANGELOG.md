@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Fixed
+
+- Reverting PR [#171](https://github.com/Microsoft/BotFramework-DirectLineJS/pull/171) and PR [#172](https://github.com/Microsoft/BotFramework-DirectLineJS/pull/172), which caused infinite loop of reconnections, by [@compulim](https://github.com/compulim) in PR [#240](https://github.com/Microsoft/BotFramework-DirectLineJS/pull/240)
+
 ## [0.11.5] - 2019-09-30
 
 ### Breaking Changes
