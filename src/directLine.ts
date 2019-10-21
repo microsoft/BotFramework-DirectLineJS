@@ -364,7 +364,7 @@ export interface DirectLineOptions {
 
 const lifetimeRefreshToken = 30 * 60 * 1000;
 const intervalRefreshToken = lifetimeRefreshToken / 2;
-const timeout = 20 * 1000;
+const timeout = 5 * 1000;
 const retries = (lifetimeRefreshToken - intervalRefreshToken) / timeout;
 
 const POLLING_INTERVAL_LOWER_BOUND: number = 200; //ms
