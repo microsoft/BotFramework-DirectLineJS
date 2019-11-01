@@ -6,6 +6,7 @@ import { Observable } from 'rxjs/Observable';
 import { IScheduler } from 'rxjs/Scheduler';
 import { Subscriber } from 'rxjs/Subscriber';
 import { Subscription } from 'rxjs/Subscription';
+import { async } from 'rxjs/Scheduler/async';
 
 import 'rxjs/add/operator/catch';
 import 'rxjs/add/operator/combineLatest';
@@ -370,7 +371,7 @@ export interface Services {
 }
 
 const makeServices = (services: Partial<Services>): Services => ({
-    scheduler: services.scheduler,
+    scheduler: services.scheduler || async,
     ajax: services.ajax || Observable.ajax,
     WebSocket: services.WebSocket || WebSocket,
 });
