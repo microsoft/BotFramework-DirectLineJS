@@ -78,8 +78,8 @@ const mockAjax = (server: MockServer): AjaxCreationMethod => {
 
     const jax = (urlOrRequest: string | AjaxRequest): AjaxResponse => {
         if (typeof urlOrRequest !== 'string') {
-            const { url } = urlOrRequest;
-            console.log(url);
+            const { method, url } = urlOrRequest;
+            console.log(`${method}: ${url}`);
             const parts = url.split(/[\/\?]/);
             if (parts[5] === 'conversations') {
                 if (parts[7] === 'activities') {
