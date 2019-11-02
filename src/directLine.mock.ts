@@ -3,6 +3,8 @@ import { TestScheduler, Observable } from "rxjs";
 import { AjaxCreationMethod, AjaxRequest, AjaxResponse } from "rxjs/observable/dom/AjaxObservable";
 import { URL, URLSearchParams } from 'url';
 
+export const mockActivity = (text: string): DirectLineExport.Activity => ({ type: 'message', from: { id: 'sender' }, text });
+
 interface ActivitySocket {
   play: (start: number, after: number) => void;
 }
@@ -30,7 +32,7 @@ const tokenResponse = (server: Server, request: AjaxRequest): AjaxResponse | nul
   return response as AjaxResponse;
 }
 
-const notImplemented = () => { throw new Error('not implemented') };
+const notImplemented = (): never => { throw new Error('not implemented') };
 
 const keyWatermark = 'watermark';
 

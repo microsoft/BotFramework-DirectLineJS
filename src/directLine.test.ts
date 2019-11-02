@@ -82,11 +82,9 @@ test('TestWithMocks', () => {
         token: 'tokenA',
     };
 
-    const makeActivity = (text: string): DirectLineExport.Activity => ({ type: 'message', from: { id: 'sender' }, text });
-
     const expected = {
-        x: makeActivity('x'),
-        y: makeActivity('y'),
+        x: DirectLineMock.mockActivity('x'),
+        y: DirectLineMock.mockActivity('y'),
     };
 
     // arrange
