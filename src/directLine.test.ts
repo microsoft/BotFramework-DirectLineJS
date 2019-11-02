@@ -1,8 +1,9 @@
 import * as DirectLineExport from "./directLine";
-import { TestScheduler, Observable, BehaviorSubject, ReplaySubject, AsyncSubject, Subscription, Subscriber } from "rxjs";
+import { TestScheduler, Observable, Subscription } from "rxjs";
 import { AjaxCreationMethod, AjaxRequest, AjaxResponse } from "rxjs/observable/dom/AjaxObservable";
 import { IScheduler } from "rxjs/Scheduler";
 import { Action } from "rxjs/scheduler/Action";
+import { URL, URLSearchParams } from 'url';
 
 declare var process: {
     arch: string;
@@ -66,61 +67,111 @@ describe("#commonHeaders", () => {
     })
 });
 
+interface ActivitySocket {
+    play: (start: number, after: number) => void;
+}
+
 interface MockServer {
     scheduler: TestScheduler;
-    sockets: Set<WebSocket>;
+    sockets: Set<WebSocket & ActivitySocket>;
     conversation: Array<DirectLineExport.Activity>;
 }
 
 const notImplemented = () => { throw new Error('not implemented') };
 
+const keyWatermark = 'watermark';
+
 const mockAjax = (server: MockServer): AjaxCreationMethod => {
 
+    const uriBase = new URL('https://directline.botframework.com/v3/directline/');
+    const createStreamUrl = (watermark: number): string => {
+        const uri = new URL('conversations/stream', uriBase);
+        if (watermark > 0) {
+            const params = new URLSearchParams();
+            params.append(keyWatermark, watermark.toString(10));
+            uri.search = params.toString();
+        }
+
+        return uri.toString();
+    }
+
     const jax = (urlOrRequest: string | AjaxRequest): AjaxResponse => {
-        if (typeof urlOrRequest !== 'string') {
-            const { method, url } = urlOrRequest;
-            console.log(`${method}: ${url}`);
-            const parts = url.split(/[\/\?]/);
-            if (parts[5] === 'conversations') {
-                if (parts[7] === 'activities') {
-                    const activity: DirectLineExport.Activity = urlOrRequest.body;
+        if (typeof urlOrRequest === 'string') {
+            throw new Error();
+        }
 
-                    const watermark = server.conversation.push(activity).toString();
+        console.log(`${urlOrRequest.method}: ${urlOrRequest.url}`);
+        const uri = new URL(urlOrRequest.url);
 
-                    const activityGroup: DirectLineExport.ActivityGroup = {
-                        activities: [
-                            activity
-                        ],
-                        watermark,
-                    }
-                    const message = new MessageEvent('type', { data: JSON.stringify(activityGroup) });
+        const { pathname, searchParams } = uri;
 
-                    for (const socket of server.sockets) {
-                        schedule(
-                            server.scheduler,
-                            () => socket.onmessage(message));
-                    }
+        const conversationId = 'SingleConversation';
+        const token = 'token';
 
-                    const response: Partial<AjaxResponse> = {
-                        response: { id: 'messageId' },
-                    }
+        const parts = pathname.split('/');
 
-                    return response as AjaxResponse;
-                }
-                else {
-                    const conversation: DirectLineExport.Conversation = {
-                        conversationId: 'conversationId',
-                        token: 'token',
-                        streamUrl: 'streamUrl',
-                    };
+        if (parts[3] === 'tokens' && parts[4] === 'refresh') {
 
-                    const response: Partial<AjaxResponse> = {
-                        response: conversation,
-                    }
+            const response: Partial<AjaxResponse> = {
+                response: { token }
+            };
 
-                    return response as AjaxResponse;
-                }
+            return response as AjaxResponse;
+        }
+
+        if (parts[3] !== 'conversations') {
+            throw new Error();
+        }
+
+        if (parts.length === 4) {
+            const conversation: DirectLineExport.Conversation = {
+                conversationId,
+                token,
+                streamUrl: createStreamUrl(0),
+            };
+
+            const response: Partial<AjaxResponse> = {
+                response: conversation,
             }
+
+            return response as AjaxResponse;
+        }
+
+        if (parts[4] !== conversationId) {
+            throw new Error();
+        }
+
+        if (parts[5] === 'activities') {
+            const activity: DirectLineExport.Activity = urlOrRequest.body;
+
+            const after = server.conversation.push(activity);
+            const start = after - 1;
+
+            for (const socket of server.sockets) {
+                socket.play(start, after);
+            }
+
+            const response: Partial<AjaxResponse> = {
+                response: { id: 'messageId' },
+            }
+
+            return response as AjaxResponse;
+        }
+        else if (parts.length === 5) {
+            const watermark = searchParams.get('watermark');
+            const start = Number.parseInt(watermark, 10);
+
+            const conversation: DirectLineExport.Conversation = {
+                conversationId,
+                token,
+                streamUrl: createStreamUrl(start),
+            };
+
+            const response: Partial<AjaxResponse> = {
+                response: conversation,
+            }
+
+            return response as AjaxResponse;
         }
 
         throw new Error();
@@ -128,17 +179,13 @@ const mockAjax = (server: MockServer): AjaxCreationMethod => {
 
     const method = (urlOrRequest: string | AjaxRequest): Observable<AjaxResponse> =>
         new Observable<AjaxResponse>(subscriber => {
-            schedule(
-                server.scheduler,
-                () => {
-                    try {
-                        subscriber.next(jax(urlOrRequest));
-                        subscriber.complete();
-                    }
-                    catch (error) {
-                        subscriber.error(error);
-                    }
-                });
+            try {
+                subscriber.next(jax(urlOrRequest));
+                subscriber.complete();
+            }
+            catch (error) {
+                subscriber.error(error);
+            }
         });
 
     type ValueType<T, V> = {
@@ -162,25 +209,38 @@ const mockAjax = (server: MockServer): AjaxCreationMethod => {
 type WebSocketConstructor = typeof WebSocket;
 type EventHandler<E extends Event> = (this: WebSocket, ev: E) => any;
 
-type Work<T> = (this: Action<T>, state?: T) => void;
-const schedule = (scheduler: IScheduler, ...works: Array<Work<undefined>>) => {
-    for (const work of works) {
-        scheduler.schedule(work);
-    }
-}
-
 const mockWebSocket = (server: MockServer): WebSocketConstructor =>
-    class MockWebSocket implements WebSocket {
+    class MockWebSocket implements WebSocket, ActivitySocket {
         constructor(url: string, protocols?: string | string[]) {
             this.server = server;
-            schedule(
-                this.server.scheduler,
-                () => this.readyState = WebSocket.CONNECTING,
-                () => {
-                    this.server.sockets.add(this);
-                    this.onopen(new Event('open'));
-                },
-                () => this.readyState = WebSocket.OPEN);
+
+            server.scheduler.schedule(() => {
+                this.readyState = WebSocket.CONNECTING;
+                this.server.sockets.add(this);
+                this.onopen(new Event('open'));
+                this.readyState = WebSocket.OPEN;
+                const uri = new URL(url);
+                const watermark = uri.searchParams.get(keyWatermark)
+                if (watermark !== null) {
+                    const start = Number.parseInt(watermark, 10);
+                    this.play(start, this.server.conversation.length);
+                }
+            });
+        }
+
+        play(start: number, after: number) {
+
+            const { conversation } = this.server;
+            const activities = conversation.slice(start, after);
+            const watermark = conversation.length.toString();
+            const activityGroup: DirectLineExport.ActivityGroup = {
+                activities,
+                watermark,
+            }
+
+            const message = new MessageEvent('type', { data: JSON.stringify(activityGroup) });
+
+            this.onmessage(message);
         }
 
         private readonly server: MockServer;
@@ -202,14 +262,10 @@ const mockWebSocket = (server: MockServer): WebSocketConstructor =>
         onopen: EventHandler<Event>;
 
         close(code?: number, reason?: string): void {
-            schedule(
-                this.server.scheduler,
-                () => this.readyState = WebSocket.CLOSING,
-                () => {
-                    this.onclose(new CloseEvent('close'))
-                    this.server.sockets.delete(this);
-                },
-                () => this.readyState = WebSocket.CLOSED);
+            this.readyState = WebSocket.CLOSING;
+            this.onclose(new CloseEvent('close'))
+            this.server.sockets.delete(this);
+            this.readyState = WebSocket.CLOSED;
         }
 
         send(data: string | ArrayBufferLike | Blob | ArrayBufferView): void {
@@ -234,9 +290,11 @@ test('TestWithMocks', () => {
     const scheduler = new TestScheduler((actual, expected) =>
         expect(expected).toBe(actual));
 
+    scheduler.maxFrames = 60 * 1000;
+
     const server: MockServer = {
         scheduler,
-        sockets: new Set<WebSocket>(),
+        sockets: new Set<WebSocket & ActivitySocket>(),
         conversation: [],
     };
 
@@ -268,10 +326,9 @@ test('TestWithMocks', () => {
         const scenario = [
             Observable.empty().delay(200, scheduler),
             directline.postActivity(expected.x),
-            // Observable.of(3).do(() => {
-            //     server.sockets.forEach(s => s.onerror(new Event('error')))
-            //     server.sockets.forEach(s => s.onclose(new CloseEvent('close')))
-            // }),
+            Observable.of(3).do(() => {
+                server.sockets.forEach(s => s.onclose(new CloseEvent('close')))
+            }),
             Observable.empty().delay(200, scheduler),
             directline.postActivity(expected.y),
             Observable.empty().delay(200, scheduler),
@@ -289,6 +346,10 @@ test('TestWithMocks', () => {
         // act
 
         scheduler.flush();
+
+        // if (scheduler.actions.length > 0) {
+        //     throw new Error();
+        // }
 
         // assert
 
