@@ -77,12 +77,7 @@ describe("MockSuite", () => {
 
         scheduler.maxFrames = 60 * 1000;
 
-        const server: DirectLineMock.Server = {
-            scheduler,
-            sockets: new Set<DirectLineMock.Socket>(),
-            conversation: [],
-            token: 'tokenA',
-        };
+        const server = DirectLineMock.mockServer(scheduler);
 
         const expected = {
             x: DirectLineMock.mockActivity('x'),

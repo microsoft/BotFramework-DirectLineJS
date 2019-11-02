@@ -18,6 +18,13 @@ export interface Server {
   token: string;
 }
 
+export const mockServer = (scheduler: TestScheduler): Server => ({
+    scheduler,
+    sockets: new Set<Socket>(),
+    conversation: [],
+    token: 'tokenA',
+});
+
 const tokenResponse = (server: Server, request: AjaxRequest): AjaxResponse | null => {
   const { headers } = request;
   const authorization = headers['Authorization'];
