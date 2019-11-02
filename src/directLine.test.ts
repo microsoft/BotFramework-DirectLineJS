@@ -86,12 +86,7 @@ describe("MockSuite", () => {
 
         // arrange
 
-        const options: DirectLineExport.Services = {
-            scheduler,
-            WebSocket: DirectLineMock.mockWebSocket(server),
-            ajax: DirectLineMock.mockAjax(server),
-            random: () => 0,
-        };
+        const options = DirectLineMock.mockServices(server, scheduler);
 
         const directline = new DirectLine(options);
 
