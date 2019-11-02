@@ -72,15 +72,20 @@ describe("MockSuite", () => {
             let inner: Subscription | undefined;
 
             const pump = () => {
-                const result = iterator.next();
-                if (result.done === true) {
-                    subscriber.complete();
+                try {
+                    const result = iterator.next();
+                    if (result.done === true) {
+                        subscriber.complete();
+                    }
+                    else {
+                        inner = result.value.subscribe(
+                            value => subscriber.next(value),
+                            error => subscriber.error(error),
+                            pump);
+                    }
                 }
-                else {
-                    inner = result.value.subscribe(
-                        value => subscriber.next(value),
-                        error => subscriber.error(error),
-                        pump);
+                catch (error) {
+                    subscriber.error(error);
                 }
             };
 
