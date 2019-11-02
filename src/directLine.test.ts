@@ -311,6 +311,7 @@ test('TestWithMocks', () => {
         scheduler,
         WebSocket: mockWebSocket(server),
         ajax: mockAjax(server),
+        random: () => 0,
     };
 
     const directline = new DirectLine(options);

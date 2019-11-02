@@ -368,12 +368,14 @@ export interface Services {
     scheduler: IScheduler;
     WebSocket: typeof WebSocket;
     ajax: AjaxCreationMethod;
+    random: () => number;
 }
 
 const makeServices = (services: Partial<Services>): Services => ({
     scheduler: services.scheduler || async,
     ajax: services.ajax || Observable.ajax,
     WebSocket: services.WebSocket || WebSocket,
+    random: services.random || Math.random,
 });
 
 const lifetimeRefreshToken = 30 * 60 * 1000;
@@ -847,7 +849,7 @@ export class DirectLine implements IBotConnection {
 
     // Returns the delay duration in milliseconds
     private getRetryDelay() {
-        return Math.floor(3000 + Math.random() * 12000);
+        return Math.floor(3000 + this.services.random() * 12000);
     }
 
     // Originally we used Observable.webSocket, but it's fairly opinionated and I ended up writing
