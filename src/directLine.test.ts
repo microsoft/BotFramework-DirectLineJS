@@ -66,9 +66,34 @@ describe("#commonHeaders", () => {
 
 describe("MockSuite", () => {
 
-    test('ReconnectOnClose', () => {
+    const lazyConcat = <T>(items: Iterable<Observable<T>>): Observable<T> =>
+        new Observable<T>(subscriber => {
+            const iterator = items[Symbol.iterator]();
+            let inner: Subscription | undefined;
 
-        const { DirectLine } = DirectLineExport;
+            const pump = () => {
+                const result = iterator.next();
+                if (result.done === true) {
+                    subscriber.complete();
+                }
+                else {
+                    inner = result.value.subscribe(
+                        value => subscriber.next(value),
+                        error => subscriber.error(error),
+                        pump);
+                }
+            };
+
+            pump();
+
+            return () => {
+                if (inner !== undefined) {
+                    inner.unsubscribe();
+                }
+            };
+        });
+
+    test('ReconnectOnClose', () => {
 
         // setup
 
@@ -79,33 +104,31 @@ describe("MockSuite", () => {
 
         const server = DirectLineMock.mockServer(scheduler);
 
+        const options = DirectLineMock.mockServices(server, scheduler);
+
+        // arrange
+
         const expected = {
             x: DirectLineMock.mockActivity('x'),
             y: DirectLineMock.mockActivity('y'),
         };
 
-        // arrange
-
-        const options = DirectLineMock.mockServices(server, scheduler);
-
-        const directline = new DirectLine(options);
+        const directline = new DirectLineExport.DirectLine(options);
 
         const subscriptions: Array<Subscription> = [];
 
         try {
 
-            const scenario = [
-                Observable.empty().delay(200, scheduler),
-                directline.postActivity(expected.x),
-                Observable.of(3).do(() => {
-                    server.sockets.forEach(s => s.onclose(new CloseEvent('close')))
-                }),
-                Observable.empty().delay(200, scheduler),
-                directline.postActivity(expected.y),
-                Observable.empty().delay(200, scheduler),
-            ];
+            const scenario = function* (): IterableIterator<Observable<unknown>> {
+                yield Observable.timer(200, scheduler);
+                yield directline.postActivity(expected.x);
+                server.sockets.forEach(s => s.onclose(new CloseEvent('close')));
+                yield Observable.timer(200, scheduler);
+                yield directline.postActivity(expected.y);
+                yield Observable.timer(200, scheduler);
+            };
 
-            subscriptions.push(Observable.concat(...scenario, scheduler).observeOn(scheduler).subscribe());
+            subscriptions.push(lazyConcat(scenario()).observeOn(scheduler).subscribe());
 
             const actual: Array<DirectLineExport.Activity> = [];
             subscriptions.push(directline.activity$.subscribe(a => {
