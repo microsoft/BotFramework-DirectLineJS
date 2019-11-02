@@ -75,6 +75,21 @@ interface MockServer {
     scheduler: TestScheduler;
     sockets: Set<WebSocket & ActivitySocket>;
     conversation: Array<DirectLineExport.Activity>;
+    token: string;
+}
+
+const tokenResponse = (server: MockServer, request: AjaxRequest): AjaxResponse | null => {
+    const { headers } = request;
+    const authorization = headers['Authorization'];
+    if (authorization === `Bearer ${server.token}`) {
+        return null;
+    }
+
+    const response: Partial<AjaxResponse> = {
+        status: 403,
+    }
+
+    return response as AjaxResponse;
 }
 
 const notImplemented = () => { throw new Error('not implemented') };
@@ -106,14 +121,13 @@ const mockAjax = (server: MockServer): AjaxCreationMethod => {
         const { pathname, searchParams } = uri;
 
         const conversationId = 'SingleConversation';
-        const token = 'token';
 
         const parts = pathname.split('/');
 
         if (parts[3] === 'tokens' && parts[4] === 'refresh') {
 
             const response: Partial<AjaxResponse> = {
-                response: { token }
+                response: { token: server.token }
             };
 
             return response as AjaxResponse;
@@ -126,7 +140,7 @@ const mockAjax = (server: MockServer): AjaxCreationMethod => {
         if (parts.length === 4) {
             const conversation: DirectLineExport.Conversation = {
                 conversationId,
-                token,
+                token: server.token,
                 streamUrl: createStreamUrl(0),
             };
 
@@ -142,6 +156,11 @@ const mockAjax = (server: MockServer): AjaxCreationMethod => {
         }
 
         if (parts[5] === 'activities') {
+            const responseToken = tokenResponse(server, urlOrRequest);
+            if (responseToken !== null) {
+                return responseToken;
+            }
+
             const activity: DirectLineExport.Activity = urlOrRequest.body;
 
             const after = server.conversation.push(activity);
@@ -158,12 +177,17 @@ const mockAjax = (server: MockServer): AjaxCreationMethod => {
             return response as AjaxResponse;
         }
         else if (parts.length === 5) {
+            const responseToken = tokenResponse(server, urlOrRequest);
+            if (responseToken !== null) {
+                return responseToken;
+            }
+
             const watermark = searchParams.get('watermark');
             const start = Number.parseInt(watermark, 10);
 
             const conversation: DirectLineExport.Conversation = {
                 conversationId,
-                token,
+                token: server.token,
                 streamUrl: createStreamUrl(start),
             };
 
@@ -296,6 +320,7 @@ test('TestWithMocks', () => {
         scheduler,
         sockets: new Set<WebSocket & ActivitySocket>(),
         conversation: [],
+        token: 'tokenA',
     };
 
     const makeActivity = (text: string): DirectLineExport.Activity => ({ type: 'message', from: { id: 'sender' }, text });
