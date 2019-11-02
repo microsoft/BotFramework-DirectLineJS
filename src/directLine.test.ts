@@ -64,85 +64,79 @@ describe("#commonHeaders", () => {
     })
 });
 
-test('TestWithMocks', () => {
+describe("MockSuite", () => {
 
-    const { DirectLine } = DirectLineExport;
+    test('ReconnectOnClose', () => {
 
-    // setup
+        const { DirectLine } = DirectLineExport;
 
-    const scheduler = new TestScheduler((actual, expected) =>
-        expect(expected).toBe(actual));
+        // setup
 
-    scheduler.maxFrames = 60 * 1000;
+        const scheduler = new TestScheduler((actual, expected) =>
+            expect(expected).toBe(actual));
 
-    const server: DirectLineMock.Server = {
-        scheduler,
-        sockets: new Set<DirectLineMock.Socket>(),
-        conversation: [],
-        token: 'tokenA',
-    };
+        scheduler.maxFrames = 60 * 1000;
 
-    const expected = {
-        x: DirectLineMock.mockActivity('x'),
-        y: DirectLineMock.mockActivity('y'),
-    };
+        const server: DirectLineMock.Server = {
+            scheduler,
+            sockets: new Set<DirectLineMock.Socket>(),
+            conversation: [],
+            token: 'tokenA',
+        };
 
-    // arrange
+        const expected = {
+            x: DirectLineMock.mockActivity('x'),
+            y: DirectLineMock.mockActivity('y'),
+        };
 
-    const options: DirectLineExport.Services = {
-        scheduler,
-        WebSocket: DirectLineMock.mockWebSocket(server),
-        ajax: DirectLineMock.mockAjax(server),
-        random: () => 0,
-    };
+        // arrange
 
-    const directline = new DirectLine(options);
+        const options: DirectLineExport.Services = {
+            scheduler,
+            WebSocket: DirectLineMock.mockWebSocket(server),
+            ajax: DirectLineMock.mockAjax(server),
+            random: () => 0,
+        };
 
-    const subscriptions: Array<Subscription> = [];
+        const directline = new DirectLine(options);
 
-    try {
+        const subscriptions: Array<Subscription> = [];
 
-        // const activity$ = scheduler.createColdObservable<DirectLineExport.Activity>('--x--y--|', expected);
-        // subscriptions.push(activity$.flatMap(a =>
-        //     directline.postActivity(a)).observeOn(scheduler).subscribe());
+        try {
 
-        const scenario = [
-            Observable.empty().delay(200, scheduler),
-            directline.postActivity(expected.x),
-            Observable.of(3).do(() => {
-                server.sockets.forEach(s => s.onclose(new CloseEvent('close')))
-            }),
-            Observable.empty().delay(200, scheduler),
-            directline.postActivity(expected.y),
-            Observable.empty().delay(200, scheduler),
-        ];
+            const scenario = [
+                Observable.empty().delay(200, scheduler),
+                directline.postActivity(expected.x),
+                Observable.of(3).do(() => {
+                    server.sockets.forEach(s => s.onclose(new CloseEvent('close')))
+                }),
+                Observable.empty().delay(200, scheduler),
+                directline.postActivity(expected.y),
+                Observable.empty().delay(200, scheduler),
+            ];
 
-        subscriptions.push(Observable.concat(...scenario, scheduler).observeOn(scheduler).subscribe());
+            subscriptions.push(Observable.concat(...scenario, scheduler).observeOn(scheduler).subscribe());
 
-        const actual: Array<DirectLineExport.Activity> = [];
-        subscriptions.push(directline.activity$.subscribe(a => {
-            actual.push(a);
-        }));
+            const actual: Array<DirectLineExport.Activity> = [];
+            subscriptions.push(directline.activity$.subscribe(a => {
+                actual.push(a);
+            }));
 
-        // scheduler.expectObservable(directline.activity$).toBe('--x--y--|', activities);
+            // act
 
-        // act
+            scheduler.flush();
 
-        scheduler.flush();
+            // assert
 
-        // if (scheduler.actions.length > 0) {
-        //     throw new Error();
-        // }
-
-        // assert
-
-        expect(actual).toStrictEqual([expected.x, expected.y]);
-    }
-    finally {
-        // cleanup
-
-        for (const subscription of subscriptions) {
-            subscription.unsubscribe();
+            expect(actual).toStrictEqual([expected.x, expected.y]);
         }
-    }
+        finally {
+            // cleanup
+
+            for (const subscription of subscriptions) {
+                subscription.unsubscribe();
+            }
+        }
+    });
+
 });
