@@ -119,13 +119,14 @@ describe("MockSuite", () => {
         }
     })
 
+    const expected = {
+        x: DirectLineMock.mockActivity('x'),
+        y: DirectLineMock.mockActivity('y'),
+        z: DirectLineMock.mockActivity('z'),
+    };
+
     test('ReconnectOnClose', () => {
         // arrange
-
-        const expected = {
-            x: DirectLineMock.mockActivity('x'),
-            y: DirectLineMock.mockActivity('y'),
-        };
 
         const scenario = function* (): IterableIterator<Observable<unknown>> {
             yield Observable.timer(200, scheduler);
