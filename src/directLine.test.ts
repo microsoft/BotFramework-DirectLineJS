@@ -98,19 +98,28 @@ describe("MockSuite", () => {
             };
         });
 
-    test('ReconnectOnClose', () => {
+    let scheduler: TestScheduler;
+    let server: DirectLineMock.Server;
+    let services: DirectLineExport.Services;
+    let subscriptions: Array<Subscription>;
+    let directline: DirectLineExport.DirectLine;
 
-        // setup
-
-        const scheduler = new TestScheduler((actual, expected) =>
-            expect(expected).toBe(actual));
-
+    beforeEach(() => {
+        scheduler = new TestScheduler((actual, expected) => expect(expected).toBe(actual));
         scheduler.maxFrames = 60 * 1000;
+        server = DirectLineMock.mockServer(scheduler);
+        services = DirectLineMock.mockServices(server, scheduler);
+        directline = new DirectLineExport.DirectLine(services);
+        subscriptions = [];
+    });
 
-        const server = DirectLineMock.mockServer(scheduler);
+    afterEach(() => {
+        for (const subscription of subscriptions) {
+            subscription.unsubscribe();
+        }
+    })
 
-        const options = DirectLineMock.mockServices(server, scheduler);
-
+    test('ReconnectOnClose', () => {
         // arrange
 
         const expected = {
@@ -118,43 +127,28 @@ describe("MockSuite", () => {
             y: DirectLineMock.mockActivity('y'),
         };
 
-        const directline = new DirectLineExport.DirectLine(options);
+        const scenario = function* (): IterableIterator<Observable<unknown>> {
+            yield Observable.timer(200, scheduler);
+            yield directline.postActivity(expected.x);
+            DirectLineMock.injectClose(server);
+            yield Observable.timer(200, scheduler);
+            yield directline.postActivity(expected.y);
+            yield Observable.timer(200, scheduler);
+        };
 
-        const subscriptions: Array<Subscription> = [];
+        subscriptions.push(lazyConcat(scenario()).observeOn(scheduler).subscribe());
 
-        try {
+        const actual: Array<DirectLineExport.Activity> = [];
+        subscriptions.push(directline.activity$.subscribe(a => {
+            actual.push(a);
+        }));
 
-            const scenario = function* (): IterableIterator<Observable<unknown>> {
-                yield Observable.timer(200, scheduler);
-                yield directline.postActivity(expected.x);
-                DirectLineMock.injectClose(server);
-                yield Observable.timer(200, scheduler);
-                yield directline.postActivity(expected.y);
-                yield Observable.timer(200, scheduler);
-            };
+        // act
 
-            subscriptions.push(lazyConcat(scenario()).observeOn(scheduler).subscribe());
+        scheduler.flush();
 
-            const actual: Array<DirectLineExport.Activity> = [];
-            subscriptions.push(directline.activity$.subscribe(a => {
-                actual.push(a);
-            }));
+        // assert
 
-            // act
-
-            scheduler.flush();
-
-            // assert
-
-            expect(actual).toStrictEqual([expected.x, expected.y]);
-        }
-        finally {
-            // cleanup
-
-            for (const subscription of subscriptions) {
-                subscription.unsubscribe();
-            }
-        }
+        expect(actual).toStrictEqual([expected.x, expected.y]);
     });
-
 });
