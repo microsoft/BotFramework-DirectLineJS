@@ -125,6 +125,31 @@ describe("MockSuite", () => {
         z: DirectLineMock.mockActivity('z'),
     };
 
+    test('HappyPath', () => {
+        // arrange
+
+        const scenario = function* (): IterableIterator<Observable<unknown>> {
+            yield Observable.timer(200, scheduler);
+            yield directline.postActivity(expected.x);
+            yield Observable.timer(200, scheduler);
+            yield directline.postActivity(expected.y);
+            yield Observable.timer(200, scheduler);
+        };
+
+        subscriptions.push(lazyConcat(scenario()).observeOn(scheduler).subscribe());
+
+        const actual: Array<DirectLineExport.Activity> = [];
+        subscriptions.push(directline.activity$.subscribe(a => actual.push(a)));
+
+        // act
+
+        scheduler.flush();
+
+        // assert
+
+        expect(actual).toStrictEqual([expected.x, expected.y]);
+    });
+
     test('ReconnectOnClose', () => {
         // arrange
 
@@ -140,9 +165,7 @@ describe("MockSuite", () => {
         subscriptions.push(lazyConcat(scenario()).observeOn(scheduler).subscribe());
 
         const actual: Array<DirectLineExport.Activity> = [];
-        subscriptions.push(directline.activity$.subscribe(a => {
-            actual.push(a);
-        }));
+        subscriptions.push(directline.activity$.subscribe(a => actual.push(a)));
 
         // act
 
