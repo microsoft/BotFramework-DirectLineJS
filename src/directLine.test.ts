@@ -127,7 +127,7 @@ describe("MockSuite", () => {
             const scenario = function* (): IterableIterator<Observable<unknown>> {
                 yield Observable.timer(200, scheduler);
                 yield directline.postActivity(expected.x);
-                server.sockets.forEach(s => s.onclose(new CloseEvent('close')));
+                DirectLineMock.injectClose(server);
                 yield Observable.timer(200, scheduler);
                 yield directline.postActivity(expected.y);
                 yield Observable.timer(200, scheduler);

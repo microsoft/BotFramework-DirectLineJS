@@ -46,6 +46,9 @@ const tokenResponse = (server: Server, request: AjaxRequest): AjaxResponse | nul
   return response as AjaxResponse;
 }
 
+export const injectClose = (server: Server): void =>
+  server.sockets.forEach(s => s.onclose(new CloseEvent('close')));
+
 const notImplemented = (): never => { throw new Error('not implemented') };
 
 const keyWatermark = 'watermark';
