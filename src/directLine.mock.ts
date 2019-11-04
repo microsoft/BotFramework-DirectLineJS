@@ -3,20 +3,15 @@ import { TestScheduler, Observable } from "rxjs";
 import { AjaxCreationMethod, AjaxRequest, AjaxResponse } from "rxjs/observable/dom/AjaxObservable";
 import { URL, URLSearchParams } from 'url';
 
-export const mockServices = (server: Server, scheduler: TestScheduler): DirectLineExport.Services => ({
-  scheduler,
-  WebSocket: mockWebSocket(server),
-  ajax: mockAjax(server),
-  random: () => 0,
-});
+// MOCK helpers
+
+const notImplemented = (): never => { throw new Error('not implemented') };
+
+// MOCK Activity
 
 export const mockActivity = (text: string): DirectLineExport.Activity => ({ type: 'message', from: { id: 'sender' }, text });
 
-interface ActivitySocket {
-  play: (start: number, after: number) => void;
-}
-
-export type Socket = WebSocket & ActivitySocket;
+// MOCK DirectLine Server (shared state used by Observable.ajax and WebSocket mocks)
 
 export interface Server {
   scheduler: TestScheduler;
@@ -49,9 +44,9 @@ const tokenResponse = (server: Server, request: AjaxRequest): AjaxResponse | nul
 export const injectClose = (server: Server): void =>
   server.sockets.forEach(s => s.onclose(new CloseEvent('close')));
 
-const notImplemented = (): never => { throw new Error('not implemented') };
-
 const keyWatermark = 'watermark';
+
+// MOCK Observable.ajax (uses shared state in Server)
 
 export const mockAjax = (server: Server): AjaxCreationMethod => {
 
@@ -187,6 +182,14 @@ export const mockAjax = (server: Server): AjaxCreationMethod => {
   return Object.assign(method, properties);
 }
 
+// MOCK WebSocket (uses shared state in Server)
+
+interface ActivitySocket {
+  play: (start: number, after: number) => void;
+}
+
+export type Socket = WebSocket & ActivitySocket;
+
 type WebSocketConstructor = typeof WebSocket;
 type EventHandler<E extends Event> = (this: WebSocket, ev: E) => any;
 
@@ -261,3 +264,12 @@ export const mockWebSocket = (server: Server): WebSocketConstructor =>
     static CONNECTING = WebSocket.CONNECTING;
     static OPEN = WebSocket.OPEN;
   };
+
+// MOCK services (top-level aggregation of all mocks)
+
+export const mockServices = (server: Server, scheduler: TestScheduler): DirectLineExport.Services => ({
+  scheduler,
+  WebSocket: mockWebSocket(server),
+  ajax: mockAjax(server),
+  random: () => 0,
+});
