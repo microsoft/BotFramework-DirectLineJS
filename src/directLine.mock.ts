@@ -13,24 +13,38 @@ export const mockActivity = (text: string): DirectLineExport.Activity => ({ type
 
 // MOCK DirectLine Server (shared state used by Observable.ajax and WebSocket mocks)
 
+interface ActivitySocket {
+  play: (start: number, after: number) => void;
+}
+
+export type Socket = WebSocket & ActivitySocket;
+
+export interface Conversation {
+  sockets: Set<Socket>;
+  conversationId: string;
+  history: Array<DirectLineExport.Activity>;
+  token: string;
+}
+
 export interface Server {
   scheduler: TestScheduler;
-  sockets: Set<WebSocket & ActivitySocket>;
-  conversation: Array<DirectLineExport.Activity>;
-  token: string;
+  conversation: Conversation;
 }
 
 export const mockServer = (scheduler: TestScheduler): Server => ({
   scheduler,
-  sockets: new Set<Socket>(),
-  conversation: [],
-  token: 'tokenA',
+  conversation: {
+    sockets: new Set<Socket>(),
+    conversationId: 'OneConversation',
+    history: [],
+    token: 'tokenA',
+  }
 });
 
 const tokenResponse = (server: Server, request: AjaxRequest): AjaxResponse | null => {
   const { headers } = request;
   const authorization = headers['Authorization'];
-  if (authorization === `Bearer ${server.token}`) {
+  if (authorization === `Bearer ${server.conversation.token}`) {
     return null;
   }
 
@@ -42,7 +56,7 @@ const tokenResponse = (server: Server, request: AjaxRequest): AjaxResponse | nul
 }
 
 export const injectClose = (server: Server): void =>
-  server.sockets.forEach(s => s.onclose(new CloseEvent('close')));
+  server.conversation.sockets.forEach(s => s.onclose(new CloseEvent('close')));
 
 const keyWatermark = 'watermark';
 
@@ -72,14 +86,12 @@ export const mockAjax = (server: Server): AjaxCreationMethod => {
 
     const { pathname, searchParams } = uri;
 
-    const conversationId = 'SingleConversation';
-
     const parts = pathname.split('/');
 
     if (parts[3] === 'tokens' && parts[4] === 'refresh') {
 
       const response: Partial<AjaxResponse> = {
-        response: { token: server.token }
+        response: { token: server.conversation.token }
       };
 
       return response as AjaxResponse;
@@ -91,8 +103,8 @@ export const mockAjax = (server: Server): AjaxCreationMethod => {
 
     if (parts.length === 4) {
       const conversation: DirectLineExport.Conversation = {
-        conversationId,
-        token: server.token,
+        conversationId: server.conversation.conversationId,
+        token: server.conversation.token,
         streamUrl: createStreamUrl(0),
       };
 
@@ -103,7 +115,7 @@ export const mockAjax = (server: Server): AjaxCreationMethod => {
       return response as AjaxResponse;
     }
 
-    if (parts[4] !== conversationId) {
+    if (parts[4] !== server.conversation.conversationId) {
       throw new Error();
     }
 
@@ -115,10 +127,10 @@ export const mockAjax = (server: Server): AjaxCreationMethod => {
 
       const activity: DirectLineExport.Activity = urlOrRequest.body;
 
-      const after = server.conversation.push(activity);
+      const after = server.conversation.history.push(activity);
       const start = after - 1;
 
-      for (const socket of server.sockets) {
+      for (const socket of server.conversation.sockets) {
         socket.play(start, after);
       }
 
@@ -138,8 +150,8 @@ export const mockAjax = (server: Server): AjaxCreationMethod => {
       const start = Number.parseInt(watermark, 10);
 
       const conversation: DirectLineExport.Conversation = {
-        conversationId,
-        token: server.token,
+        conversationId: server.conversation.conversationId,
+        token: server.conversation.token,
         streamUrl: createStreamUrl(start),
       };
 
@@ -184,39 +196,32 @@ export const mockAjax = (server: Server): AjaxCreationMethod => {
 
 // MOCK WebSocket (uses shared state in Server)
 
-interface ActivitySocket {
-  play: (start: number, after: number) => void;
-}
-
-export type Socket = WebSocket & ActivitySocket;
-
 type WebSocketConstructor = typeof WebSocket;
 type EventHandler<E extends Event> = (this: WebSocket, ev: E) => any;
 
 export const mockWebSocket = (server: Server): WebSocketConstructor =>
   class MockWebSocket implements WebSocket, ActivitySocket {
     constructor(url: string, protocols?: string | string[]) {
-      this.server = server;
 
       server.scheduler.schedule(() => {
         this.readyState = WebSocket.CONNECTING;
-        this.server.sockets.add(this);
+        server.conversation.sockets.add(this);
         this.onopen(new Event('open'));
         this.readyState = WebSocket.OPEN;
         const uri = new URL(url);
         const watermark = uri.searchParams.get(keyWatermark)
         if (watermark !== null) {
           const start = Number.parseInt(watermark, 10);
-          this.play(start, this.server.conversation.length);
+          this.play(start, server.conversation.history.length);
         }
       });
     }
 
     play(start: number, after: number) {
 
-      const { conversation } = this.server;
-      const activities = conversation.slice(start, after);
-      const watermark = conversation.length.toString();
+      const { conversation: { history } } = server;
+      const activities = history.slice(start, after);
+      const watermark = history.length.toString();
       const activityGroup: DirectLineExport.ActivityGroup = {
         activities,
         watermark,
@@ -226,8 +231,6 @@ export const mockWebSocket = (server: Server): WebSocketConstructor =>
 
       this.onmessage(message);
     }
-
-    private readonly server: Server;
 
     binaryType: BinaryType = 'arraybuffer';
     readonly bufferedAmount: number = 0;
@@ -248,7 +251,7 @@ export const mockWebSocket = (server: Server): WebSocketConstructor =>
     close(code?: number, reason?: string): void {
       this.readyState = WebSocket.CLOSING;
       this.onclose(new CloseEvent('close'))
-      this.server.sockets.delete(this);
+      server.conversation.sockets.delete(this);
       this.readyState = WebSocket.CLOSED;
     }
 
