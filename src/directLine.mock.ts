@@ -31,13 +31,15 @@ export interface Server {
   conversation: Conversation;
 }
 
+const tokenPrefix = 'token';
+
 export const mockServer = (scheduler: TestScheduler): Server => ({
   scheduler,
   conversation: {
     sockets: new Set<Socket>(),
     conversationId: 'OneConversation',
     history: [],
-    token: 'tokenA',
+    token: tokenPrefix + '1',
   }
 });
 
@@ -57,6 +59,12 @@ const tokenResponse = (server: Server, request: AjaxRequest): AjaxResponse | nul
 
 export const injectClose = (server: Server): void =>
   server.conversation.sockets.forEach(s => s.onclose(new CloseEvent('close')));
+
+export const injectNewToken = (server: Server): void => {
+  const { conversation } = server;
+  const suffix = Number.parseInt(conversation.token.substring(tokenPrefix.length), 10) + 1
+  conversation.token = tokenPrefix + suffix;
+}
 
 const keyWatermark = 'watermark';
 
