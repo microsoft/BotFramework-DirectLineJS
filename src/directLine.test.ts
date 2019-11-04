@@ -1,6 +1,8 @@
 import * as DirectLineExport from "./directLine";
 import * as DirectLineMock from './directLine.mock';
 import { TestScheduler, Observable, Subscription } from "rxjs";
+//@ts-ignore
+import {version} from "../package.json";
 
 declare var process: {
     arch: string;
@@ -175,4 +177,12 @@ describe("MockSuite", () => {
 
         expect(actual).toStrictEqual([expected.x, expected.y]);
     });
+
+    test('BotAgentWithMocks', () => {
+        const expected: string = `DirectLine/3.0 (directlinejs ${version})`;
+
+        //@ts-ignore
+        const actual: string = directline.commonHeaders()["x-ms-bot-agent"];
+        expect(actual).toStrictEqual(expected)
+    })
 });

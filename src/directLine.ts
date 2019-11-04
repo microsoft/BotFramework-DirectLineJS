@@ -35,6 +35,7 @@ declare var process: {
     arch: string;
     env: {
         VERSION: string;
+        npm_package_version: string;
     };
     platform: string;
     release: string;
@@ -944,6 +945,6 @@ export class DirectLine implements IBotConnection {
             clientAgent += `; ${customAgent}`
         }
 
-        return `${DIRECT_LINE_VERSION} (${clientAgent})`;
+        return `${DIRECT_LINE_VERSION} (${clientAgent} ${process.env.npm_package_version})`;
     }
 }
