@@ -1,6 +1,6 @@
 // In order to keep file size down, only import the parts of rxjs that we use
 
-import { AjaxResponse, AjaxCreationMethod } from 'rxjs/observable/dom/AjaxObservable';
+import { AjaxResponse, AjaxCreationMethod, AjaxRequest } from 'rxjs/observable/dom/AjaxObservable';
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 import { Observable } from 'rxjs/Observable';
 import { IScheduler } from 'rxjs/Scheduler';
@@ -16,6 +16,7 @@ import 'rxjs/add/operator/do';
 import 'rxjs/add/operator/filter';
 import 'rxjs/add/operator/map';
 import 'rxjs/add/operator/mergeMap';
+import 'rxjs/add/operator/concatMap';
 import 'rxjs/add/operator/retryWhen';
 import 'rxjs/add/operator/share';
 import 'rxjs/add/operator/take';
@@ -946,5 +947,36 @@ export class DirectLine implements IBotConnection {
         }
 
         return `${DIRECT_LINE_VERSION} (${clientAgent} ${process.env.npm_package_version})`;
+    }
+
+    private wrapWithRetry = (source: AjaxCreationMethod): AjaxCreationMethod => {
+
+        const notImplemented = (): never => { throw new Error('not implemented') };
+
+        const inner = (response$ : Observable<AjaxResponse>) => {
+            return response$
+            .concatMap((response: AjaxResponse) => {
+                if(response.status === 429){
+                    const retryAfter =  response.xhr.getResponseHeader("retry-after");
+                    if(retryAfter && !isNaN(Number(retryAfter))){
+                        return Observable.of(response).delay(Number(retryAfter), this.services.scheduler);
+                    }
+                }
+                return Observable.of(response);
+            })
+        };
+
+        const outer = (urlOrRequest: string| AjaxRequest) => {
+            return inner(source(urlOrRequest));
+        };
+
+        return  Object.assign(outer, {
+            get: (url: string, headers?: Object): Observable<AjaxResponse> => notImplemented(),
+            post: (url: string, body?: any, headers?: Object): Observable<AjaxResponse> => notImplemented(),
+            put: (url: string, body?: any, headers?: Object): Observable<AjaxResponse> => notImplemented(),
+            patch: (url: string, body?: any, headers?: Object): Observable<AjaxResponse> => notImplemented(),
+            delete: (url: string, headers?: Object): Observable<AjaxResponse> => notImplemented(),
+            getJSON: <T>(url: string, headers?: Object): Observable<T> => notImplemented()
+        });
     }
 }
