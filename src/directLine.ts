@@ -6,7 +6,7 @@ import { Observable } from 'rxjs/Observable';
 import { IScheduler } from 'rxjs/Scheduler';
 import { Subscriber } from 'rxjs/Subscriber';
 import { Subscription } from 'rxjs/Subscription';
-import { async } from 'rxjs/Scheduler/async';
+import { async as AsyncScheduler } from 'rxjs/scheduler/async';
 
 import 'rxjs/add/operator/catch';
 import 'rxjs/add/operator/combineLatest';
@@ -405,10 +405,10 @@ const wrapWithRetry = (source: AjaxCreationMethod, scheduler: IScheduler): AjaxC
 }
 
 const makeServices = (services: Partial<Services>): Services => {
-    const serviceScheduler = services.scheduler || async;
+    const scheduler = services.scheduler || AsyncScheduler;
     return {
-    scheduler: serviceScheduler,
-    ajax: wrapWithRetry(services.ajax || Observable.ajax, serviceScheduler),
+    scheduler,
+    ajax: wrapWithRetry(services.ajax || Observable.ajax, scheduler),
     WebSocket: services.WebSocket || WebSocket,
     random: services.random || Math.random,
 }};
