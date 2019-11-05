@@ -373,12 +373,45 @@ export interface Services {
     random: () => number;
 }
 
-const makeServices = (services: Partial<Services>): Services => ({
-    scheduler: services.scheduler || async,
-    ajax: services.ajax || Observable.ajax,
+const wrapWithRetry = (source: AjaxCreationMethod, scheduler: IScheduler): AjaxCreationMethod =>{
+
+    const notImplemented = (): never => { throw new Error('not implemented') };
+
+    const inner = (response$ : Observable<AjaxResponse>) => {
+        return response$
+        .concatMap((response: AjaxResponse) => {
+            if(response.status === 429){
+                const retryAfter =  response.xhr.getResponseHeader("Retry-After");
+                if(retryAfter && !isNaN(Number(retryAfter))){
+                    return Observable.of(response).delay(Number(retryAfter), scheduler);
+                }
+            }
+            return Observable.of(response);
+        })
+    };
+
+    const outer = (urlOrRequest: string| AjaxRequest) => {
+        return inner(source(urlOrRequest));
+    };
+
+    return  Object.assign(outer, {
+        get: (url: string, headers?: Object): Observable<AjaxResponse> => notImplemented(),
+        post: (url: string, body?: any, headers?: Object): Observable<AjaxResponse> => notImplemented(),
+        put: (url: string, body?: any, headers?: Object): Observable<AjaxResponse> => notImplemented(),
+        patch: (url: string, body?: any, headers?: Object): Observable<AjaxResponse> => notImplemented(),
+        delete: (url: string, headers?: Object): Observable<AjaxResponse> => notImplemented(),
+        getJSON: <T>(url: string, headers?: Object): Observable<T> => notImplemented()
+    });
+}
+
+const makeServices = (services: Partial<Services>): Services => {
+    const serviceScheduler = services.scheduler || async;
+    return {
+    scheduler: serviceScheduler,
+    ajax: wrapWithRetry(services.ajax || Observable.ajax, serviceScheduler),
     WebSocket: services.WebSocket || WebSocket,
     random: services.random || Math.random,
-});
+}};
 
 const lifetimeRefreshToken = 30 * 60 * 1000;
 const intervalRefreshToken = lifetimeRefreshToken / 2;
@@ -581,9 +614,9 @@ export class DirectLine implements IBotConnection {
         .retryWhen(error$ =>
             // for now we deem 4xx and 5xx errors as unrecoverable
             // for everything else (timeouts), retry for a while
-            error$.mergeMap(error => error.status >= 400 && error.status < 600
+            error$.mergeMap(error => {console.log(error);return error.status >= 400 && error.status < 600
                 ? Observable.throw(error, this.services.scheduler)
-                : Observable.of(error, this.services.scheduler)
+                : Observable.of(error, this.services.scheduler)}
             )
             .delay(timeout, this.services.scheduler)
             .take(retries)
@@ -949,34 +982,5 @@ export class DirectLine implements IBotConnection {
         return `${DIRECT_LINE_VERSION} (${clientAgent} ${process.env.npm_package_version})`;
     }
 
-    private wrapWithRetry = (source: AjaxCreationMethod): AjaxCreationMethod => {
 
-        const notImplemented = (): never => { throw new Error('not implemented') };
-
-        const inner = (response$ : Observable<AjaxResponse>) => {
-            return response$
-            .concatMap((response: AjaxResponse) => {
-                if(response.status === 429){
-                    const retryAfter =  response.xhr.getResponseHeader("retry-after");
-                    if(retryAfter && !isNaN(Number(retryAfter))){
-                        return Observable.of(response).delay(Number(retryAfter), this.services.scheduler);
-                    }
-                }
-                return Observable.of(response);
-            })
-        };
-
-        const outer = (urlOrRequest: string| AjaxRequest) => {
-            return inner(source(urlOrRequest));
-        };
-
-        return  Object.assign(outer, {
-            get: (url: string, headers?: Object): Observable<AjaxResponse> => notImplemented(),
-            post: (url: string, body?: any, headers?: Object): Observable<AjaxResponse> => notImplemented(),
-            put: (url: string, body?: any, headers?: Object): Observable<AjaxResponse> => notImplemented(),
-            patch: (url: string, body?: any, headers?: Object): Observable<AjaxResponse> => notImplemented(),
-            delete: (url: string, headers?: Object): Observable<AjaxResponse> => notImplemented(),
-            getJSON: <T>(url: string, headers?: Object): Observable<T> => notImplemented()
-        });
-    }
 }

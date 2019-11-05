@@ -17,8 +17,7 @@
     "declaration": true,
     "declarationDir": "lib",
     "emitDeclarationOnly": true,
-    "sourceMap": true,
-    "resolveJsonModule": true
+    "sourceMap": true
   },
   "exclude": [
     "__tests__/**/*.js",

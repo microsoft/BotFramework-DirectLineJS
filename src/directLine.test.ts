@@ -1,7 +1,7 @@
 import * as DirectLineExport from "./directLine";
 import * as DirectLineMock from './directLine.mock';
-import { TestScheduler, Observable, Subscription } from "rxjs";
-//@ts-ignore
+import { TestScheduler, Observable, Subscription, AjaxResponse } from "rxjs";
+// @ts-ignore
 import {version} from "../package.json";
 
 declare var process: {
@@ -13,6 +13,12 @@ declare var process: {
     release: string;
     version: string;
 };
+
+// mock delay observable
+jest.mock('rxjs/add/operator/delay', () => {
+    const Observable = require('rxjs/Observable').Observable;
+    Observable.prototype.delay = jest.fn(function (item) { return this; });  // <= mock delay
+  });
 
 test("#setConnectionStatusFallback", () => {
     const { DirectLine } = DirectLineExport;
@@ -184,5 +190,28 @@ describe("MockSuite", () => {
         //@ts-ignore
         const actual: string = directline.commonHeaders()["x-ms-bot-agent"];
         expect(actual).toStrictEqual(expected)
-    })
+    });
+
+    test('MockRetry', () => {
+        services.ajax = DirectLineMock.mockAjax(server, (urlOrRequest) => {
+            const response: Partial<AjaxResponse> = {
+                status: 429,
+                xhr:{
+                    getResponseHeader: (name) => "10",
+                } as XMLHttpRequest
+            };
+            return response as AjaxResponse;
+        })
+        directline = new DirectLineExport.DirectLine(services);
+
+        const scenario = function* (): IterableIterator<Observable<unknown>> {
+            yield Observable.timer(200, scheduler);
+            yield directline.postActivity(expected.x);
+        };
+
+        subscriptions.push(lazyConcat(scenario()).observeOn(scheduler).subscribe());
+        scheduler.flush();
+
+        expect(Observable.prototype.delay).toHaveBeenNthCalledWith(1, "10");
+    });
 });

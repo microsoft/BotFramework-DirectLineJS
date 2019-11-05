@@ -68,9 +68,11 @@ export const injectNewToken = (server: Server): void => {
 
 const keyWatermark = 'watermark';
 
+type ajaxType = (urlOrRequest: string | AjaxRequest) => AjaxResponse;
+
 // MOCK Observable.ajax (uses shared state in Server)
 
-export const mockAjax = (server: Server): AjaxCreationMethod => {
+export const mockAjax = (server: Server, customAjax?: ajaxType): AjaxCreationMethod => {
 
   const uriBase = new URL('https://directline.botframework.com/v3/directline/');
   const createStreamUrl = (watermark: number): string => {
@@ -84,7 +86,7 @@ export const mockAjax = (server: Server): AjaxCreationMethod => {
     return uri.toString();
   }
 
-  const jax = (urlOrRequest: string | AjaxRequest): AjaxResponse => {
+  const jax = customAjax || ((urlOrRequest: string | AjaxRequest): AjaxResponse => {
     if (typeof urlOrRequest === 'string') {
       throw new Error();
     }
@@ -171,7 +173,7 @@ export const mockAjax = (server: Server): AjaxCreationMethod => {
     }
 
     throw new Error();
-  };
+  });
 
   const method = (urlOrRequest: string | AjaxRequest): Observable<AjaxResponse> =>
     new Observable<AjaxResponse>(subscriber => {
