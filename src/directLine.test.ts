@@ -14,6 +14,17 @@ declare var process: {
     version: string;
 };
 
+class AjaxError extends Error{
+    message: string;
+    response: AjaxResponse;
+    constructor(m: string, response: AjaxResponse){
+        super(m);
+        this.message = m;
+        this.response = response;
+        Object.setPrototypeOf(this, AjaxError.prototype);
+    }
+}
+
 // mock delay observable
 jest.mock('rxjs/add/operator/delay', () => {
     const Observable = require('rxjs/Observable').Observable;
@@ -200,8 +211,9 @@ describe("MockSuite", () => {
                     getResponseHeader: (name) => "10",
                 } as XMLHttpRequest
             };
-            return response as AjaxResponse;
-        })
+            const error = new Error('Ajax Error')
+            throw Object.assign(error, response);
+        });
         directline = new DirectLineExport.DirectLine(services);
 
         const scenario = function* (): IterableIterator<Observable<unknown>> {
@@ -212,6 +224,6 @@ describe("MockSuite", () => {
         subscriptions.push(lazyConcat(scenario()).observeOn(scheduler).subscribe());
         scheduler.flush();
 
-        expect(Observable.prototype.delay).toHaveBeenNthCalledWith(1, "10");
+        expect(Observable.prototype.delay).toHaveBeenNthCalledWith(1, 10, expect.anything());
     });
 });

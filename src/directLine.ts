@@ -1,6 +1,6 @@
 // In order to keep file size down, only import the parts of rxjs that we use
 
-import { AjaxResponse, AjaxCreationMethod, AjaxRequest } from 'rxjs/observable/dom/AjaxObservable';
+import { AjaxResponse, AjaxCreationMethod, AjaxRequest, AjaxError } from 'rxjs/observable/dom/AjaxObservable';
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 import { Observable } from 'rxjs/Observable';
 import { IScheduler } from 'rxjs/Scheduler';
@@ -379,15 +379,25 @@ const wrapWithRetry = (source: AjaxCreationMethod, scheduler: IScheduler): AjaxC
 
     const inner = (response$ : Observable<AjaxResponse>) => {
         return response$
-        .concatMap((response: AjaxResponse) => {
-            if(response.status === 429){
-                const retryAfter =  response.xhr.getResponseHeader("Retry-After");
+        .catch<AjaxResponse, AjaxResponse>((err) => {
+            console.log(err.message);
+            // console.log("the value is " + err.response.xhr.getResponseHeader('Retry-After'));
+            if(err.status === 429){
+                const retryAfter = err.xhr.getResponseHeader('Retry-After');
                 if(retryAfter && !isNaN(Number(retryAfter))){
-                    return Observable.of(response).delay(Number(retryAfter), scheduler);
+                    return Observable.throw(err).delay(Number(retryAfter), scheduler);
                 }
             }
-            return Observable.of(response);
-        })
+        });
+        // .concatMap((response: AjaxResponse) => {
+        //     if(response.status === 429){
+        //         const retryAfter =  response.xhr.getResponseHeader("Retry-After");
+        //         if(retryAfter && !isNaN(Number(retryAfter))){
+        //             return Observable.of(response).delay(Number(retryAfter), scheduler);
+        //         }
+        //     }
+        //     return Observable.of(response);
+        // })
     };
 
     const outer = (urlOrRequest: string| AjaxRequest) => {
@@ -614,10 +624,11 @@ export class DirectLine implements IBotConnection {
         .retryWhen(error$ =>
             // for now we deem 4xx and 5xx errors as unrecoverable
             // for everything else (timeouts), retry for a while
-            error$.mergeMap(error => {console.log(error);return error.status >= 400 && error.status < 600
+            error$.mergeMap((error) {
+                return error.status >= 400 && error.status < 600
                 ? Observable.throw(error, this.services.scheduler)
-                : Observable.of(error, this.services.scheduler)}
-            )
+                : Observable.of(error, this.services.scheduler)
+            })
             .delay(timeout, this.services.scheduler)
             .take(retries)
         )
