@@ -218,7 +218,7 @@ describe("MockSuite", () => {
 
         const scenario = function* (): IterableIterator<Observable<unknown>> {
             yield Observable.timer(200, scheduler);
-            yield directline.postActivity(expected.x);
+            yield directline.postActivity(expected.x).catch(() => Observable.empty(scheduler));
         };
 
         subscriptions.push(lazyConcat(scenario()).observeOn(scheduler).subscribe());
