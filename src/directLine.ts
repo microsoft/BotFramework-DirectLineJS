@@ -385,9 +385,11 @@ const wrapWithRetry = (source: AjaxCreationMethod, scheduler: IScheduler): AjaxC
             if(err.status === 429){
                 const retryAfter = err.xhr.getResponseHeader('Retry-After');
                 if(retryAfter && !isNaN(Number(retryAfter))){
-                    return Observable.throw(err).delay(Number(retryAfter), scheduler);
+                    return Observable.throw(err, scheduler).delay(Number(retryAfter), scheduler);
                 }
             }
+
+            return Observable.throw(err, scheduler);
         });
         // .concatMap((response: AjaxResponse) => {
         //     if(response.status === 429){
@@ -624,7 +626,7 @@ export class DirectLine implements IBotConnection {
         .retryWhen(error$ =>
             // for now we deem 4xx and 5xx errors as unrecoverable
             // for everything else (timeouts), retry for a while
-            error$.mergeMap((error) {
+            error$.mergeMap((error) => {
                 return error.status >= 400 && error.status < 600
                 ? Observable.throw(error, this.services.scheduler)
                 : Observable.of(error, this.services.scheduler)
