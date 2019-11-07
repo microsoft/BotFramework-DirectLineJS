@@ -221,6 +221,9 @@ describe("MockSuite", () => {
             yield directline.postActivity(expected.x).catch(() => Observable.empty(scheduler));
         };
 
+        // lack of subscribe arguments means that the empty subscriber is used
+        // the empty subscriber will propagate observable errors on the JS call stack
+        // within the scheduler notification action handling loop because of the observeOn
         subscriptions.push(lazyConcat(scenario()).observeOn(scheduler).subscribe());
         scheduler.flush();
 
