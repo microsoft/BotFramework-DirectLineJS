@@ -203,7 +203,12 @@ describe("MockSuite", () => {
         expect(actual).toStrictEqual(expected)
     });
 
-    test('MockRetry', () => {
+    test('RetryAfterHeader', () => {
+        // jest.mock('rxjs/add/operator/delay', () => {
+        //     const Observable = require('rxjs/Observable').Observable;
+        //     Observable.prototype.delay = jest.fn(function (item) { return this; });  // <= mock delay
+        //   });
+
         services.ajax = DirectLineMock.mockAjax(server, (urlOrRequest) => {
             const response: Partial<AjaxResponse> = {
                 status: 429,
@@ -228,5 +233,49 @@ describe("MockSuite", () => {
         scheduler.flush();
 
         expect(Observable.prototype.delay).toHaveBeenNthCalledWith(1, 10, expect.anything());
+    });
+
+    test('SendDebugHeader', () => {
+        let expectedBotId:string;
+        const actual = 'botid';
+        services.ajax = DirectLineMock.mockAjax(server, (urlOrRequest) => {
+            if(typeof urlOrRequest === 'string'){
+                throw new Error();
+            }
+
+            if(urlOrRequest.url && urlOrRequest.url.indexOf(server.conversation.conversationId)>0){
+                 const response: Partial<AjaxResponse> = {
+                    response: {id:'blah'},
+                    status: 200
+                };
+                expectedBotId = urlOrRequest.headers['x-ms-botid'];
+                return response as AjaxResponse;
+            }
+            else if(urlOrRequest.url && urlOrRequest.url.indexOf('/conversations') > 0){
+                // start conversation
+                const response: Partial<AjaxResponse> = {
+                    response: server.conversation,
+                    status: 201,
+                    xhr: {
+                        getResponseHeader: (name) => actual
+                    } as XMLHttpRequest
+                };
+                return response as AjaxResponse;
+            }
+            throw new Error();
+        });
+        directline = new DirectLineExport.DirectLine(services);
+        const scenario = function* (): IterableIterator<Observable<unknown>> {
+            yield Observable.timer(200, scheduler);
+            yield directline.postActivity(expected.x).catch(() => Observable.empty(scheduler));
+        };
+
+        // lack of subscribe arguments means that the empty subscriber is used
+        // the empty subscriber will propagate observable errors on the JS call stack
+        // within the scheduler notification action handling loop because of the observeOn
+        subscriptions.push(lazyConcat(scenario()).observeOn(scheduler).subscribe());
+        scheduler.flush();
+
+        expect(expectedBotId).toBe(actual);
     });
 });

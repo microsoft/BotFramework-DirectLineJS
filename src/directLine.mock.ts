@@ -91,7 +91,6 @@ export const mockAjax = (server: Server, customAjax?: ajaxType): AjaxCreationMet
       throw new Error();
     }
 
-    console.log(`${urlOrRequest.method}: ${urlOrRequest.url}`);
     const uri = new URL(urlOrRequest.url);
 
     const { pathname, searchParams } = uri;

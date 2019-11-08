@@ -29,6 +29,7 @@ import 'rxjs/add/observable/of';
 import 'rxjs/add/observable/throw';
 
 import dedupeFilenames from './dedupeFilenames';
+import { objectExpression } from '@babel/types';
 
 const DIRECT_LINE_VERSION = 'DirectLine/3.0';
 
@@ -380,8 +381,6 @@ const wrapWithRetry = (source: AjaxCreationMethod, scheduler: IScheduler): AjaxC
     const inner = (response$ : Observable<AjaxResponse>) => {
         return response$
         .catch<AjaxResponse, AjaxResponse>((err) => {
-            console.log(err.message);
-            // console.log("the value is " + err.response.xhr.getResponseHeader('Retry-After'));
             if(err.status === 429){
                 const retryAfter = err.xhr.getResponseHeader('Retry-After');
                 if(retryAfter && !isNaN(Number(retryAfter))){
@@ -469,6 +468,7 @@ export class DirectLine implements IBotConnection {
     private services: Services;
     private _userAgent: string;
     public referenceGrammarId: string;
+    private botIdHeader: string;
 
     private pollingInterval: number = 1000; //ms
 
@@ -622,7 +622,12 @@ export class DirectLine implements IBotConnection {
             }
         })
 //      .do(ajaxResponse => konsole.log("conversation ajaxResponse", ajaxResponse.response))
-        .map(ajaxResponse => ajaxResponse.response as Conversation)
+        .map(ajaxResponse => {
+            if(!this.botIdHeader){
+                this.botIdHeader = ajaxResponse.xhr.getResponseHeader('x-ms-botid');
+            }
+            return ajaxResponse.response as Conversation;
+        })
         .retryWhen(error$ =>
             // for now we deem 4xx and 5xx errors as unrecoverable
             // for everything else (timeouts), retry for a while
@@ -979,10 +984,10 @@ export class DirectLine implements IBotConnection {
     }
 
     private commonHeaders() {
-        return {
-            "Authorization": `Bearer ${this.token}`,
-            "x-ms-bot-agent": this._botAgent
-        };
+            return Object.assign({
+                "Authorization": `Bearer ${this.token}`,
+                "x-ms-bot-agent": this._botAgent
+            },  this.botIdHeader ? {'x-ms-botid': this.botIdHeader}: null);
     }
 
     private getBotAgent(customAgent: string = ''): string {
