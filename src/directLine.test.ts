@@ -26,10 +26,10 @@ class AjaxError extends Error{
 }
 
 // mock delay observable
-jest.mock('rxjs/add/operator/delay', () => {
-    const Observable = require('rxjs/Observable').Observable;
-    Observable.prototype.delay = jest.fn(function (item) { return this; });  // <= mock delay
-  });
+// jest.mock('rxjs/add/operator/delay', () => {
+//     const Observable = require('rxjs/Observable').Observable;
+//     Observable.prototype.delay = jest.fn(function (item) { return this; });  // <= mock delay
+//   });
 
 test("#setConnectionStatusFallback", () => {
     const { DirectLine } = DirectLineExport;
@@ -204,12 +204,11 @@ describe("MockSuite", () => {
     });
 
     test('RetryAfterHeader', () => {
-        // jest.mock('rxjs/add/operator/delay', () => {
-        //     const Observable = require('rxjs/Observable').Observable;
-        //     Observable.prototype.delay = jest.fn(function (item) { return this; });  // <= mock delay
-        //   });
-
         services.ajax = DirectLineMock.mockAjax(server, (urlOrRequest) => {
+            if(typeof urlOrRequest === 'string'){
+                throw new Error();
+            }
+            console.log('called with url ' + urlOrRequest.url);
             const response: Partial<AjaxResponse> = {
                 status: 429,
                 xhr:{
@@ -219,20 +218,27 @@ describe("MockSuite", () => {
             const error = new Error('Ajax Error')
             throw Object.assign(error, response);
         });
-        directline = new DirectLineExport.DirectLine(services);
+        // directline = new DirectLineExport.DirectLine(services);
 
+        let startTime: number;
         const scenario = function* (): IterableIterator<Observable<unknown>> {
             yield Observable.timer(200, scheduler);
-            yield directline.postActivity(expected.x).catch(() => Observable.empty(scheduler));
+            yield Observable.of(2).do(_ => {startTime = scheduler.now()});
+            yield Observable.of(2).delay(300, scheduler);
+            // yield directline.postActivity(expected.x).catch(() => Observable.empty(scheduler));
         };
 
         // lack of subscribe arguments means that the empty subscriber is used
         // the empty subscriber will propagate observable errors on the JS call stack
         // within the scheduler notification action handling loop because of the observeOn
+        // const startTime = scheduler.now();
+        // startTime = scheduler.now();
         subscriptions.push(lazyConcat(scenario()).observeOn(scheduler).subscribe());
         scheduler.flush();
+        const endTime = scheduler.now();
+        console.log('the time difference is ' + (endTime - startTime));
 
-        expect(Observable.prototype.delay).toHaveBeenNthCalledWith(1, 10, expect.anything());
+        // expect(Observable.prototype.delay).toHaveBeenNthCalledWith(1, 10, expect.anything());
     });
 
     test('SendDebugHeader', () => {
