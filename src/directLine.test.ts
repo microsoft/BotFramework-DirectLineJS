@@ -14,23 +14,6 @@ declare var process: {
     version: string;
 };
 
-class AjaxError extends Error{
-    message: string;
-    response: AjaxResponse;
-    constructor(m: string, response: AjaxResponse){
-        super(m);
-        this.message = m;
-        this.response = response;
-        Object.setPrototypeOf(this, AjaxError.prototype);
-    }
-}
-
-// mock delay observable
-// jest.mock('rxjs/add/operator/delay', () => {
-//     const Observable = require('rxjs/Observable').Observable;
-//     Observable.prototype.delay = jest.fn(function (item) { return this; });  // <= mock delay
-//   });
-
 test("#setConnectionStatusFallback", () => {
     const { DirectLine } = DirectLineExport;
     expect(typeof DirectLine.prototype.setConnectionStatusFallback).toBe("function")
@@ -50,7 +33,7 @@ test("#setConnectionStatusFallback", () => {
 });
 
 describe("#commonHeaders", () => {
-    const botAgent = "DirectLine/3.0 (directlinejs; custom-bot-agent)";
+    const botAgent = `DirectLine/3.0 (directlinejs; custom-bot-agent ${version})`;
     let botConnection;
 
     beforeEach(() => {
@@ -205,40 +188,57 @@ describe("MockSuite", () => {
 
     test('RetryAfterHeader', () => {
         services.ajax = DirectLineMock.mockAjax(server, (urlOrRequest) => {
+
             if(typeof urlOrRequest === 'string'){
                 throw new Error();
             }
-            console.log('called with url ' + urlOrRequest.url);
-            const response: Partial<AjaxResponse> = {
-                status: 429,
-                xhr:{
-                    getResponseHeader: (name) => "10",
-                } as XMLHttpRequest
-            };
-            const error = new Error('Ajax Error')
-            throw Object.assign(error, response);
+
+            if(urlOrRequest.url && urlOrRequest.url.indexOf(server.conversation.conversationId)>0){
+                 const response: Partial<AjaxResponse> = {
+                    status: 429,
+                    xhr:{
+                        getResponseHeader: (name) => "10"
+                    } as XMLHttpRequest
+                };
+                const error = new Error('Ajax Error');
+                throw Object.assign(error, response);
+            }
+            else if(urlOrRequest.url && urlOrRequest.url.indexOf('/conversations') > 0){
+                // start conversation
+                const response: Partial<AjaxResponse> = {
+                    response: server.conversation,
+                    status: 201,
+                    xhr: {
+                        getResponseHeader: (name) => 'n/a'
+                    } as XMLHttpRequest
+                };
+                return response as AjaxResponse;
+            }
+            throw new Error();
         });
-        // directline = new DirectLineExport.DirectLine(services);
+        directline = new DirectLineExport.DirectLine(services);
 
         let startTime: number;
+        let endTime: number;
         const scenario = function* (): IterableIterator<Observable<unknown>> {
             yield Observable.timer(200, scheduler);
-            yield Observable.of(2).do(_ => {startTime = scheduler.now()});
-            yield Observable.of(2).delay(300, scheduler);
-            // yield directline.postActivity(expected.x).catch(() => Observable.empty(scheduler));
+            startTime = scheduler.now();
+            yield directline.postActivity(expected.x);
         };
 
-        // lack of subscribe arguments means that the empty subscriber is used
-        // the empty subscriber will propagate observable errors on the JS call stack
-        // within the scheduler notification action handling loop because of the observeOn
-        // const startTime = scheduler.now();
-        // startTime = scheduler.now();
+        let actualError: Error;
+        try{
         subscriptions.push(lazyConcat(scenario()).observeOn(scheduler).subscribe());
         scheduler.flush();
-        const endTime = scheduler.now();
-        console.log('the time difference is ' + (endTime - startTime));
-
-        // expect(Observable.prototype.delay).toHaveBeenNthCalledWith(1, 10, expect.anything());
+        }
+        catch(error){
+            actualError = error;
+            endTime = scheduler.now();
+        }
+        expect(actualError.message).toStrictEqual('Ajax Error');
+        // @ts-ignore
+        expect(actualError.status).toStrictEqual(429);
+        expect(endTime - startTime).toStrictEqual(10);
     });
 
     test('SendDebugHeader', () => {

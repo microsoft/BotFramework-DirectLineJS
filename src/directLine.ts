@@ -382,24 +382,16 @@ const wrapWithRetry = (source: AjaxCreationMethod, scheduler: IScheduler): AjaxC
         return response$
         .catch<AjaxResponse, AjaxResponse>((err) => {
             if(err.status === 429){
-                const retryAfter = err.xhr.getResponseHeader('Retry-After');
-                if(retryAfter && !isNaN(Number(retryAfter))){
-                    console.log('delaying by ' + retryAfter);
-                    return Observable.throw(err, scheduler).delay(Number(retryAfter), scheduler);
+                const retryAfterValue = err.xhr.getResponseHeader('Retry-After');
+                const retryAfter = Number(retryAfterValue);
+                if(!isNaN(retryAfter)){
+                    return Observable.timer(Number(retryAfter), scheduler)
+                    .flatMap(_ => Observable.throw(err, scheduler));
                 }
             }
 
             return Observable.throw(err, scheduler);
         });
-        // .concatMap((response: AjaxResponse) => {
-        //     if(response.status === 429){
-        //         const retryAfter =  response.xhr.getResponseHeader("Retry-After");
-        //         if(retryAfter && !isNaN(Number(retryAfter))){
-        //             return Observable.of(response).delay(Number(retryAfter), scheduler);
-        //         }
-        //     }
-        //     return Observable.of(response);
-        // })
     };
 
     const outer = (urlOrRequest: string| AjaxRequest) => {
@@ -612,7 +604,6 @@ export class DirectLine implements IBotConnection {
             ? `${this.domain}/conversations/${this.conversationId}?watermark=${this.watermark}`
             : `${this.domain}/conversations`;
         const method = this.conversationId ? "GET" : "POST";
-        console.log('start conversation called');
         return this.services.ajax({
             method,
             url,
@@ -624,16 +615,18 @@ export class DirectLine implements IBotConnection {
         })
 //      .do(ajaxResponse => konsole.log("conversation ajaxResponse", ajaxResponse.response))
         .map(ajaxResponse => {
-            if(!this.botIdHeader){
-                this.botIdHeader = ajaxResponse.xhr.getResponseHeader('x-ms-botid');
+            try{
+                if(!this.botIdHeader ){
+                    this.botIdHeader = ajaxResponse.xhr.getResponseHeader('x-ms-botid');
+                }
             }
+            catch{/*don't care if the above throws for any reason*/}
             return ajaxResponse.response as Conversation;
         })
         .retryWhen(error$ =>
             // for now we deem 4xx and 5xx errors as unrecoverable
             // for everything else (timeouts), retry for a while
             error$.mergeMap((error) => {
-                console.log(error.status);
                 return error.status >= 400 && error.status < 600
                 ? Observable.throw(error, this.services.scheduler)
                 : Observable.of(error, this.services.scheduler)
