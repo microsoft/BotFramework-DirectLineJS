@@ -95,7 +95,7 @@ describe('MockSuite', () => {
             pump();
 
             return () => {
-                if (inner !== undefined) {
+                if (typeof inner !== 'undefined') {
                     inner.unsubscribe();
                 }
             };

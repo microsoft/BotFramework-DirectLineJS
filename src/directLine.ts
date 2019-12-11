@@ -374,7 +374,7 @@ export interface Services {
     random: () => number;
 }
 
-const wrapWithRetry = (source: AjaxCreationMethod, scheduler: IScheduler): AjaxCreationMethod =>{
+const wrapAjaxWithRetry = (source: AjaxCreationMethod, scheduler: IScheduler): AjaxCreationMethod =>{
 
     const notImplemented = (): never => { throw new Error('not implemented'); };
 
@@ -411,11 +411,12 @@ const wrapWithRetry = (source: AjaxCreationMethod, scheduler: IScheduler): AjaxC
 const makeServices = (services: Partial<Services>): Services => {
     const scheduler = services.scheduler || AsyncScheduler;
     return {
-    scheduler,
-    ajax: wrapWithRetry(services.ajax || Observable.ajax, scheduler),
-    WebSocket: services.WebSocket || WebSocket,
-    random: services.random || Math.random,
-}};
+        scheduler,
+        ajax: wrapAjaxWithRetry(services.ajax || Observable.ajax, scheduler),
+        WebSocket: services.WebSocket || WebSocket,
+        random: services.random || Math.random,
+    }
+}
 
 const lifetimeRefreshToken = 30 * 60 * 1000;
 const intervalRefreshToken = lifetimeRefreshToken / 2;
