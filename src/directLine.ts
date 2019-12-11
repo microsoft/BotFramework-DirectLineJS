@@ -376,7 +376,7 @@ export interface Services {
 
 const wrapWithRetry = (source: AjaxCreationMethod, scheduler: IScheduler): AjaxCreationMethod =>{
 
-    const notImplemented = (): never => { throw new Error('not implemented') };
+    const notImplemented = (): never => { throw new Error('not implemented'); };
 
     const inner = (response$ : Observable<AjaxResponse>) => {
         return response$
@@ -385,7 +385,7 @@ const wrapWithRetry = (source: AjaxCreationMethod, scheduler: IScheduler): AjaxC
                 const retryAfterValue = err.xhr.getResponseHeader('Retry-After');
                 const retryAfter = Number(retryAfterValue);
                 if(!isNaN(retryAfter)){
-                    return Observable.timer(Number(retryAfter), scheduler)
+                    return Observable.timer(retryAfter, scheduler)
                     .flatMap(_ => Observable.throw(err, scheduler));
                 }
             }
@@ -398,7 +398,7 @@ const wrapWithRetry = (source: AjaxCreationMethod, scheduler: IScheduler): AjaxC
         return inner(source(urlOrRequest));
     };
 
-    return  Object.assign(outer, {
+    return Object.assign(outer, {
         get: (url: string, headers?: Object): Observable<AjaxResponse> => notImplemented(),
         post: (url: string, body?: any, headers?: Object): Observable<AjaxResponse> => notImplemented(),
         put: (url: string, body?: any, headers?: Object): Observable<AjaxResponse> => notImplemented(),
@@ -617,7 +617,7 @@ export class DirectLine implements IBotConnection {
         .map(ajaxResponse => {
             try{
                 if(!this.botIdHeader ){
-                    this.botIdHeader = ajaxResponse.xhr.getResponseHeader('x-ms-botid');
+                    this.botIdHeader = ajaxResponse.xhr.getResponseHeader('x-ms-bot-id');
                 }
             }
             catch{/*don't care if the above throws for any reason*/}
@@ -982,7 +982,7 @@ export class DirectLine implements IBotConnection {
             return Object.assign({
                 "Authorization": `Bearer ${this.token}`,
                 "x-ms-bot-agent": this._botAgent
-            },  this.botIdHeader ? {'x-ms-botid': this.botIdHeader}: null);
+            },  this.botIdHeader ? {'x-ms-bot-id': this.botIdHeader}: null);
     }
 
     private getBotAgent(customAgent: string = ''): string {

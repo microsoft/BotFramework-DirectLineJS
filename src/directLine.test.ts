@@ -2,7 +2,7 @@ import * as DirectLineExport from "./directLine";
 import * as DirectLineMock from './directLine.mock';
 import { TestScheduler, Observable, Subscription, AjaxResponse } from "rxjs";
 // @ts-ignore
-import {version} from "../package.json";
+import { version } from "../package.json";
 
 declare var process: {
     arch: string;
@@ -66,7 +66,7 @@ describe("#commonHeaders", () => {
     })
 });
 
-describe("MockSuite", () => {
+describe('MockSuite', () => {
 
     const lazyConcat = <T>(items: Iterable<Observable<T>>): Observable<T> =>
         new Observable<T>(subscriber => {
@@ -83,7 +83,8 @@ describe("MockSuite", () => {
                         inner = result.value.subscribe(
                             value => subscriber.next(value),
                             error => subscriber.error(error),
-                            pump);
+                            pump
+                        );
                     }
                 }
                 catch (error) {
