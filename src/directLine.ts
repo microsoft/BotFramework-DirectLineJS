@@ -29,6 +29,7 @@ import 'rxjs/add/observable/of';
 import 'rxjs/add/observable/throw';
 
 import dedupeFilenames from './dedupeFilenames';
+import getBlobFromDataUri from './getBlobFromDataUri'
 import { objectExpression } from '@babel/types';
 
 const DIRECT_LINE_VERSION = 'DirectLine/3.0';
@@ -768,30 +769,21 @@ export class DirectLine implements IBotConnection {
 
         // If we're not connected to the bot, get connected
         // Will throw an error if we are not connected
-        return this.checkConnection(true)
-        .flatMap(_ => {
-            // To send this message to DirectLine we need to deconstruct it into a "template" activity
-            // and one blob for each attachment.
-            formData = new FormData();
-            formData.append('activity', new Blob([JSON.stringify({
-                ...message,
-                // Removing contentUrl from attachment, we will send it via multipart
-                attachments: cleansedAttachments.map(({ contentUrl: string, ...others }) => ({ ...others }))
-            })], { type: 'application/vnd.microsoft.activity' }));
+        // To send this message to DirectLine we need to deconstruct it into a "template" activity
+        // and one blob for each attachment.
+        formData = new FormData();
+        formData.append('activity', new Blob([JSON.stringify({
+            ...message,
+            // Removing contentUrl from attachment, we will send it via multipart
+            attachments: cleansedAttachments.map(({ contentUrl: string, ...others }) => ({ ...others }))
+        })], { type: 'application/vnd.microsoft.activity' }));
 
-            return Observable.from(cleansedAttachments, this.services.scheduler)
-            .flatMap((media: Media) =>
-                this.services.ajax({
-                    method: "GET",
-                    url: media.contentUrl,
-                    responseType: 'arraybuffer'
-                })
-                .do(ajaxResponse =>
-                    formData.append('file', new Blob([ajaxResponse.response], { type: media.contentType }), media.name)
-                )
-            )
-            .count()
-        })
+        cleansedAttachments.forEach(function (media) {
+            const blob = getBlobFromDataUri(media.contentUrl);
+            formData.append('file', blob, media.name);
+        });
+
+        return this.checkConnection(true)
         .flatMap(_ =>
             this.services.ajax({
                 method: "POST",
