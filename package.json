@@ -27,6 +27,7 @@
   "license": "MIT",
   "dependencies": {
     "@babel/runtime": "^7.6.0",
+    "data-uri-to-buffer": "^3.0.0",
     "rxjs": "^5.0.3"
   },
   "devDependencies": {

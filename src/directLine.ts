@@ -29,7 +29,7 @@ import 'rxjs/add/observable/of';
 import 'rxjs/add/observable/throw';
 
 import dedupeFilenames from './dedupeFilenames';
-import getBlobFromDataUri from './getBlobFromDataUri'
+import dataUriToBuffer from 'data-uri-to-buffer'
 import { objectExpression } from '@babel/types';
 
 const DIRECT_LINE_VERSION = 'DirectLine/3.0';
@@ -778,8 +778,8 @@ export class DirectLine implements IBotConnection {
             attachments: cleansedAttachments.map(({ contentUrl: string, ...others }) => ({ ...others }))
         })], { type: 'application/vnd.microsoft.activity' }));
 
-        cleansedAttachments.forEach(media => {
-            const blob = getBlobFromDataUri(media.contentUrl);
+        cleansedAttachments.forEach((media) {
+            const blob = new Blob([dataUriToBuffer(media.contentUrl)]);
             formData.append('file', blob, media.name);
         });
 
