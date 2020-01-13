@@ -778,7 +778,7 @@ export class DirectLine implements IBotConnection {
             attachments: cleansedAttachments.map(({ contentUrl: string, ...others }) => ({ ...others }))
         })], { type: 'application/vnd.microsoft.activity' }));
 
-        cleansedAttachments.forEach(function (media) {
+        cleansedAttachments.forEach(media => {
             const blob = getBlobFromDataUri(media.contentUrl);
             formData.append('file', blob, media.name);
         });
