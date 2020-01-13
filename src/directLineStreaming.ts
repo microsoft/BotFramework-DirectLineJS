@@ -3,7 +3,7 @@
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 import { Observable } from 'rxjs/Observable';
 import { Subscriber } from 'rxjs/Subscriber';
-import * as BFSE from 'botframework-streaming-extensions';
+import * as BFSE from 'botframework-streaming';
 
 import {
   Activity,
