@@ -1,10 +1,12 @@
 // In order to keep file size down, only import the parts of rxjs that we use
 
-import { AjaxResponse, AjaxRequest } from 'rxjs/observable/dom/AjaxObservable';
+import { AjaxResponse, AjaxCreationMethod, AjaxRequest, AjaxError } from 'rxjs/observable/dom/AjaxObservable';
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 import { Observable } from 'rxjs/Observable';
+import { IScheduler } from 'rxjs/Scheduler';
 import { Subscriber } from 'rxjs/Subscriber';
 import { Subscription } from 'rxjs/Subscription';
+import { async as AsyncScheduler } from 'rxjs/scheduler/async';
 
 import 'rxjs/add/operator/catch';
 import 'rxjs/add/operator/combineLatest';
@@ -14,6 +16,7 @@ import 'rxjs/add/operator/do';
 import 'rxjs/add/operator/filter';
 import 'rxjs/add/operator/map';
 import 'rxjs/add/operator/mergeMap';
+import 'rxjs/add/operator/concatMap';
 import 'rxjs/add/operator/retryWhen';
 import 'rxjs/add/operator/share';
 import 'rxjs/add/operator/take';
@@ -28,6 +31,7 @@ import 'rxjs/add/observable/throw';
 import {DirectLineStreaming} from './directLineStreaming';
 
 import dedupeFilenames from './dedupeFilenames';
+import { objectExpression } from '@babel/types';
 
 const DIRECT_LINE_VERSION = 'DirectLine/3.0';
 
@@ -35,6 +39,7 @@ declare var process: {
     arch: string;
     env: {
         VERSION: string;
+        npm_package_version: string;
     };
     platform: string;
     release: string;
@@ -335,7 +340,7 @@ export interface EventActivity extends IActivity {
 
 export type Activity = Message | Typing | EventActivity;
 
-interface ActivityGroup {
+export interface ActivityGroup {
     activities: Activity[],
     watermark: string
 }
@@ -363,6 +368,57 @@ export interface DirectLineOptions {
     streamUrl?: string,
     // Attached to all requests to identify requesting agent.
     botAgent?: string
+}
+
+export interface Services {
+    scheduler: IScheduler;
+    WebSocket: typeof WebSocket;
+    ajax: AjaxCreationMethod;
+    random: () => number;
+}
+
+const wrapAjaxWithRetry = (source: AjaxCreationMethod, scheduler: IScheduler): AjaxCreationMethod =>{
+
+    const notImplemented = (): never => { throw new Error('not implemented'); };
+
+    const inner = (response$ : Observable<AjaxResponse>) => {
+        return response$
+        .catch<AjaxResponse, AjaxResponse>((err) => {
+            if(err.status === 429){
+                const retryAfterValue = err.xhr.getResponseHeader('Retry-After');
+                const retryAfter = Number(retryAfterValue);
+                if(!isNaN(retryAfter)){
+                    return Observable.timer(retryAfter, scheduler)
+                    .flatMap(_ => Observable.throw(err, scheduler));
+                }
+            }
+
+            return Observable.throw(err, scheduler);
+        });
+    };
+
+    const outer = (urlOrRequest: string| AjaxRequest) => {
+        return inner(source(urlOrRequest));
+    };
+
+    return Object.assign(outer, {
+        get: (url: string, headers?: Object): Observable<AjaxResponse> => notImplemented(),
+        post: (url: string, body?: any, headers?: Object): Observable<AjaxResponse> => notImplemented(),
+        put: (url: string, body?: any, headers?: Object): Observable<AjaxResponse> => notImplemented(),
+        patch: (url: string, body?: any, headers?: Object): Observable<AjaxResponse> => notImplemented(),
+        delete: (url: string, headers?: Object): Observable<AjaxResponse> => notImplemented(),
+        getJSON: <T>(url: string, headers?: Object): Observable<T> => notImplemented()
+    });
+}
+
+const makeServices = (services: Partial<Services>): Services => {
+    const scheduler = services.scheduler || AsyncScheduler;
+    return {
+        scheduler,
+        ajax: wrapAjaxWithRetry(services.ajax || Observable.ajax, scheduler),
+        WebSocket: services.WebSocket || WebSocket,
+        random: services.random || Math.random,
+    }
 }
 
 const lifetimeRefreshToken = 30 * 60 * 1000;
@@ -406,16 +462,16 @@ export class DirectLine implements IBotConnection {
     private watermark = '';
     private streamUrl: string;
     private _botAgent = '';
+    private services: Services;
     private _userAgent: string;
     public referenceGrammarId: string;
+    private botIdHeader: string;
 
     private pollingInterval: number = 1000; //ms
 
     private tokenRefreshSubscription: Subscription;
 
-    private ending: boolean;
-
-    constructor(options: DirectLineOptions) {
+    constructor(options: DirectLineOptions & Partial<Services>) {
         this.secret = options.secret;
         this.token = options.secret || options.token;
         this.webSocket = (options.webSocket === undefined ? true : options.webSocket) && typeof WebSocket !== 'undefined' && WebSocket !== undefined;
@@ -441,6 +497,8 @@ export class DirectLine implements IBotConnection {
         }
 
         this._botAgent = this.getBotAgent(options.botAgent);
+
+        this.services = makeServices(options);
 
         const parsedPollingInterval = ~~options.pollingInterval;
 
@@ -479,7 +537,7 @@ export class DirectLine implements IBotConnection {
                 //if token and streamUrl are defined it means reconnect has already been done. Skipping it.
                 if (this.token && this.streamUrl) {
                     this.connectionStatus$.next(ConnectionStatus.Online);
-                    return Observable.of(connectionStatus);
+                    return Observable.of(connectionStatus, this.services.scheduler);
                 } else {
                     return this.startConversation().do(conversation => {
                         this.conversationId = conversation.conversationId;
@@ -497,26 +555,23 @@ export class DirectLine implements IBotConnection {
                 }
             }
             else {
-                return Observable.of(connectionStatus);
+                return Observable.of(connectionStatus, this.services.scheduler);
             }
         })
         .filter(connectionStatus => connectionStatus != ConnectionStatus.Uninitialized && connectionStatus != ConnectionStatus.Connecting)
         .flatMap(connectionStatus => {
             switch (connectionStatus) {
                 case ConnectionStatus.Ended:
-                    if (this.ending)
-                        return Observable.of(connectionStatus);
-                    else
-                        return Observable.throw(errorConversationEnded);
+                    return Observable.throw(errorConversationEnded, this.services.scheduler);
 
                 case ConnectionStatus.FailedToConnect:
-                    return Observable.throw(errorFailedToConnect);
+                    return Observable.throw(errorFailedToConnect, this.services.scheduler);
 
                 case ConnectionStatus.ExpiredToken:
-                    return Observable.of(connectionStatus);
+                    return Observable.of(connectionStatus, this.services.scheduler);
 
                 default:
-                    return Observable.of(connectionStatus);
+                    return Observable.of(connectionStatus, this.services.scheduler);
             }
         })
 
@@ -557,8 +612,7 @@ export class DirectLine implements IBotConnection {
             ? `${this.domain}/conversations/${this.conversationId}?watermark=${this.watermark}`
             : `${this.domain}/conversations`;
         const method = this.conversationId ? "GET" : "POST";
-
-        return Observable.ajax({
+        return this.services.ajax({
             method,
             url,
             timeout,
@@ -568,21 +622,30 @@ export class DirectLine implements IBotConnection {
             }
         })
 //      .do(ajaxResponse => konsole.log("conversation ajaxResponse", ajaxResponse.response))
-        .map(ajaxResponse => ajaxResponse.response as Conversation)
+        .map(ajaxResponse => {
+            try{
+                if(!this.botIdHeader ){
+                    this.botIdHeader = ajaxResponse.xhr.getResponseHeader('x-ms-bot-id');
+                }
+            }
+            catch{/*don't care if the above throws for any reason*/}
+            return ajaxResponse.response as Conversation;
+        })
         .retryWhen(error$ =>
             // for now we deem 4xx and 5xx errors as unrecoverable
             // for everything else (timeouts), retry for a while
-            error$.mergeMap(error => error.status >= 400 && error.status < 600
-                ? Observable.throw(error)
-                : Observable.of(error)
-            )
-            .delay(timeout)
+            error$.mergeMap((error) => {
+                return error.status >= 400 && error.status < 600
+                ? Observable.throw(error, this.services.scheduler)
+                : Observable.of(error, this.services.scheduler)
+            })
+            .delay(timeout, this.services.scheduler)
             .take(retries)
         )
     }
 
     private refreshTokenLoop() {
-        this.tokenRefreshSubscription = Observable.interval(intervalRefreshToken)
+        this.tokenRefreshSubscription = Observable.interval(intervalRefreshToken, this.services.scheduler)
         .flatMap(_ => this.refreshToken())
         .subscribe(token => {
             konsole.log("refreshing token", token, "at", new Date());
@@ -593,7 +656,7 @@ export class DirectLine implements IBotConnection {
     private refreshToken() {
         return this.checkConnection(true)
         .flatMap(_ =>
-            Observable.ajax({
+            this.services.ajax({
                 method: "POST",
                 url: `${this.domain}/tokens/refresh`,
                 timeout,
@@ -607,15 +670,15 @@ export class DirectLine implements IBotConnection {
                     if (error.status === 403) {
                         // if the token is expired there's no reason to keep trying
                         this.expiredToken();
-                        return Observable.throw(error);
+                        return Observable.throw(error, this.services.scheduler);
                     } else if (error.status === 404) {
                         // If the bot is gone, we should stop retrying
-                        return Observable.throw(error);
+                        return Observable.throw(error, this.services.scheduler);
                     }
 
-                    return Observable.of(error);
+                    return Observable.of(error, this.services.scheduler);
                 })
-                .delay(timeout)
+                .delay(timeout, this.services.scheduler)
                 .take(retries)
             )
         )
@@ -631,8 +694,13 @@ export class DirectLine implements IBotConnection {
     end() {
         if (this.tokenRefreshSubscription)
             this.tokenRefreshSubscription.unsubscribe();
-        this.ending = true;
-        this.connectionStatus$.next(ConnectionStatus.Ended);
+        try {
+            this.connectionStatus$.next(ConnectionStatus.Ended);
+        } catch (e) {
+            if (e === errorConversationEnded)
+                return;
+            throw(e);
+        }
     }
 
     getSessionId(): Observable<string> {
@@ -641,7 +709,7 @@ export class DirectLine implements IBotConnection {
         konsole.log("getSessionId");
         return this.checkConnection(true)
             .flatMap(_ =>
-                Observable.ajax({
+                this.services.ajax({
                     method: "GET",
                     url: `${this.domain}/session/getsessionid`,
                     withCredentials: true,
@@ -660,7 +728,7 @@ export class DirectLine implements IBotConnection {
                 })
                 .catch(error => {
                     konsole.log("getSessionId error: " + error.status);
-                    return Observable.of('');
+                    return Observable.of('', this.services.scheduler);
                 })
             )
             .catch(error => this.catchExpiredToken(error));
@@ -678,7 +746,7 @@ export class DirectLine implements IBotConnection {
         konsole.log("postActivity", activity);
         return this.checkConnection(true)
         .flatMap(_ =>
-            Observable.ajax({
+            this.services.ajax({
                 method: "POST",
                 url: `${this.domain}/conversations/${this.conversationId}/activities`,
                 body: activity,
@@ -718,9 +786,9 @@ export class DirectLine implements IBotConnection {
                 attachments: cleansedAttachments.map(({ contentUrl: string, ...others }) => ({ ...others }))
             })], { type: 'application/vnd.microsoft.activity' }));
 
-            return Observable.from(cleansedAttachments)
+            return Observable.from(cleansedAttachments, this.services.scheduler)
             .flatMap((media: Media) =>
-                Observable.ajax({
+                this.services.ajax({
                     method: "GET",
                     url: media.contentUrl,
                     responseType: 'arraybuffer'
@@ -732,7 +800,7 @@ export class DirectLine implements IBotConnection {
             .count()
         })
         .flatMap(_ =>
-            Observable.ajax({
+            this.services.ajax({
                 method: "POST",
                 url: `${this.domain}/conversations/${this.conversationId}/upload?userId=${message.from.id}`,
                 body: formData,
@@ -753,14 +821,14 @@ export class DirectLine implements IBotConnection {
             this.expiredToken();
         else if (error.status >= 400 && error.status < 500)
             // more unrecoverable errors
-            return Observable.throw(error);
-        return Observable.of("retry");
+            return Observable.throw(error, this.services.scheduler);
+        return Observable.of("retry", this.services.scheduler);
     }
 
     private catchExpiredToken(error: any) {
         return error === errorExpiredToken
-        ? Observable.of("retry")
-        : Observable.throw(error);
+        ? Observable.of("retry", this.services.scheduler)
+        : Observable.throw(error, this.services.scheduler);
     }
 
     private pollingGetActivity$() {
@@ -769,11 +837,13 @@ export class DirectLine implements IBotConnection {
             // the first event is produced immediately.
             const trigger$ = new BehaviorSubject<any>({});
 
+            // TODO: remove Date.now, use reactive interval to space out every request
+
             trigger$.subscribe(() => {
                 if (this.connectionStatus$.getValue() === ConnectionStatus.Online) {
                     const startTimestamp = Date.now();
 
-                    Observable.ajax({
+                    this.services.ajax({
                         headers: {
                             Accept: 'application/json',
                             ...this.commonHeaders()
@@ -818,7 +888,7 @@ export class DirectLine implements IBotConnection {
     private observableFromActivityGroup(activityGroup: ActivityGroup) {
         if (activityGroup.watermark)
             this.watermark = activityGroup.watermark;
-        return Observable.from(activityGroup.activities);
+        return Observable.from(activityGroup.activities, this.services.scheduler);
     }
 
     private webSocketActivity$(): Observable<Activity> {
@@ -828,23 +898,23 @@ export class DirectLine implements IBotConnection {
             // WebSockets can be closed by the server or the browser. In the former case we need to
             // retrieve a new streamUrl. In the latter case we could first retry with the current streamUrl,
             // but it's simpler just to always fetch a new one.
-            .retryWhen(error$ => error$.delay(this.getRetryDelay()).mergeMap(error => this.reconnectToConversation()))
+            .retryWhen(error$ => error$.delay(this.getRetryDelay(), this.services.scheduler).mergeMap(error => this.reconnectToConversation()))
         )
         .flatMap(activityGroup => this.observableFromActivityGroup(activityGroup))
     }
 
     // Returns the delay duration in milliseconds
     private getRetryDelay() {
-        return Math.floor(3000 + Math.random() * 12000);
+        return Math.floor(3000 + this.services.random() * 12000);
     }
 
-    // Originally we used Observable.webSocket, but it's fairly opionated  and I ended up writing
+    // Originally we used Observable.webSocket, but it's fairly opinionated and I ended up writing
     // a lot of code to work around their implemention details. Since WebChat is meant to be a reference
     // implementation, I decided roll the below, where the logic is more purposeful. - @billba
     private observableWebSocket<T>() {
         return Observable.create((subscriber: Subscriber<T>) => {
             konsole.log("creating WebSocket", this.streamUrl);
-            const ws = new WebSocket(this.streamUrl);
+            const ws = new this.services.WebSocket(this.streamUrl);
             let sub: Subscription;
 
             ws.onopen = open => {
@@ -853,7 +923,7 @@ export class DirectLine implements IBotConnection {
                 // If we periodically ping the server with empty messages, it helps Chrome
                 // realize when connection breaks, and close the socket. We then throw an
                 // error, and that give us the opportunity to attempt to reconnect.
-                sub = Observable.interval(timeout).subscribe(_ => {
+                sub = Observable.interval(timeout, this.services.scheduler).subscribe(_ => {
                     try {
                         ws.send("")
                     } catch(e) {
@@ -870,12 +940,6 @@ export class DirectLine implements IBotConnection {
 
             ws.onmessage = message => message.data && subscriber.next(JSON.parse(message.data));
 
-            ws.onerror = error =>  {
-                konsole.log("WebSocket error", error);
-                if (sub) sub.unsubscribe();
-                subscriber.error(error);
-            }
-
             // This is the 'unsubscribe' method, which is called when this observable is disposed.
             // When the WebSocket closes itself, we throw an error, and this function is eventually called.
             // When the observable is closed first (e.g. when tearing down a WebChat instance) then
@@ -889,7 +953,7 @@ export class DirectLine implements IBotConnection {
     private reconnectToConversation() {
         return this.checkConnection(true)
         .flatMap(_ =>
-            Observable.ajax({
+            this.services.ajax({
                 method: "GET",
                 url: `${this.domain}/conversations/${this.conversationId}?watermark=${this.watermark}`,
                 timeout,
@@ -911,22 +975,22 @@ export class DirectLine implements IBotConnection {
                         // website might eventually call reconnect() with a new token and streamUrl.
                         this.expiredToken();
                     } else if (error.status === 404) {
-                        return Observable.throw(errorConversationEnded);
+                        return Observable.throw(errorConversationEnded, this.services.scheduler);
                     }
 
-                    return Observable.of(error);
+                    return Observable.of(error, this.services.scheduler);
                 })
-                .delay(timeout)
+                .delay(timeout, this.services.scheduler)
                 .take(retries)
             )
         )
     }
 
     private commonHeaders() {
-        return {
-            "Authorization": `Bearer ${this.token}`,
-            "x-ms-bot-agent": this._botAgent
-        };
+            return Object.assign({
+                "Authorization": `Bearer ${this.token}`,
+                "x-ms-bot-agent": this._botAgent
+            },  this.botIdHeader ? {'x-ms-bot-id': this.botIdHeader}: null);
     }
 
     private getBotAgent(customAgent: string = ''): string {
@@ -936,6 +1000,8 @@ export class DirectLine implements IBotConnection {
             clientAgent += `; ${customAgent}`
         }
 
-        return `${DIRECT_LINE_VERSION} (${clientAgent})`;
+        return `${DIRECT_LINE_VERSION} (${clientAgent} ${process.env.npm_package_version})`;
     }
+
+
 }

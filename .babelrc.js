@@ -21,7 +21,13 @@ module.exports = {
     '@babel/plugin-proposal-class-properties',
     '@babel/plugin-proposal-object-rest-spread',
     '@babel/plugin-transform-runtime',
-    'babel-plugin-transform-inline-environment-variables'
+    [
+      "transform-inline-environment-variables", {
+        "include": [
+          "npm_package_version"
+        ]
+      }
+    ]
   ],
   presets: [
     ['@babel/preset-env', {
