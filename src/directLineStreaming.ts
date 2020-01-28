@@ -49,11 +49,11 @@ class StreamHandler implements BFSE.RequestHandler {
       return r;
     }
 
-    var attachments = activitySet.activities[0].attachments;
+    let attachments = activitySet.activities[0].attachments;
     let stream: BFSE.ContentStream;
     while (stream = request.streams.shift()) {
       let atch = await stream.readAsString();
-      var dataUri = "data:text/plain;base64," + atch;
+      let dataUri = "data:text/plain;base64," + atch;
       attachments.push({ contentType: stream.contentType, contentUrl: dataUri });
     }
 
@@ -177,7 +177,7 @@ export class DirectLineStreaming implements IBotConnection {
         },
         (e) => {
           if (e.status === 403 || e.status === 404) {
-            console.warn("Error refreshing token " + e.status);
+            console.error("Fatal error while refreshing token " + e.status);
           }else{
             if (retryCount > 0) {
               console.warn("Error refreshing token " + e.status + " " + retryCount + " retries left");
@@ -241,7 +241,7 @@ export class DirectLineStreaming implements IBotConnection {
         .flatMap(_ => {
           let url = `/v3/directline/conversations/${this.conversationId}/users/${messageWithoutAttachments.from.id}/upload`;
           let request = BFSE.StreamingRequest.create('PUT', url);
-          var activityStream = new BFSE.SubscribableStream();
+          let activityStream = new BFSE.SubscribableStream();
           activityStream.write(JSON.stringify(messageWithoutAttachments), 'utf-8');
           request.addStream(new BFSE.HttpContent({ type: "application/vnd.microsoft.activity", contentLength: activityStream.length }, activityStream));
           httpContentList.forEach(e => request.addStream(e));
@@ -249,7 +249,8 @@ export class DirectLineStreaming implements IBotConnection {
         })
         .do(resp => {
           if (resp.streams && resp.streams.length !== 1) {
-            subscriber.error("Invalid stream count " + resp.streams.length);
+            //subscriber.error("Invalid stream count " + resp.streams.length);
+            subscriber.error(new Error(`Invalid stream count ${resp.streams.length}`));
           } else {
             resp.streams[0].readAsJson()
               .then(json => {
@@ -307,8 +308,8 @@ export class DirectLineStreaming implements IBotConnection {
   private async connectAsync() {
     let re = new RegExp('^http(s?)');
     if (!re.test(this.domain)) throw ("Domain must begin with http or https");
-    let wsUrl = this.domain.replace(re, "ws$1") + '/conversations/connect?token=' + this.token + '&conversationId=' + this.conversationId;
-
+    let urlSearchParams = new URLSearchParams({token: this.token, conversationId: this.conversationId}).toString();
+    let wsUrl = `${this.domain.replace(re, 'ws$1')}/conversations/connect?${urlSearchParams}`;
     try {
       this.streamConnection = new BFSE.WebSocketClient({
         url: wsUrl,

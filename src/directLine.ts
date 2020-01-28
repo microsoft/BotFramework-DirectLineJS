@@ -517,7 +517,7 @@ export class DirectLine implements IBotConnection {
         );
 
         if (options.streamingWebSocket) {
-            var DLS = new DirectLineStreaming(options, this);
+            const DLS = new DirectLineStreaming(options, this);
         } else {
             this.activity$ = (this.webSocket
                         ? this.webSocketActivity$()

@@ -1,13 +1,12 @@
 language: node_js
 
-if: branch = ckk/protocoljs
 
 node_js:
 - "12"
 
 before_install:
 - npm ci
-- npx version-from-git --travis --template streamingextensions.short
+- npx version-from-git --travis
 
 install:
 - npm run prepublishOnly
