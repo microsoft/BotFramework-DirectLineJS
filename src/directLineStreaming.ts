@@ -249,7 +249,6 @@ export class DirectLineStreaming implements IBotConnection {
         })
         .do(resp => {
           if (resp.streams && resp.streams.length !== 1) {
-            //subscriber.error("Invalid stream count " + resp.streams.length);
             subscriber.error(new Error(`Invalid stream count ${resp.streams.length}`));
           } else {
             resp.streams[0].readAsJson()
