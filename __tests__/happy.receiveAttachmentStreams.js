@@ -50,9 +50,10 @@ describe('Happy path', () => {
           }
           let attachmentContents1 = await fetchAsBase64(url1);
           let attachmentContents2 = await fetchAsBase64(url2);
+          const prefixLength = "data:text/plain;base64,".length;
           return (activity.attachments.length == 2 &&
-             attachmentContents1 == activity.attachments[0].contentUrl.substr(23) &&
-             attachmentContents2 == activity.attachments[1].contentUrl.substr(23));
+             attachmentContents1 == activity.attachments[0].contentUrl.substr(prefixLength) &&
+             attachmentContents2 == activity.attachments[1].contentUrl.substr(prefixLength));
         })
       ]);
     });

@@ -4,7 +4,7 @@ This is CONTRIBUTING.md for Direct Line Streaming Extensions.
 
 ## Run automated tests
 
-- Clone this repository with `ckk/protocoljs` branch
+- Clone this repository branch
 - `npm ci`
    - Please ignore `node-gyp` errors, it is a warning instead
 - `npm test`
@@ -15,7 +15,7 @@ If you want to run tests in watch mode, run `npm test -- --watch`.
 
 ## Build development bundle
 
-- Clone this repository with `ckk/protocoljs` branch
+- Clone this repository
 - `npm ci`
 - `npm run build`
 
@@ -26,10 +26,9 @@ To use the bundle:
 ```js
 const { DirectLine } = window.DirectLine;
 
-const directLine = new DirectLine({
+const directLine = new DirectLineStreaming({
   conversationId: '<required>',
   domain: 'https://.../.bot/v3/directline',
-  streamingWebSocket: true,
   token: '<required>',
   webSocket: true
 });
@@ -68,7 +67,7 @@ For easier consumption, in the assets, [`directline.js`](https://github.com/micr
 <html lang="en-US">
   <head>
     <title>Web Chat with Streaming Extensions</title>
-    <script src="https://cdn.botframework.com/botframework-webchat/4.5.2/webchat-es5.js"></script>
+    <script src="https://cdn.botframework.com/botframework-webchat/latest/webchat-es5.js"></script>
     <script src="https://github.com/microsoft/BotFramework-DirectLineJS/releases/download/dev-streamingextensions/directline.js"></script>
     <style type="text/css">
       html, body, body > div { height: 100%; }
@@ -84,7 +83,6 @@ For easier consumption, in the assets, [`directline.js`](https://github.com/micr
         directLine: new DirectLine({
           conversationId: '<required>',
           domain: 'https://.../.bot/v3/directline',
-          streamingWebSocket: true,
           token: '<required>',
           webSocket: true
         })

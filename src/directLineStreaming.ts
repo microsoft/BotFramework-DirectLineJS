@@ -9,12 +9,11 @@ import {
   Activity,
   ConnectionStatus,
   Conversation,
-  DirectLine,
   DirectLineOptions,
   IBotConnection,
   Media,
   Message
-  } from './directLine';
+} from './directLine';
 
 const DIRECT_LINE_VERSION = 'DirectLine/3.0';
 const MAX_RETRY_COUNT = 3;
@@ -37,28 +36,33 @@ class StreamHandler implements BFSE.RequestHandler {
   }
 
   async processRequest(request: BFSE.IReceiveRequest, logger?: any): Promise<BFSE.StreamingResponse> {
-    let stream0 = request.streams.shift();
-    let activitySetJson = await stream0.readAsString();
-    let activitySet = JSON.parse(activitySetJson);
+    const streams = [...request.streams];
+    const stream0 = streams.shift();
+    const activitySetJson = await stream0.readAsString();
+    const activitySet = JSON.parse(activitySetJson);
 
     if (activitySet.activities.length !== 1) {
       // Only one activity is expected in a set in streaming
-      this.subscriber.error(activitySet)
-      let r = new BFSE.StreamingResponse();
+      this.subscriber.error(new Error('there should be exactly one activity'));
+      const r = new BFSE.StreamingResponse();
       r.statusCode = 500;
       return r;
     }
 
-    let attachments = activitySet.activities[0].attachments;
-    let stream: BFSE.ContentStream;
-    while (stream = request.streams.shift()) {
-      let atch = await stream.readAsString();
-      let dataUri = "data:text/plain;base64," + atch;
-      attachments.push({ contentType: stream.contentType, contentUrl: dataUri });
-    }
+    const activity = activitySet.activities[0];
 
-    let activity = activitySet.activities[0];
-    activity.attachments = attachments;
+    if (streams.length > 0) {
+      let attachments = [...activity.attachments];
+
+      let stream: BFSE.ContentStream;
+      while (stream = streams.shift()) {
+        const attachment = await stream.readAsString();
+        const dataUri = "data:text/plain;base64," + attachment;
+        attachments.push({ contentType: stream.contentType, contentUrl: dataUri });
+      }
+
+      activity.attachments = attachments;
+    }
 
     if (this.connectionStatus$.value === ConnectionStatus.Online) {
       this.subscriber.next(activity);
@@ -66,7 +70,7 @@ class StreamHandler implements BFSE.RequestHandler {
       this.activityQueue.push(activity);
     }
 
-    let r = new BFSE.StreamingResponse();
+    const r = new BFSE.StreamingResponse();
     r.statusCode = 200;
     return r;
   }

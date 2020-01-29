@@ -58,16 +58,14 @@ describe('Happy path', () => {
             ]);
 
 
-            let result = ((expectedContents[0] === attachments[0].contentUrl &&
-                   expectedContents[1] === attachments[1].contentUrl) ||
-                   (expectedContents[1] === attachments[0].contentUrl &&
-                     expectedContents[0] === attachments[1].contentUrl));
+            let result = ( (expectedContents[0] === attachments[0].contentUrl &&
+                            expectedContents[1] === attachments[1].contentUrl) ||
+                          (expectedContents[1] === attachments[0].contentUrl &&
+                            expectedContents[0] === attachments[1].contentUrl) );
 
             if (!result) {
               console.warn(attachments[0].contentUrl);
               console.warn(attachments[1].contentUrl);
-            }else{
-              console.warn("SUCCESS");
             }
 
             return result;
