@@ -2,6 +2,7 @@ import fetch from 'node-fetch';
 
 import { DirectLine } from '../../src/directLine';
 import { userId as DEFAULT_USER_ID } from '../constants.json';
+import { DirectLineStreaming } from '../../src/directLineStreaming';
 
 const {
   DIRECT_LINE_SECRET,
@@ -79,10 +80,9 @@ export async function forStreamingExtensions(mergeOptions = {}) {
   :
     await fetchDirectLineStreamingExtensionsToken();
 
-  return new DirectLine({
+  return new DirectLineStreaming({
     conversationId,
     domain: STREAMING_EXTENSIONS_DOMAIN,
-    streamingWebSocket: true,
     token,
     webSocket: true,
     ...mergeOptions

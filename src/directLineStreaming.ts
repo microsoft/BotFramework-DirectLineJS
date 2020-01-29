@@ -84,7 +84,6 @@ export class DirectLineStreaming implements IBotConnection {
 
   private activitySubscriber: Subscriber<Activity>;
   private theStreamHandler: StreamHandler;
-  private parentDirectLine: DirectLine;
 
   private retryCount = MAX_RETRY_COUNT;
 
@@ -96,7 +95,7 @@ export class DirectLineStreaming implements IBotConnection {
 
   private _botAgent = '';
 
-  constructor(options: DirectLineOptions, parentDirectLine: DirectLine) {
+  constructor(options: DirectLineOptions) {
     this.token = options.secret || options.token;
 
     if (options.token) {
@@ -111,15 +110,9 @@ export class DirectLineStreaming implements IBotConnection {
       this.conversationId = options.conversationId;
     }
 
-    this.parentDirectLine = parentDirectLine;
-
     this._botAgent = this.getBotAgent(options.botAgent);
 
     this.activity$ = this.streamingWebSocketActivity$().share();
-      this.parentDirectLine.activity$ = this.activity$;
-      this.parentDirectLine.connectionStatus$ = this.connectionStatus$;
-      this.parentDirectLine.postActivity = this.postActivity.bind(this);
-      this.parentDirectLine.end = this.end.bind(this);
   }
 
   public reconnect(conversation: Conversation) {
@@ -324,7 +317,6 @@ export class DirectLineStreaming implements IBotConnection {
       let responseString = await response.streams[0].readAsString();
       let conversation = JSON.parse(responseString);
       this.conversationId = conversation.conversationId;
-      this.parentDirectLine.referenceGrammarId = conversation.referenceGrammarId;
       this.connectionStatus$.next(ConnectionStatus.Online);
 
       // Wait until DL consumers have had a chance to be notified

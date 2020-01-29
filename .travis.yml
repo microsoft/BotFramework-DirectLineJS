@@ -1,8 +1,6 @@
 language: node_js
-
-
 node_js:
-- "12"
+- "10"
 
 before_install:
 - npm ci
@@ -11,25 +9,24 @@ before_install:
 install:
 - npm run prepublishOnly
 
-before_deploy:
-- npm pack
-- git config --local user.name "CK Kashyap"
-- git config --local user.email "ckkashyap@gmail.com"
-- export TRAVIS_TAG=dev-streamingextensions
-- git tag -f $TRAVIS_TAG
-- cp dist/directline.js dist/directline-`cat package.json | jq -r .version`.js
-
 deploy:
+- provider: npm
+  api_key: $NPM_TOKEN
+  email: "botframework@microsoft.com"
+  on:
+    branch: master
+  skip_cleanup: true
+  tag: master
+
+- provider: npm
+  api_key: $NPM_TOKEN
+  email: "botframework@microsoft.com"
+  on:
+    tags: true
+  skip_cleanup: true
+
 - provider: releases
   api_key: $GITHUB_TOKEN
-  body: "This build will be updated on every push. Please do not use it in production environment."
-  file:
-  - dist/directline*.js
-  - botframework-directlinejs-*.tgz
-  file_glob: true
-  name: "Continuous integration build for Direct Line Streaming Extensions"
   on:
-    branch: ckk/protocoljs
-  overwrite: true
-  prerelease: true
+    tags: true
   skip_cleanup: true

@@ -28,8 +28,6 @@ import 'rxjs/add/observable/interval';
 import 'rxjs/add/observable/of';
 import 'rxjs/add/observable/throw';
 
-import {DirectLineStreaming} from './directLineStreaming';
-
 import dedupeFilenames from './dedupeFilenames';
 import { objectExpression } from '@babel/types';
 
@@ -363,7 +361,6 @@ export interface DirectLineOptions {
     watermark?: string,
     domain?: string,
     webSocket?: boolean,
-    streamingWebSocket: boolean,
     pollingInterval?: number,
     streamUrl?: string,
     // Attached to all requests to identify requesting agent.
@@ -516,14 +513,10 @@ export class DirectLine implements IBotConnection {
             5
         );
 
-        if (options.streamingWebSocket) {
-            const DLS = new DirectLineStreaming(options, this);
-        } else {
-            this.activity$ = (this.webSocket
-                        ? this.webSocketActivity$()
-                        : this.pollingGetActivity$()
-                    ).share();
-        }
+        this.activity$ = (this.webSocket
+            ? this.webSocketActivity$()
+            : this.pollingGetActivity$()
+        ).share();
     }
 
     // Every time we're about to make a Direct Line REST call, we call this first to see check the current connection status.
