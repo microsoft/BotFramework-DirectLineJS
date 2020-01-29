@@ -116,7 +116,11 @@ export class DirectLineStreaming implements IBotConnection {
 
     this._botAgent = this.getBotAgent(options.botAgent);
 
-    this.activity$ = this.streamingWebSocketActivity$().share();
+    this.activity$ = Observable.create(async (subscriber: Subscriber<Activity>) => {
+      this.activitySubscriber = subscriber;
+      this.theStreamHandler = new StreamHandler(subscriber, this.connectionStatus$);
+      await this.connectAsync();
+    }).share();
   }
 
   public reconnect(conversation: Conversation) {
@@ -272,23 +276,13 @@ export class DirectLineStreaming implements IBotConnection {
     this.connectionStatus$.next(ConnectionStatus.Connecting);
     this.retryCount--;
     if (this.retryCount > 0) {
-      setTimeout(this.streamingWebSocketActivity$.bind(this), this.getRetryDelay());
+      setTimeout(() => {
+        this.theStreamHandler.setSubscriber(this.activitySubscriber);
+        this.connectAsync().then(_ => _);
+      }, this.getRetryDelay());
     } else {
       console.warn("Exhausted retries");
       this.activitySubscriber.error(e);
-    }
-  }
-
-  private streamingWebSocketActivity$(): Observable<Activity> {
-    if (this.activitySubscriber) {
-      this.theStreamHandler.setSubscriber(this.activitySubscriber);
-      this.connectAsync().then(_ => _);
-    } else {
-      return Observable.create(async (subscriber: Subscriber<Activity>) => {
-        this.activitySubscriber = subscriber;
-        this.theStreamHandler = new StreamHandler(subscriber, this.connectionStatus$);
-        await this.connectAsync();
-      });
     }
   }
 

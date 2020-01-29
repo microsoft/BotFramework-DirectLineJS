@@ -31,6 +31,9 @@ import 'rxjs/add/observable/throw';
 import dedupeFilenames from './dedupeFilenames';
 import { objectExpression } from '@babel/types';
 
+import { DirectLineStreaming } from './directLineStreaming';
+export { DirectLineStreaming };
+
 const DIRECT_LINE_VERSION = 'DirectLine/3.0';
 
 declare var process: {
