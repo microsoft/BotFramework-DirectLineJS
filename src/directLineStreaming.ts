@@ -183,6 +183,7 @@ export class DirectLineStreaming implements IBotConnection {
         (e) => {
           if (e.status === 403 || e.status === 404) {
             console.error("Fatal error while refreshing token " + e.status);
+            this.streamConnection.disconnect();
           }else{
             if (retryCount > 0) {
               console.warn("Error refreshing token " + e.status + " " + retryCount + " retries left");
@@ -190,6 +191,7 @@ export class DirectLineStreaming implements IBotConnection {
             }else{
               this.token = null;
               console.warn("Error refreshing token " + e.status + " Retries exhausted");
+              this.streamConnection.disconnect();
             }
           }
         })
@@ -217,6 +219,7 @@ export class DirectLineStreaming implements IBotConnection {
           // the disconnectionHandler. Everything else can
           // be retried
           console.warn(e);
+          this.streamConnection.disconnect();
           return subscriber.error(e);
       }
     });
