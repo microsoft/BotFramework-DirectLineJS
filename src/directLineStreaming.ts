@@ -9,7 +9,6 @@ import {
   Activity,
   ConnectionStatus,
   Conversation,
-  DirectLineOptions,
   IBotConnection,
   Media,
   Message
@@ -20,6 +19,14 @@ const MAX_RETRY_COUNT = 3;
 const refreshTokenLifetime = 30 * 60 * 1000;
 const timeout = 20 * 1000;
 const refreshTokenInterval = refreshTokenLifetime / 2;
+
+interface DirectLineStreamingOptions {
+  token?: string,
+  conversationId?: string,
+  domain?: string,
+  // Attached to all requests to identify requesting agent.
+  botAgent?: string
+}
 
 class StreamHandler implements BFSE.RequestHandler {
   private connectionStatus$;
@@ -102,7 +109,7 @@ export class DirectLineStreaming implements IBotConnection {
 
   private _botAgent = '';
 
-  constructor(options: DirectLineOptions) {
+  constructor(options: DirectLineStreamingOptions) {
     this.token = options.secret || options.token;
 
     if (options.token) {
