@@ -270,8 +270,7 @@ export class DirectLineStreaming implements IBotConnection {
   }
 
   private disconnectionHandler(e: any) {
-    if (this.connectionStatus$.value === ConnectionStatus.Connecting ||
-        this.connectionStatus$.value === ConnectionStatus.Ended) {
+    if (this.connectionStatus$.value === ConnectionStatus.Ended) {
       return;
     }
 
@@ -280,9 +279,9 @@ export class DirectLineStreaming implements IBotConnection {
       return;
     }
 
-    this.connectionStatus$.next(ConnectionStatus.Connecting);
     this.retryCount--;
     if (this.retryCount > 0) {
+      this.connectionStatus$.next(ConnectionStatus.Connecting);
       setTimeout(() => {
         this.theStreamHandler.setSubscriber(this.activitySubscriber);
         this.connectAsync().then(_ => _);
