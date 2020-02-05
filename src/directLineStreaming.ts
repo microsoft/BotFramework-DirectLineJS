@@ -21,9 +21,9 @@ const timeout = 20 * 1000;
 const refreshTokenInterval = refreshTokenLifetime / 2;
 
 interface DirectLineStreamingOptions {
-  token?: string,
+  token: string,
   conversationId?: string,
-  domain?: string,
+  domain: string,
   // Attached to all requests to identify requesting agent.
   botAgent?: string
 }
@@ -53,9 +53,7 @@ class StreamHandler implements BFSE.RequestHandler {
     if (activitySet.activities.length !== 1) {
       // Only one activity is expected in a set in streaming
       this.subscriber.error(new Error('there should be exactly one activity'));
-      const r = new BFSE.StreamingResponse();
-      r.statusCode = 500;
-      return r;
+      return BFSE.StreamingResponse.create(500);
     }
 
     const activity = activitySet.activities[0];
@@ -79,9 +77,7 @@ class StreamHandler implements BFSE.RequestHandler {
       this.subscriber.next(activity);
     }
 
-    const r = new BFSE.StreamingResponse();
-    r.statusCode = 200;
-    return r;
+    return BFSE.StreamingResponse.create(200);
   }
 
   public flush() {
@@ -100,7 +96,7 @@ export class DirectLineStreaming implements IBotConnection {
 
   private retryCount = MAX_RETRY_COUNT;
 
-  private domain = "https://directline.botframework.com/v3/directline";
+  private domain: string;
 
   private conversationId: string;
   private token: string;
@@ -110,15 +106,11 @@ export class DirectLineStreaming implements IBotConnection {
   private _botAgent = '';
 
   constructor(options: DirectLineStreamingOptions) {
-    this.token = options.secret || options.token;
+    this.token = options.token;
 
-    if (options.token) {
-      this.refreshToken();
-    }
+    this.refreshToken();
 
-    if (options.domain) {
-      this.domain = options.domain;
-    }
+    this.domain = options.domain;
 
     if (options.conversationId) {
       this.conversationId = options.conversationId;
@@ -130,14 +122,14 @@ export class DirectLineStreaming implements IBotConnection {
     this.activity$ = Observable.create(async (subscriber: Subscriber<Activity>) => {
       this.activitySubscriber = subscriber;
       this.theStreamHandler = new StreamHandler(subscriber, this.connectionStatus$, () => this.queueActivities);
-      await this.connectAsync();
+      this.connectAsync();
     }).share();
   }
 
-  public reconnect(conversation: Conversation) {
-    this.conversationId = conversation.conversationId;
-    this.token = conversation.token;
-    this.connectAsync().then(_ => _);
+  public reconnect({ conversationId, token } : Conversation) {
+    this.conversationId = conversationId;
+    this.token = token;
+    this.connectAsync();
   }
 
   end() {
@@ -153,7 +145,7 @@ export class DirectLineStreaming implements IBotConnection {
   }
 
   private getBotAgent(customAgent: string = ''): string {
-    let clientAgent = 'directlinejs'
+    let clientAgent = 'directlineStreaming'
 
     if (customAgent) {
       clientAgent += `; ${customAgent}`
@@ -291,7 +283,7 @@ export class DirectLineStreaming implements IBotConnection {
       this.connectionStatus$.next(ConnectionStatus.Connecting);
       setTimeout(() => {
         this.theStreamHandler.setSubscriber(this.activitySubscriber);
-        this.connectAsync().then(_ => _);
+        this.connectAsync();
       }, this.getRetryDelay());
     } else {
       console.warn("Exhausted retries");
@@ -311,7 +303,9 @@ export class DirectLineStreaming implements IBotConnection {
   private async connectAsync() {
     let re = new RegExp('^http(s?)');
     if (!re.test(this.domain)) throw ("Domain must begin with http or https");
-    let urlSearchParams = new URLSearchParams({token: this.token, conversationId: this.conversationId}).toString();
+    const params = {token: this.token};
+    if (this.conversationId) params['conversationId'] = this.conversationId;
+    let urlSearchParams = new URLSearchParams(params).toString();
     let wsUrl = `${this.domain.replace(re, 'ws$1')}/conversations/connect?${urlSearchParams}`;
     try {
       this.streamConnection = new BFSE.WebSocketClient({
