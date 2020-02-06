@@ -6,7 +6,7 @@ module.exports = {
   entry: {
     directline: './lib/directLine.js'
   },
-  externals: ['net', 'fs', 'watershed', 'botframework-connector'],
+  externals: ['net'],
   mode: 'production',
   output: {
     filename: '[name].js',
