@@ -4,19 +4,23 @@ import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 import { Observable } from 'rxjs/Observable';
 import { Subscriber } from 'rxjs/Subscriber';
 import * as BFSE from 'botframework-streaming';
+import fetch from 'cross-fetch';
 
 import {
   Activity,
+  Attachment,
   ConnectionStatus,
   Conversation,
   IBotConnection,
   Media,
   Message
 } from './directLine';
+import { async } from 'rxjs/scheduler/async';
 
 const DIRECT_LINE_VERSION = 'DirectLine/3.0';
 const MAX_RETRY_COUNT = 3;
 const refreshTokenLifetime = 30 * 60 * 1000;
+//const refreshTokenLifetime = 5000;
 const timeout = 20 * 1000;
 const refreshTokenInterval = refreshTokenLifetime / 2;
 
@@ -228,44 +232,42 @@ export class DirectLineStreaming implements IBotConnection {
   private postMessageWithAttachments(message: Message) {
     const { attachments, ...messageWithoutAttachments } = message;
 
-    let httpContentList = [];
-    return Observable.create(subscriber => {
-      return Observable.from(attachments || [])
-        .flatMap((media: Media) =>
-          Observable.ajax({
-            method: "GET",
-            url: media.contentUrl,
-            responseType: 'arraybuffer'
-          })
-            .do(ajaxResponse => {
-              let buffer = new Buffer(ajaxResponse.response);
+    return Observable.create( subscriber => {
+      let httpContentList = [];
+      (async () => {
+        try {
+          for (var i = 0; i < attachments.length; i++) {
+            var media = attachments[i] as Media;
+            const res = await fetch(media.contentUrl);
+            if (res.ok) {
+              const arrayBuffer = await res.arrayBuffer();
+              let buffer = new Buffer(arrayBuffer);
               let stream = new BFSE.SubscribableStream();
               stream.write(buffer);
               let httpContent = new BFSE.HttpContent({ type: media.contentType, contentLength: buffer.length }, stream);
               httpContentList.push(httpContent);
-            }))
-        .count()
-        .flatMap(_ => {
+            }
+          }
+
           let url = `/v3/directline/conversations/${this.conversationId}/users/${messageWithoutAttachments.from.id}/upload`;
           let request = BFSE.StreamingRequest.create('PUT', url);
           let activityStream = new BFSE.SubscribableStream();
           activityStream.write(JSON.stringify(messageWithoutAttachments), 'utf-8');
           request.addStream(new BFSE.HttpContent({ type: "application/vnd.microsoft.activity", contentLength: activityStream.length }, activityStream));
           httpContentList.forEach(e => request.addStream(e));
-          return this.streamConnection.send(request);
-        })
-        .do(resp => {
+
+          const resp = await this.streamConnection.send(request);
           if (resp.streams && resp.streams.length !== 1) {
             subscriber.error(new Error(`Invalid stream count ${resp.streams.length}`));
           } else {
-            resp.streams[0].readAsJson()
-              .then(({Id: id}) => {
-                subscriber.next(id)
-              })
+            const {Id: id} = await resp.streams[0].readAsJson();
+            subscriber.next(id);
           }
-        })
-        .subscribe(_ => _) // force execution
-    })
+        } catch(e) {
+          subscriber.error(e);
+        }
+      })();
+    });
   }
 
   private disconnectionHandler(e: any) {
