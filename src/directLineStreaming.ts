@@ -159,45 +159,33 @@ export class DirectLineStreaming implements IBotConnection {
   }
 
   private async refreshToken(firstCall = true, retryCount = 0) {
-    if (firstCall) {
-      setTimeout(async () => await this.refreshToken(false, 0), refreshTokenInterval);
-      return;
-    }
-
-    if (this.connectionStatus$.value === ConnectionStatus.Ended) {
-      return;
-    }
-
     await this.waitUntilOnline();
 
-    Observable.ajax({
-      method: "POST",
-      url: `${this.domain}/tokens/refresh`,
-      timeout,
-      headers: {
-        ...this.commonHeaders()
-      }
-    })
-      .subscribe(
-        (ajaxResponse) => {
-          this.token = ajaxResponse.response.token as string;
-          setTimeout(() => this.refreshToken(false, MAX_RETRY_COUNT), refreshTokenInterval);
-        },
-        (e) => {
-          if (e.status === 403 || e.status === 404) {
-            console.error("Fatal error while refreshing token " + e.status);
+    var numberOfAttempts = 0;
+    while(numberOfAttempts < MAX_RETRY_COUNT) {
+      numberOfAttempts++;
+      await new Promise(r => setTimeout(r, refreshTokenInterval));
+      try {
+        const res = await fetch(`${this.domain}/tokens/refresh`, {method: "POST", headers: this.commonHeaders()});
+        if (res.ok) {
+          numberOfAttempts = 0;
+          const {token: token} = await res.json();
+          this.token = token;
+        } else {
+          if (res.status === 403 || res.status === 403) {
+            console.error(`Fatal error while refreshing the token: ${res.status} ${res.statusText}`);
             this.streamConnection.disconnect();
-          }else{
-            if (retryCount > 0) {
-              console.warn("Error refreshing token " + e.status + " " + retryCount + " retries left");
-              this.refreshToken(false, retryCount-1);
-            }else{
-              this.token = null;
-              console.warn("Error refreshing token " + e.status + " Retries exhausted");
-              this.streamConnection.disconnect();
-            }
+          } else {
+            console.warn(`Refresh attempt #${numberOfAttempts} failed: ${res.status} ${res.statusText}`);
           }
-        })
+        }
+      } catch(e) {
+        console.warn(`Refresh attempt #${numberOfAttempts} threw an exception: ${e}`);
+      }
+    }
+
+    console.error("Retries exhausted");
+    this.streamConnection.disconnect();
   }
 
   postActivity(activity: Activity) {
