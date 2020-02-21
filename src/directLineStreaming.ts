@@ -8,14 +8,12 @@ import fetch from 'cross-fetch';
 
 import {
   Activity,
-  Attachment,
   ConnectionStatus,
   Conversation,
   IBotConnection,
   Media,
   Message
 } from './directLine';
-import { async } from 'rxjs/scheduler/async';
 
 const DIRECT_LINE_VERSION = 'DirectLine/3.0';
 const MAX_RETRY_COUNT = 3;
@@ -63,7 +61,7 @@ class StreamHandler implements BFSE.RequestHandler {
     const activity = activitySet.activities[0];
 
     if (streams.length > 0) {
-      let attachments = [...activity.attachments];
+      const attachments = [...activity.attachments];
 
       let stream: BFSE.ContentStream;
       while (stream = streams.shift()) {
@@ -98,8 +96,6 @@ export class DirectLineStreaming implements IBotConnection {
   private activitySubscriber: Subscriber<Activity>;
   private theStreamHandler: StreamHandler;
 
-  private retryCount = MAX_RETRY_COUNT;
-
   private domain: string;
 
   private conversationId: string;
@@ -126,7 +122,7 @@ export class DirectLineStreaming implements IBotConnection {
     this.activity$ = Observable.create(async (subscriber: Subscriber<Activity>) => {
       this.activitySubscriber = subscriber;
       this.theStreamHandler = new StreamHandler(subscriber, this.connectionStatus$, () => this.queueActivities);
-      this.connectAsync();
+      this.connectWithRetryAsync();
     }).share();
   }
 
@@ -161,7 +157,7 @@ export class DirectLineStreaming implements IBotConnection {
   private async refreshToken(firstCall = true, retryCount = 0) {
     await this.waitUntilOnline();
 
-    var numberOfAttempts = 0;
+    let numberOfAttempts = 0;
     while(numberOfAttempts < MAX_RETRY_COUNT) {
       numberOfAttempts++;
       await new Promise(r => setTimeout(r, refreshTokenInterval));
@@ -193,7 +189,7 @@ export class DirectLineStreaming implements IBotConnection {
       return this.postMessageWithAttachments(activity);
     }
 
-    let resp$ = Observable.create(async subscriber => {
+    const resp$ = Observable.create(async subscriber => {
       const request = BFSE.StreamingRequest.create('POST', '/v3/directline/conversations/' + this.conversationId + '/activities');
       request.setBody(JSON.stringify(activity));
       const resp = await this.streamConnection.send(request);
@@ -221,25 +217,25 @@ export class DirectLineStreaming implements IBotConnection {
     const { attachments, ...messageWithoutAttachments } = message;
 
     return Observable.create( subscriber => {
-      let httpContentList = [];
+      const httpContentList = [];
       (async () => {
         try {
-          for (var i = 0; i < attachments.length; i++) {
-            var media = attachments[i] as Media;
+          for (let i = 0; i < attachments.length; i++) {
+            const media = attachments[i] as Media;
             const res = await fetch(media.contentUrl);
             if (res.ok) {
               const arrayBuffer = await res.arrayBuffer();
-              let buffer = new Buffer(arrayBuffer);
-              let stream = new BFSE.SubscribableStream();
+              const buffer = new Buffer(arrayBuffer);
+              const stream = new BFSE.SubscribableStream();
               stream.write(buffer);
-              let httpContent = new BFSE.HttpContent({ type: media.contentType, contentLength: buffer.length }, stream);
+              const httpContent = new BFSE.HttpContent({ type: media.contentType, contentLength: buffer.length }, stream);
               httpContentList.push(httpContent);
             }
           }
 
-          let url = `/v3/directline/conversations/${this.conversationId}/users/${messageWithoutAttachments.from.id}/upload`;
-          let request = BFSE.StreamingRequest.create('PUT', url);
-          let activityStream = new BFSE.SubscribableStream();
+          const url = `/v3/directline/conversations/${this.conversationId}/users/${messageWithoutAttachments.from.id}/upload`;
+          const request = BFSE.StreamingRequest.create('PUT', url);
+          const activityStream = new BFSE.SubscribableStream();
           activityStream.write(JSON.stringify(messageWithoutAttachments), 'utf-8');
           request.addStream(new BFSE.HttpContent({ type: "application/vnd.microsoft.activity", contentLength: activityStream.length }, activityStream));
           httpContentList.forEach(e => request.addStream(e));
@@ -258,29 +254,6 @@ export class DirectLineStreaming implements IBotConnection {
     });
   }
 
-  private disconnectionHandler(e: any) {
-    if (this.connectionStatus$.value === ConnectionStatus.Ended) {
-      return;
-    }
-
-    if (!this.token) {
-      this.activitySubscriber.error("Token unavailable");
-      return;
-    }
-
-    this.retryCount--;
-    if (this.retryCount > 0) {
-      this.connectionStatus$.next(ConnectionStatus.Connecting);
-      setTimeout(() => {
-        this.theStreamHandler.setSubscriber(this.activitySubscriber);
-        this.connectAsync();
-      }, this.getRetryDelay());
-    } else {
-      console.warn("Exhausted retries");
-      this.activitySubscriber.error(e);
-    }
-  }
-
   private async waitUntilOnline() {
     return new Promise<void>((resolve, reject) => {
       this.connectionStatus$.subscribe((cs) => {
@@ -291,40 +264,64 @@ export class DirectLineStreaming implements IBotConnection {
   }
 
   private async connectAsync() {
-    let re = new RegExp('^http(s?)');
+    const re = new RegExp('^http(s?)');
     if (!re.test(this.domain)) throw ("Domain must begin with http or https");
     const params = {token: this.token};
     if (this.conversationId) params['conversationId'] = this.conversationId;
-    let urlSearchParams = new URLSearchParams(params).toString();
-    let wsUrl = `${this.domain.replace(re, 'ws$1')}/conversations/connect?${urlSearchParams}`;
-    try {
-      this.streamConnection = new BFSE.WebSocketClient({
-        url: wsUrl,
-        requestHandler: this.theStreamHandler,
-        disconnectionHandler: this.disconnectionHandler.bind(this)
-      });
+    const urlSearchParams = new URLSearchParams(params).toString();
+    const wsUrl = `${this.domain.replace(re, 'ws$1')}/conversations/connect?${urlSearchParams}`;
 
-      this.queueActivities = true;
-      await this.streamConnection.connect();
-      let request = BFSE.StreamingRequest.create('POST', '/v3/directline/conversations');
-      let response = await this.streamConnection.send(request);
-      if (response.statusCode !== 200) throw new Error("Connection response code " + response.statusCode);
-      if (response.streams.length !== 1) throw new Error("Expected 1 stream but got " + response.streams.length);
-      let responseString = await response.streams[0].readAsString();
-      let conversation = JSON.parse(responseString);
-      this.conversationId = conversation.conversationId;
-      this.connectionStatus$.next(ConnectionStatus.Online);
+    return new Promise(async (resolve, reject) => {
+      try {
+        this.streamConnection = new BFSE.WebSocketClient({
+          url: wsUrl,
+          requestHandler: this.theStreamHandler,
+          disconnectionHandler: (e) => resolve(e)
+        });
 
-      // Wait until DL consumers have had a chance to be notified
-      // of the connection status change.
-      await this.waitUntilOnline();
-      this.theStreamHandler.flush();
-      this.queueActivities = false;
+        this.queueActivities = true;
+        await this.streamConnection.connect();
+        const request = BFSE.StreamingRequest.create('POST', '/v3/directline/conversations');
+        const response = await this.streamConnection.send(request);
+        if (response.statusCode !== 200) throw new Error("Connection response code " + response.statusCode);
+        if (response.streams.length !== 1) throw new Error("Expected 1 stream but got " + response.streams.length);
+        const responseString = await response.streams[0].readAsString();
+        const conversation = JSON.parse(responseString);
+        this.conversationId = conversation.conversationId;
+        this.connectionStatus$.next(ConnectionStatus.Online);
 
-      this.retryCount = MAX_RETRY_COUNT;
-    } catch (e) {
-      console.warn(e);
-      this.streamConnection.disconnect();
+        // Wait until DL consumers have had a chance to be notified
+        // of the connection status change.
+        await this.waitUntilOnline();
+        this.theStreamHandler.flush();
+        this.queueActivities = false;
+      } catch(e) {
+        reject(e);
+      }
+    });
+  }
+
+  private async connectWithRetryAsync() {
+    let numRetries = MAX_RETRY_COUNT;
+    while (numRetries > 0) {
+      numRetries--;
+      const start = new Date();
+      try {
+        this.connectionStatus$.next(ConnectionStatus.Connecting);
+        const res = await this.connectAsync();
+        console.warn(`Retrying connection ${res}`);
+        if (60000 < new Date().valueOf() - start.valueOf()) {
+          // reset the retry counter and retry immediately
+          // if the connection lasted for more than a minute
+          numRetries = MAX_RETRY_COUNT;
+          continue;
+        }
+      } catch (err) {
+        console.error(`Failed to connect ${err}`);
+        throw(err);
+      }
+
+      await new Promise(r => setTimeout(r, this.getRetryDelay()));
     }
   }
 
