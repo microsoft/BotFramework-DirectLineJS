@@ -165,7 +165,7 @@ export class DirectLineStreaming implements IBotConnection {
         const res = await fetch(`${this.domain}/tokens/refresh`, {method: "POST", headers: this.commonHeaders()});
         if (res.ok) {
           numberOfAttempts = 0;
-          const {token: token} = await res.json();
+          const {token} = await res.json();
           this.token = token;
         } else {
           if (res.status === 403 || res.status === 403) {
@@ -220,18 +220,24 @@ export class DirectLineStreaming implements IBotConnection {
       const httpContentList = [];
       (async () => {
         try {
-          for (let i = 0; i < attachments.length; i++) {
-            const media = attachments[i] as Media;
+          const arrayBuffers = await Promise.all(attachments.map(async attachment => {
+            const media = attachment as Media;
             const res = await fetch(media.contentUrl);
             if (res.ok) {
-              const arrayBuffer = await res.arrayBuffer();
-              const buffer = new Buffer(arrayBuffer);
-              const stream = new BFSE.SubscribableStream();
-              stream.write(buffer);
-              const httpContent = new BFSE.HttpContent({ type: media.contentType, contentLength: buffer.length }, stream);
-              httpContentList.push(httpContent);
+              return { arrayBuffer: await res.arrayBuffer(), media };
+            } else {
+              throw new Error('...');
             }
-          }
+          }));
+
+          arrayBuffers.forEach(({ arrayBuffer, media }) => {
+            const buffer = new Buffer(arrayBuffer);
+            console.log(buffer);
+            const stream = new BFSE.SubscribableStream();
+            stream.write(buffer);
+            const httpContent = new BFSE.HttpContent({ type: media.contentType, contentLength: buffer.length }, stream);
+            httpContentList.push(httpContent);
+          });
 
           const url = `/v3/directline/conversations/${this.conversationId}/users/${messageWithoutAttachments.from.id}/upload`;
           const request = BFSE.StreamingRequest.create('PUT', url);
@@ -305,12 +311,12 @@ export class DirectLineStreaming implements IBotConnection {
     let numRetries = MAX_RETRY_COUNT;
     while (numRetries > 0) {
       numRetries--;
-      const start = new Date();
+      const start = Date.now();
       try {
         this.connectionStatus$.next(ConnectionStatus.Connecting);
         const res = await this.connectAsync();
         console.warn(`Retrying connection ${res}`);
-        if (60000 < new Date().valueOf() - start.valueOf()) {
+        if (60000 < Date.now() - start) {
           // reset the retry counter and retry immediately
           // if the connection lasted for more than a minute
           numRetries = MAX_RETRY_COUNT;
