@@ -27,7 +27,7 @@
   "license": "MIT",
   "dependencies": {
     "@babel/runtime": "^7.6.0",
-    "botframework-streaming": "4.7.0",
+    "botframework-streaming": "4.8.0-preview-109324",
     "core-js": "^3.6.4",
     "cross-fetch": "^3.0.4",
     "rxjs": "^5.0.3",
