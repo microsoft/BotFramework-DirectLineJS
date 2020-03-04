@@ -27,7 +27,11 @@
   "license": "MIT",
   "dependencies": {
     "@babel/runtime": "^7.6.0",
-    "rxjs": "^5.0.3"
+    "botframework-streaming": "4.8.0-preview-109324",
+    "core-js": "^3.6.4",
+    "cross-fetch": "^3.0.4",
+    "rxjs": "^5.0.3",
+    "url-search-params-polyfill": "^8.0.0"
   },
   "devDependencies": {
     "@babel/cli": "^7.6.0",
@@ -58,7 +62,7 @@
     "rimraf": "^3.0.0",
     "simple-update-in": "^2.1.1",
     "typescript": "^3.6.2",
-    "webpack": "^4.39.3",
+    "webpack": "^4.41.0",
     "webpack-cli": "^3.3.8",
     "webpack-visualizer-plugin": "^0.1.11"
   }

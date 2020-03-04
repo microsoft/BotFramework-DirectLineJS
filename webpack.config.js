@@ -6,6 +6,7 @@ module.exports = {
   entry: {
     directline: './lib/directLine.js'
   },
+  externals: ['net'],
   mode: 'production',
   output: {
     filename: '[name].js',

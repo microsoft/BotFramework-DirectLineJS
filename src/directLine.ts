@@ -1,5 +1,7 @@
 // In order to keep file size down, only import the parts of rxjs that we use
 
+import 'core-js/features/promise';
+import 'url-search-params-polyfill';
 import { AjaxResponse, AjaxCreationMethod, AjaxRequest, AjaxError } from 'rxjs/observable/dom/AjaxObservable';
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 import { Observable } from 'rxjs/Observable';
@@ -30,6 +32,9 @@ import 'rxjs/add/observable/throw';
 
 import dedupeFilenames from './dedupeFilenames';
 import { objectExpression } from '@babel/types';
+
+import { DirectLineStreaming } from './directLineStreaming';
+export { DirectLineStreaming };
 
 const DIRECT_LINE_VERSION = 'DirectLine/3.0';
 

@@ -255,7 +255,7 @@ describe('MockSuite', () => {
                     response: {id:'blah'},
                     status: 200
                 };
-                expectedBotId = urlOrRequest.headers['x-ms-botid'];
+                expectedBotId = urlOrRequest.headers['x-ms-bot-id'];
                 return response as AjaxResponse;
             }
             else if(urlOrRequest.url && urlOrRequest.url.indexOf('/conversations') > 0){

@@ -4,8 +4,7 @@ import onErrorResumeNext from 'on-error-resume-next';
 
 import { timeouts } from './constants.json';
 import * as createDirectLine from './setup/createDirectLine';
-import postActivity from './setup/postActivity';
-import waitForBotToEcho from './setup/waitForBotToEcho';
+import waitForBotToRespond from './setup/waitForBotToRespond';
 import waitForConnected from './setup/waitForConnected';
 
 describe('Happy path', () => {
@@ -14,15 +13,11 @@ describe('Happy path', () => {
   beforeEach(() => unsubscribes = []);
   afterEach(() => unsubscribes.forEach(fn => onErrorResumeNext(fn)));
 
-  describe('should connect, send message, and receive echo from bot', () => {
+  describe('should receive the welcome message from bot', () => {
     let directLine;
 
     describe('using REST', () => {
       beforeEach(() => jest.setTimeout(timeouts.rest));
-
-      test('with secret', async () => {
-        directLine = await createDirectLine.forREST({ token: false });
-      });
 
       test('with token', async () => {
         directLine = await createDirectLine.forREST({ token: true });
@@ -37,12 +32,8 @@ describe('Happy path', () => {
     describe('using Web Socket', () => {
       beforeEach(() => jest.setTimeout(timeouts.webSocket));
 
-      test('with secret', async () => {
-        directLine = await createDirectLine.forWebSocket({ token: false });
-      });
-
       test('with token', async () => {
-        directLine = await createDirectLine.forWebSocket({ token: false });
+        directLine = await createDirectLine.forWebSocket({ token: true });
       });
     });
 
@@ -51,12 +42,8 @@ describe('Happy path', () => {
       if (!directLine) { return; }
 
       unsubscribes.push(directLine.end.bind(directLine));
-      unsubscribes.push(await waitForConnected(directLine));
 
-      await Promise.all([
-        postActivity(directLine, { text: 'Hello, World!', type: 'message' }),
-        waitForBotToEcho(directLine, ({ text }) => text === 'Hello, World!')
-      ]);
+      await waitForBotToRespond(directLine, ({ text }) => text === 'Welcome')
     });
   });
 });

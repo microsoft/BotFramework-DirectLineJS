@@ -2,16 +2,17 @@ import fetch from 'node-fetch';
 
 import { DirectLine } from '../../src/directLine';
 import { userId as DEFAULT_USER_ID } from '../constants.json';
+import { DirectLineStreaming } from '../../src/directLineStreaming';
 
 const {
   DIRECT_LINE_SECRET,
-  STREAMING_EXTENSIONS_DOMAIN = 'https://webchat-waterbottle.azurewebsites.net/.bot/v3/directline'
+  STREAMING_EXTENSIONS_DOMAIN = 'https://myasebot.azurewebsites.net/.bot/v3/directline'
 } = process.env;
 
 const DEFAULT_DOMAIN = 'https://directline.botframework.com/v3/directline';
 
 async function fetchDirectLineToken() {
-  const res = await fetch('https://webchat-waterbottle.azurewebsites.net/token/directline');
+  const res = await fetch('https://myasebot.azurewebsites.net/token/directline');
 
   if (res.ok) {
     return await res.json();
@@ -21,7 +22,7 @@ async function fetchDirectLineToken() {
 }
 
 async function fetchDirectLineStreamingExtensionsToken() {
-  const res = await fetch(`${ STREAMING_EXTENSIONS_DOMAIN }/token/directline`);
+  const res = await fetch(`https://myasebot.azurewebsites.net/token/directlinease`);
 
   if (res.ok) {
     return await res.json();
@@ -79,10 +80,9 @@ export async function forStreamingExtensions(mergeOptions = {}) {
   :
     await fetchDirectLineStreamingExtensionsToken();
 
-  return new DirectLine({
+  return new DirectLineStreaming({
     conversationId,
     domain: STREAMING_EXTENSIONS_DOMAIN,
-    streamingWebSocket: true,
     token,
     webSocket: true,
     ...mergeOptions

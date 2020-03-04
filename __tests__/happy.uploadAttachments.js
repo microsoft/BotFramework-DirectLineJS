@@ -30,11 +30,6 @@ describe('Happy path', () => {
       });
     });
 
-    // test('using Streaming Extensions', async () => {
-    //   jest.setTimeout(timeouts.webSocket);
-    //   directLine = await createDirectLine.forStreamingExtensions();
-    // });
-
     describe('using Web Socket', () => {
       beforeEach(() => jest.setTimeout(timeouts.webSocket));
 
@@ -57,13 +52,13 @@ describe('Happy path', () => {
       const activityFromUser = {
         // DirectLine.postActivityWithAttachments support "contentUrl" only but not "content"
         attachments: [{
-          contentType: 'image/png',
-          contentUrl: 'https://webchat-waterbottle.azurewebsites.net/public/surfacelogo.png',
-          thumbnailUrl: 'data:image/png;base64,===surfacelogo.png'
+          contentType: 'image/jpg',
+          contentUrl: 'http://myasebot.azurewebsites.net/177KB.jpg',
+          thumbnailUrl: 'data:image/png;base64,===177KB.jpg'
         }, {
           contentType: 'image/png',
-          contentUrl: 'https://webchat-waterbottle.azurewebsites.net/public/xboxlogo.png',
-          thumbnailUrl: 'data:image/png;base64,===xboxlogo.png'
+          contentUrl: 'http://myasebot.azurewebsites.net/100KB.jpg',
+          thumbnailUrl: 'data:image/png;base64,===100KB.jpb'
         }],
         text: 'Hello, World!',
         type: 'message'
