@@ -446,7 +446,7 @@ export interface IBotConnection {
     activity$: Observable<Activity>,
     end(): void,
     referenceGrammarId?: string,
-    postActivity(activity: Activity): Observable<string>,
+    postActivity(activity: Activity, hasResponse?: boolean): Observable<object>,
     getSessionId? : () => Observable<string>
 }
 
@@ -732,12 +732,12 @@ export class DirectLine implements IBotConnection {
             .catch(error => this.catchExpiredToken(error));
     }
 
-    postActivity(activity: Activity) {
+    postActivity(activity: Activity, hasResponse?: boolean) {
         // Use postMessageWithAttachments for messages with attachments that are local files (e.g. an image to upload)
         // Technically we could use it for *all* activities, but postActivity is much lighter weight
         // So, since WebChat is partially a reference implementation of Direct Line, we implement both.
         if (activity.type === "message" && activity.attachments && activity.attachments.length > 0)
-            return this.postMessageWithAttachments(activity);
+            return this.postMessageWithAttachments(activity, hasResponse);
 
         // If we're not connected to the bot, get connected
         // Will throw an error if we are not connected
@@ -754,13 +754,18 @@ export class DirectLine implements IBotConnection {
                     ...this.commonHeaders()
                 },
             })
-            .map(ajaxResponse => ajaxResponse.response.id as string)
+            .map(ajaxResponse => {
+                if (hasResponse)
+                    return ajaxResponse.response.id as string;
+                else
+                    return ajaxResponse.response;
+            })
             .catch(error => this.catchPostError(error))
         )
         .catch(error => this.catchExpiredToken(error));
     }
 
-    private postMessageWithAttachments(message: Message) {
+    private postMessageWithAttachments(message: Message, hasResponse?: boolean) {
         const { attachments } = message;
         // We clean the attachments but making sure every attachment has unique name.
         // If the file do not have a name, Chrome will assign "blob" when it is appended to FormData.
@@ -807,7 +812,12 @@ export class DirectLine implements IBotConnection {
                     ...this.commonHeaders()
                 }
             })
-            .map(ajaxResponse => ajaxResponse.response.id as string)
+            .map(ajaxResponse => {
+                if (hasResponse)
+                    return ajaxResponse.response;
+                else
+                    return ajaxResponse.response.id as string;
+            })
             .catch(error => this.catchPostError(error))
         )
         .catch(error => this.catchPostError(error));
