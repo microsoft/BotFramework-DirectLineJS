@@ -446,7 +446,7 @@ export interface IBotConnection {
     activity$: Observable<Activity>,
     end(): void,
     referenceGrammarId?: string,
-    postActivity(activity: Activity, hasResponse?: boolean): Observable<object>,
+    postActivity(activity: Activity, hasResponse?: boolean): Observable<any>,
     getSessionId? : () => Observable<string>
 }
 
