@@ -369,7 +369,8 @@ export interface DirectLineOptions {
     pollingInterval?: number,
     streamUrl?: string,
     // Attached to all requests to identify requesting agent.
-    botAgent?: string
+    botAgent?: string,
+    mapActivity?: (activity: Activity) => Activity,
 }
 
 export interface Services {
@@ -472,6 +473,7 @@ export class DirectLine implements IBotConnection {
     private pollingInterval: number = 1000; //ms
 
     private tokenRefreshSubscription: Subscription;
+    private mapActivity?: (activity: Activity) => Activity
 
     constructor(options: DirectLineOptions & Partial<Services>) {
         this.secret = options.secret;
@@ -733,6 +735,9 @@ export class DirectLine implements IBotConnection {
     }
 
     postActivity(activity: Activity) {
+        if (this.mapActivity) {
+            activity = this.mapActivity(activity)
+        }
         // Use postMessageWithAttachments for messages with attachments that are local files (e.g. an image to upload)
         // Technically we could use it for *all* activities, but postActivity is much lighter weight
         // So, since WebChat is partially a reference implementation of Direct Line, we implement both.
