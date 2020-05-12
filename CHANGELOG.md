@@ -15,6 +15,20 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- Added support of Direct Line App Service Extension, by [@ckkashyap](https://github.com/ckkashyap), in PR [#183](https://github.com/microsoft/BotFramework-DirectLineJS/pull/183) and [#274](https://github.com/microsoft/BotFramework-DirectLineJS/pull/274)
+- Added support for `Retry-After` header and version information to `x-ms-bot-agent` header, by [@swagatmishra2007](https://github.com/swagatmishra2007), in PR [#247](https://github.com/microsoft/BotFramework-DirectLineJS/pull/247)
+   - Also improved testability of the package
+
+### Changed
+
+- Lock down on version of dependencies, by [@compulim](https://github.com/compulim), in PR [#XXX](https://github.com/Microsoft/BotFramework-DirectLineJS/pull/XXX)
+   - [`rxjs@5.5.10`](https://npmjs.com/package/rxjs)
+      - This version is selected out of the previous commit of `package-lock.json`
+
+## [0.11.6] - 2019-10-25
+
 ### Fixed
 
 - Reverting PR [#171](https://github.com/Microsoft/BotFramework-DirectLineJS/pull/171) and PR [#172](https://github.com/Microsoft/BotFramework-DirectLineJS/pull/172), which caused infinite loop of reconnections, by [@compulim](https://github.com/compulim) in PR [#240](https://github.com/Microsoft/BotFramework-DirectLineJS/pull/240)
