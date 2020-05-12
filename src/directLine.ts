@@ -353,7 +353,7 @@ export interface ActivityGroup {
 export enum ConnectionStatus {
     Uninitialized,              // the status when the DirectLine object is first created/constructed
     Connecting,                 // currently trying to connect to the conversation
-    Online,                     // successfully connected to the converstaion. Connection is healthy so far as we know.
+    Online,                     // successfully connected to the conversation. Connection is healthy so far as we know.
     ExpiredToken,               // last operation errored out with an expired token. Possibly waiting for someone to supply a new one.
     FailedToConnect,            // the initial attempt to connect to the conversation failed. No recovery possible.
     Ended                       // the bot ended the conversation
@@ -907,7 +907,7 @@ export class DirectLine implements IBotConnection {
     }
 
     // Originally we used Observable.webSocket, but it's fairly opinionated and I ended up writing
-    // a lot of code to work around their implemention details. Since WebChat is meant to be a reference
+    // a lot of code to work around their implementation details. Since WebChat is meant to be a reference
     // implementation, I decided roll the below, where the logic is more purposeful. - @billba
     private observableWebSocket<T>() {
         return Observable.create((subscriber: Subscriber<T>) => {
