@@ -23,7 +23,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 
-- Lock down on version of dependencies, by [@compulim](https://github.com/compulim), in PR [#XXX](https://github.com/Microsoft/BotFramework-DirectLineJS/pull/XXX)
+- Lock down on version of dependencies, by [@compulim](https://github.com/compulim), in PR [#280](https://github.com/Microsoft/BotFramework-DirectLineJS/pull/280)
    - [`rxjs@5.5.10`](https://npmjs.com/package/rxjs)
       - This version is selected out of the previous commit of `package-lock.json`
 
