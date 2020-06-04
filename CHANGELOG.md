@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.12.0] - 2020-06-04
+
 ### Added
 
 - Added support of Direct Line App Service Extension, by [@ckkashyap](https://github.com/ckkashyap), in PR [#183](https://github.com/microsoft/BotFramework-DirectLineJS/pull/183) and [#274](https://github.com/microsoft/BotFramework-DirectLineJS/pull/274)
