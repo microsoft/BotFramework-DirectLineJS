@@ -26,7 +26,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Lock down on version of dependencies, by [@compulim](https://github.com/compulim), in PR [#280](https://github.com/microsoft/BotFramework-DirectLineJS/pull/280)
    - [`rxjs@5.5.10`](https://npmjs.com/package/rxjs)
       - This version is selected out of the previous commit of `package-lock.json`
-- Bumped [`botframework-streaming@4.9.2`](https://npmjs.com/package/botframework-streaming), by [@compulim](https://github.com/compulim), in PR [#XXX](https://github.com/microsoft/BotFramework-DirectLineJS/pull/XXX)
+- Bumped [`botframework-streaming@4.9.2`](https://npmjs.com/package/botframework-streaming), by [@compulim](https://github.com/compulim), in PR [#285](https://github.com/microsoft/BotFramework-DirectLineJS/pull/285)
 
 ## [0.11.6] - 2019-10-25
 
