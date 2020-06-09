@@ -218,6 +218,8 @@ export class DirectLineStreaming implements IBotConnection {
 
     return Observable.create( subscriber => {
       const httpContentList = [];
+      const attachmentNames = [];
+
       (async () => {
         try {
           const arrayBuffers = await Promise.all(attachments.map(async attachment => {
@@ -237,7 +239,17 @@ export class DirectLineStreaming implements IBotConnection {
             stream.write(buffer);
             const httpContent = new BFSE.HttpContent({ type: media.contentType, contentLength: buffer.length }, stream);
             httpContentList.push(httpContent);
+            attachmentNames.push(media.name);
           });
+
+          let { channelData } = message;
+          if (channelData == null)
+          {
+            channelData = {};
+          }
+          channelData['attachmentNames'] = attachmentNames;
+          message.channelData = channelData;
+
 
           const url = `/v3/directline/conversations/${this.conversationId}/users/${messageWithoutAttachments.from.id}/upload`;
           const request = BFSE.StreamingRequest.create('PUT', url);
