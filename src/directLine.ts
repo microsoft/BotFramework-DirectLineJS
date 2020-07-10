@@ -370,7 +370,10 @@ export interface DirectLineOptions {
     streamUrl?: string,
     timeout?: number,
     // Attached to all requests to identify requesting agent.
-    botAgent?: string
+    botAgent?: string,
+    locale?: string,
+    userid?: string,
+    username?: string
 }
 
 export interface Services {
@@ -470,6 +473,10 @@ export class DirectLine implements IBotConnection {
     private timeout = 20 * 1000;
     private retries: number;
 
+    private locale: string;
+    private userid: string;
+    private username:string;
+
     private pollingInterval: number = 1000; //ms
 
     private tokenRefreshSubscription: Subscription;
@@ -478,6 +485,18 @@ export class DirectLine implements IBotConnection {
         this.secret = options.secret;
         this.token = options.secret || options.token;
         this.webSocket = (options.webSocket === undefined ? true : options.webSocket) && typeof WebSocket !== 'undefined' && WebSocket !== undefined;
+
+        if (options.locale) {
+            this.locale = options.locale;
+        }
+
+        if (options.userid) {
+            this.userid = options.userid;
+        }
+
+        if (options.username) {
+            this.username = options.username;
+        }
 
         if (options.domain) {
             this.domain = options.domain;
@@ -617,12 +636,23 @@ export class DirectLine implements IBotConnection {
             ? `${this.domain}/conversations/${this.conversationId}?watermark=${this.watermark}`
             : `${this.domain}/conversations`;
         const method = this.conversationId ? "GET" : "POST";
+        const body = this.conversationId
+            ? null
+            : {
+                user: {
+                    id: this.userid,
+                    name: this.username
+                },
+                locale: this.locale
+             };
         return this.services.ajax({
             method,
             url,
+            body,
             timeout: this.timeout,
             headers: {
                 "Accept": "application/json",
+                "Content-Type": "application/json",
                 ...this.commonHeaders()
             }
         })
