@@ -371,9 +371,7 @@ export interface DirectLineOptions {
     timeout?: number,
     // Attached to all requests to identify requesting agent.
     botAgent?: string,
-    locale?: string,
-    userid?: string,
-    username?: string
+    locale?: string
 }
 
 export interface Services {
