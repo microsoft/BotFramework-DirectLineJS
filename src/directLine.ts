@@ -474,8 +474,6 @@ export class DirectLine implements IBotConnection {
     private retries: number;
 
     private locale: string;
-    private userid: string;
-    private username:string;
 
     private pollingInterval: number = 1000; //ms
 
@@ -488,14 +486,6 @@ export class DirectLine implements IBotConnection {
 
         if (options.locale) {
             this.locale = options.locale;
-        }
-
-        if (options.userid) {
-            this.userid = options.userid;
-        }
-
-        if (options.username) {
-            this.username = options.username;
         }
 
         if (options.domain) {
@@ -637,12 +627,8 @@ export class DirectLine implements IBotConnection {
             : `${this.domain}/conversations`;
         const method = this.conversationId ? "GET" : "POST";
         const body = this.conversationId
-            ? null
+            ? undefined
             : {
-                user: {
-                    id: this.userid,
-                    name: this.username
-                },
                 locale: this.locale
              };
         return this.services.ajax({
