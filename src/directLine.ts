@@ -371,7 +371,7 @@ export interface DirectLineOptions {
     timeout?: number,
     // Attached to all requests to identify requesting agent.
     botAgent?: string,
-    conversationStartLocale?: string
+    conversationStartProperties?: any
 }
 
 export interface Services {
@@ -471,7 +471,7 @@ export class DirectLine implements IBotConnection {
     private timeout = 20 * 1000;
     private retries: number;
 
-    private locale: string;
+    private localeOnStartConversation: string;
 
     private pollingInterval: number = 1000; //ms
 
@@ -482,8 +482,10 @@ export class DirectLine implements IBotConnection {
         this.token = options.secret || options.token;
         this.webSocket = (options.webSocket === undefined ? true : options.webSocket) && typeof WebSocket !== 'undefined' && WebSocket !== undefined;
 
-        if (options.conversationStartLocale) {
-            this.locale = options.conversationStartLocale;
+        if (options.conversationStartProperties) {
+            if (options.conversationStartProperties.locale) {
+                this.localeOnStartConversation = options.conversationStartProperties.locale;
+            }
         }
 
         if (options.domain) {
@@ -627,8 +629,8 @@ export class DirectLine implements IBotConnection {
         const body = this.conversationId
             ? undefined
             : {
-                locale: this.locale
-             };
+                locale: this.localeOnStartConversation
+              };
         return this.services.ajax({
             method,
             url,
