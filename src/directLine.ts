@@ -467,7 +467,6 @@ export class DirectLine implements IBotConnection {
     private services: Services;
     private _userAgent: string;
     public referenceGrammarId: string;
-    private botIdHeader: string;
     private timeout = 20 * 1000;
     private retries: number;
 
@@ -643,15 +642,7 @@ export class DirectLine implements IBotConnection {
             }
         })
 //      .do(ajaxResponse => konsole.log("conversation ajaxResponse", ajaxResponse.response))
-        .map(ajaxResponse => {
-            try{
-                if(!this.botIdHeader ){
-                    this.botIdHeader = ajaxResponse.xhr.getResponseHeader('x-ms-bot-id');
-                }
-            }
-            catch{/*don't care if the above throws for any reason*/}
-            return ajaxResponse.response as Conversation;
-        })
+        .map(ajaxResponse => ajaxResponse.response as Conversation)
         .retryWhen(error$ =>
             // for now we deem 4xx and 5xx errors as unrecoverable
             // for everything else (timeouts), retry for a while
@@ -1008,10 +999,10 @@ export class DirectLine implements IBotConnection {
     }
 
     private commonHeaders() {
-            return Object.assign({
-                "Authorization": `Bearer ${this.token}`,
-                "x-ms-bot-agent": this._botAgent
-            },  this.botIdHeader ? {'x-ms-bot-id': this.botIdHeader}: null);
+        return {
+            "Authorization": `Bearer ${this.token}`,
+            "x-ms-bot-agent": this._botAgent
+        };
     }
 
     private getBotAgent(customAgent: string = ''): string {
