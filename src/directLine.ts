@@ -483,7 +483,11 @@ export class DirectLine implements IBotConnection {
 
         if (options.conversationStartProperties) {
             if (options.conversationStartProperties.locale) {
-                this.localeOnStartConversation = options.conversationStartProperties.locale;
+                if (Object.prototype.toString.call(options.conversationStartProperties.locale) === "[object String]") {
+                    this.localeOnStartConversation = options.conversationStartProperties.locale;
+                } else {
+                    console.warn('DirectLineJS: conversationStartProperties.locale was ignored: the locale name may be a BCP 47 language tag');
+                }
             }
         }
 

@@ -53,11 +53,11 @@ describe('Happy path', () => {
         // DirectLine.postActivityWithAttachments support "contentUrl" only but not "content"
         attachments: [{
           contentType: 'image/jpg',
-          contentUrl: 'http://myasebot.azurewebsites.net/177KB.jpg',
+          contentUrl: 'http://dljstestbot.azurewebsites.net/177KB.jpg',
           thumbnailUrl: 'data:image/png;base64,===177KB.jpg'
         }, {
           contentType: 'image/png',
-          contentUrl: 'http://myasebot.azurewebsites.net/100KB.jpg',
+          contentUrl: 'http://dljstestbot.azurewebsites.net/100KB.jpg',
           thumbnailUrl: 'data:image/png;base64,===100KB.jpb'
         }],
         text: 'Hello, World!',
