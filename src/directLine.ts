@@ -481,13 +481,11 @@ export class DirectLine implements IBotConnection {
         this.token = options.secret || options.token;
         this.webSocket = (options.webSocket === undefined ? true : options.webSocket) && typeof WebSocket !== 'undefined' && WebSocket !== undefined;
 
-        if (options.conversationStartProperties) {
-            if (options.conversationStartProperties.locale) {
-                if (Object.prototype.toString.call(options.conversationStartProperties.locale) === "[object String]") {
-                    this.localeOnStartConversation = options.conversationStartProperties.locale;
-                } else {
-                    console.warn('DirectLineJS: conversationStartProperties.locale was ignored: the locale name may be a BCP 47 language tag');
-                }
+        if (options.conversationStartProperties && options.conversationStartProperties.locale) {
+            if (Object.prototype.toString.call(options.conversationStartProperties.locale) === '[object String]') {
+                this.localeOnStartConversation = options.conversationStartProperties.locale;
+            } else {
+                console.warn('DirectLineJS: conversationStartProperties.locale was ignored: the locale name may be a BCP 47 language tag');
             }
         }
 
