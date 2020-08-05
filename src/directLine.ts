@@ -370,7 +370,8 @@ export interface DirectLineOptions {
     streamUrl?: string,
     timeout?: number,
     // Attached to all requests to identify requesting agent.
-    botAgent?: string
+    botAgent?: string,
+    conversationStartProperties?: any
 }
 
 export interface Services {
@@ -469,6 +470,8 @@ export class DirectLine implements IBotConnection {
     private timeout = 20 * 1000;
     private retries: number;
 
+    private localeOnStartConversation: string;
+
     private pollingInterval: number = 1000; //ms
 
     private tokenRefreshSubscription: Subscription;
@@ -477,6 +480,14 @@ export class DirectLine implements IBotConnection {
         this.secret = options.secret;
         this.token = options.secret || options.token;
         this.webSocket = (options.webSocket === undefined ? true : options.webSocket) && typeof WebSocket !== 'undefined' && WebSocket !== undefined;
+
+        if (options.conversationStartProperties && options.conversationStartProperties.locale) {
+            if (Object.prototype.toString.call(options.conversationStartProperties.locale) === '[object String]') {
+                this.localeOnStartConversation = options.conversationStartProperties.locale;
+            } else {
+                console.warn('DirectLineJS: conversationStartProperties.locale was ignored: the locale name may be a BCP 47 language tag');
+            }
+        }
 
         if (options.domain) {
             this.domain = options.domain;
@@ -616,12 +627,19 @@ export class DirectLine implements IBotConnection {
             ? `${this.domain}/conversations/${this.conversationId}?watermark=${this.watermark}`
             : `${this.domain}/conversations`;
         const method = this.conversationId ? "GET" : "POST";
+        const body = this.conversationId
+            ? undefined
+            : {
+                locale: this.localeOnStartConversation
+              };
         return this.services.ajax({
             method,
             url,
+            body,
             timeout: this.timeout,
             headers: {
                 "Accept": "application/json",
+                "Content-Type": "application/json",
                 ...this.commonHeaders()
             }
         })
