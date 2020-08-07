@@ -17,6 +17,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Added `conversationStartProperties` and `locale`, by [@zhiwang](https://github.com/zhiwang), in PR [#293](https://github.com/microsoft/BotFramework-DirectLineJS/pull/293)
+
+### Fixed
+
+- Fixed [#287](https://github.com/microsoft/BotFramework-DirectLineJS/issues/287), removed `x-ms-bot-id` header, by [@swagatmishra2007](https://github.com/swagatmishra2007), in PR [#296](https://github.com/microsoft/BotFramework-DirectLineJS/pull/296)
+
+## [0.12.0] - 2020-06-04
+
+### Added
+
 - Added support of Direct Line App Service Extension, by [@ckkashyap](https://github.com/ckkashyap), in PR [#183](https://github.com/microsoft/BotFramework-DirectLineJS/pull/183) and [#274](https://github.com/microsoft/BotFramework-DirectLineJS/pull/274)
 - Added support for `Retry-After` header and version information to `x-ms-bot-agent` header, by [@swagatmishra2007](https://github.com/swagatmishra2007), in PR [#247](https://github.com/microsoft/BotFramework-DirectLineJS/pull/247)
    - Also improved testability of the package
