@@ -79,6 +79,9 @@ var directLine = new DirectLine({
     webSocket: /* optional: false if you want to use polling GET to receive messages. Defaults to true (use WebSocket). */,
     pollingInterval: /* optional: set polling interval in milliseconds. Defaults to 1000 */,
     timeout: /* optional: a timeout in milliseconds for requests to the bot. Defaults to 20000 */,
+    conversationStartProperties: { /* optional: properties to send to the bot on conversation start */
+        locale: 'en-US'
+    }
 });
 ```
 
