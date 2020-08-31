@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Changed
+
+- Separate generated types from `directLine.ts` to `types.ts`
+
 ## [0.13.0] - 2020-08-17
 
 ### Added
