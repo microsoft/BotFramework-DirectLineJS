@@ -36,91 +36,91 @@ import { objectExpression } from '@babel/types';
 import { DirectLineStreaming } from './directLineStreaming';
 
 import {
-    Conversation,
-    MediaType,
-    Media,
-    UnknownMedia,
-    CardActionTypes,
-    CardAction,
+    Activity,
+    ActivityGroup,
+    AnimationCard,
+    AdaptiveCard,
+    Attachment,
+    AttachmentLayout,
+    AudioCard,
     CallCardAction,
+    CardAction,
+    CardActionTypes,
+    CardImage,
+    Conversation,
     DownloadFileCardAction,
+    EventActivity,
+    FlexCard,
+    HeroCard,
+    IActivity,
     IMBackCardAction,
+    KnownMedia,
+    Media,
+    MediaType,
+    Message,
     MessageBackCardAction,
     MessageBackWithImage,
     MessageBackWithTitle,
+    OAuth,
     OpenURLCardAction,
     PlayAudioCardAction,
     PlayVideoCardAction,
     PostBackCardAction,
-    ShowImageCardAction,
-    SignInCardAction,
-    CardImage,
-    HeroCard,
-    Thumbnail,
-    Signin,
-    OAuth,
     ReceiptItem,
     Receipt,
-    FlexCard,
-    AudioCard,
-    VideoCard,
-    AdaptiveCard,
-    AnimationCard,
-    KnownMedia,
-    Attachment,
-    UserRole,
-    User,
-    IActivity,
-    AttachmentLayout,
-    Message,
+    ShowImageCardAction,
+    Signin,
+    SignInCardAction,
+    Thumbnail,
     Typing,
-    EventActivity,
-    Activity,
-    ActivityGroup
+    UnknownMedia,
+    User,
+    UserRole,
+    VideoCard
 } from './types';
 
 export {
-    Conversation,
-    MediaType,
-    Media,
-    UnknownMedia,
-    CardActionTypes,
-    CardAction,
+    Activity,
+    ActivityGroup,
+    AnimationCard,
+    AdaptiveCard,
+    Attachment,
+    AttachmentLayout,
+    AudioCard,
     CallCardAction,
+    CardAction,
+    CardActionTypes,
+    CardImage,
+    Conversation,
     DownloadFileCardAction,
+    EventActivity,
+    FlexCard,
+    HeroCard,
+    IActivity,
     IMBackCardAction,
+    KnownMedia,
+    Media,
+    MediaType,
+    Message,
     MessageBackCardAction,
     MessageBackWithImage,
     MessageBackWithTitle,
+    OAuth,
     OpenURLCardAction,
     PlayAudioCardAction,
     PlayVideoCardAction,
     PostBackCardAction,
-    ShowImageCardAction,
-    SignInCardAction,
-    CardImage,
-    HeroCard,
-    Thumbnail,
-    Signin,
-    OAuth,
     ReceiptItem,
     Receipt,
-    FlexCard,
-    AudioCard,
-    VideoCard,
-    AdaptiveCard,
-    AnimationCard,
-    KnownMedia,
-    Attachment,
-    UserRole,
-    User,
-    IActivity,
-    AttachmentLayout,
-    Message,
+    ShowImageCardAction,
+    Signin,
+    SignInCardAction,
+    Thumbnail,
     Typing,
-    EventActivity,
-    Activity,
-    ActivityGroup
+    UnknownMedia,
+    User,
+    UserRole,
+    VideoCard
 } from './types';
 
 export { DirectLineStreaming };
@@ -141,34 +141,34 @@ declare var process: {
 // These types are specific to this client library, not to Direct Line 3.0
 
 export enum ConnectionStatus {
-    Uninitialized,              // the status when the DirectLine object is first created/constructed
     Connecting,                 // currently trying to connect to the conversation
-    Online,                     // successfully connected to the conversation. Connection is healthy so far as we know.
+    Ended,                      // the bot ended the conversation
     ExpiredToken,               // last operation errored out with an expired token. Possibly waiting for someone to supply a new one.
     FailedToConnect,            // the initial attempt to connect to the conversation failed. No recovery possible.
-    Ended                       // the bot ended the conversation
+    Uninitialized,              // the status when the DirectLine object is first created/constructed
+    Online,                     // successfully connected to the conversation. Connection is healthy so far as we know.
 }
 
 export interface DirectLineOptions {
-    secret?: string,
-    token?: string,
-    conversationId?: string,
-    watermark?: string,
-    domain?: string,
-    webSocket?: boolean,
-    pollingInterval?: number,
-    streamUrl?: string,
-    timeout?: number,
     // Attached to all requests to identify requesting agent.
     botAgent?: string,
+    conversationId?: string,
     conversationStartProperties?: any
+    domain?: string,
+    pollingInterval?: number,
+    secret?: string,
+    streamUrl?: string,
+    timeout?: number,
+    token?: string,
+    watermark?: string,
+    webSocket?: boolean,
 }
 
 export interface Services {
-    scheduler: IScheduler;
-    WebSocket: typeof WebSocket;
     ajax: AjaxCreationMethod;
     random: () => number;
+    scheduler: IScheduler;
+    WebSocket: typeof WebSocket;
 }
 
 const wrapAjaxWithRetry = (source: AjaxCreationMethod, scheduler: IScheduler): AjaxCreationMethod =>{
