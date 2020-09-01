@@ -1,10 +1,19 @@
 // In order to keep file size down, only import the parts of rxjs that we use
 
+import fetch from 'cross-fetch';
+import {
+  ContentStream,
+  HttpContent,
+  IReceiveRequest,
+  RequestHandler,
+  StreamingRequest,
+  StreamingResponse,
+  SubscribableStream,
+  WebSocketClient,
+} from 'botframework-streaming/browser/index-browser';
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 import { Observable } from 'rxjs/Observable';
 import { Subscriber } from 'rxjs/Subscriber';
-import * as BFSE from 'botframework-streaming/browser/index-browser';
-import fetch from 'cross-fetch';
 
 import {
   Activity,
@@ -30,7 +39,7 @@ interface DirectLineStreamingOptions {
   botAgent?: string
 }
 
-class StreamHandler implements BFSE.RequestHandler {
+class StreamHandler implements RequestHandler {
   private connectionStatus$;
   private subscriber: Subscriber<Activity>;
   private shouldQueue: () => boolean;
@@ -42,11 +51,11 @@ class StreamHandler implements BFSE.RequestHandler {
     this.shouldQueue = sq;
   }
 
-  public setSubscriber(s: Subscriber<Activity>) {
+  public setSubscriber(s: Subscriber<Activity>): void {
     this.subscriber = s;
   }
 
-  async processRequest(request: BFSE.IReceiveRequest, logger?: any): Promise<BFSE.StreamingResponse> {
+  async processRequest(request: IReceiveRequest, logger?: any): Promise<StreamingResponse> {
     const streams = [...request.streams];
     const stream0 = streams.shift();
     const activitySetJson = await stream0.readAsString();
@@ -55,7 +64,7 @@ class StreamHandler implements BFSE.RequestHandler {
     if (activitySet.activities.length !== 1) {
       // Only one activity is expected in a set in streaming
       this.subscriber.error(new Error('there should be exactly one activity'));
-      return BFSE.StreamingResponse.create(500);
+      return StreamingResponse.create(500);
     }
 
     const activity = activitySet.activities[0];
@@ -63,7 +72,7 @@ class StreamHandler implements BFSE.RequestHandler {
     if (streams.length > 0) {
       const attachments = [...activity.attachments];
 
-      let stream: BFSE.ContentStream;
+      let stream: ContentStream;
       while (stream = streams.shift()) {
         const attachment = await stream.readAsString();
         const dataUri = "data:text/plain;base64," + attachment;
@@ -79,10 +88,10 @@ class StreamHandler implements BFSE.RequestHandler {
       this.subscriber.next(activity);
     }
 
-    return BFSE.StreamingResponse.create(200);
+    return StreamingResponse.create(200);
   }
 
-  public flush() {
+  public flush(): void {
     this.connectionStatus$.subscribe(cs => { })
     this.activityQueue.forEach((a) => this.subscriber.next(a));
     this.activityQueue = [];
@@ -100,12 +109,12 @@ export class DirectLineStreaming implements IBotConnection {
 
   private conversationId: string;
   private token: string;
-  private streamConnection: BFSE.WebSocketClient;
+  private streamConnection: WebSocketClient;
   private queueActivities: boolean;
 
   private _botAgent = '';
 
-  constructor(options: DirectLineStreamingOptions) {
+  public constructor(options: DirectLineStreamingOptions) {
     this.token = options.token;
 
     this.refreshToken();
@@ -126,21 +135,21 @@ export class DirectLineStreaming implements IBotConnection {
     }).share();
   }
 
-  public reconnect({ conversationId, token } : Conversation) {
+  public reconnect({ conversationId, token }: Conversation): void {
     this.conversationId = conversationId;
     this.token = token;
     this.connectAsync();
   }
 
-  end() {
+  public end(): void {
     this.connectionStatus$.next(ConnectionStatus.Ended);
     this.streamConnection.disconnect();
   }
 
-  private commonHeaders() {
+  private commonHeaders(): { 'Authorization': string, 'x-ms-bot-agent': string } {
     return {
-      "Authorization": `Bearer ${this.token}`,
-      "x-ms-bot-agent": this._botAgent
+      'Authorization': `Bearer ${this.token}`,
+      'x-ms-bot-agent': this._botAgent
     };
   }
 
@@ -154,7 +163,7 @@ export class DirectLineStreaming implements IBotConnection {
     return `${DIRECT_LINE_VERSION} (${clientAgent})`;
   }
 
-  private async refreshToken(firstCall = true, retryCount = 0) {
+  private async refreshToken(firstCall = true, retryCount = 0): Promise<void> {
     await this.waitUntilOnline();
 
     let numberOfAttempts = 0;
@@ -190,7 +199,7 @@ export class DirectLineStreaming implements IBotConnection {
     }
 
     const resp$ = Observable.create(async subscriber => {
-      const request = BFSE.StreamingRequest.create('POST', '/v3/directline/conversations/' + this.conversationId + '/activities');
+      const request = StreamingRequest.create('POST', '/v3/directline/conversations/' + this.conversationId + '/activities');
       request.setBody(JSON.stringify(activity));
       const resp = await this.streamConnection.send(request);
 
@@ -232,18 +241,17 @@ export class DirectLineStreaming implements IBotConnection {
 
           arrayBuffers.forEach(({ arrayBuffer, media }) => {
             const buffer = new Buffer(arrayBuffer);
-            console.log(buffer);
-            const stream = new BFSE.SubscribableStream();
+            const stream = new SubscribableStream();
             stream.write(buffer);
-            const httpContent = new BFSE.HttpContent({ type: media.contentType, contentLength: buffer.length }, stream);
+            const httpContent = new HttpContent({ type: media.contentType, contentLength: buffer.length }, stream);
             httpContentList.push(httpContent);
           });
 
           const url = `/v3/directline/conversations/${this.conversationId}/users/${messageWithoutAttachments.from.id}/upload`;
-          const request = BFSE.StreamingRequest.create('PUT', url);
-          const activityStream = new BFSE.SubscribableStream();
+          const request = StreamingRequest.create('PUT', url);
+          const activityStream = new SubscribableStream();
           activityStream.write(JSON.stringify(messageWithoutAttachments), 'utf-8');
-          request.addStream(new BFSE.HttpContent({ type: "application/vnd.microsoft.activity", contentLength: activityStream.length }, activityStream));
+          request.addStream(new HttpContent({ type: "application/vnd.microsoft.activity", contentLength: activityStream.length }, activityStream));
           httpContentList.forEach(e => request.addStream(e));
 
           const resp = await this.streamConnection.send(request);
@@ -279,7 +287,7 @@ export class DirectLineStreaming implements IBotConnection {
 
     return new Promise(async (resolve, reject) => {
       try {
-        this.streamConnection = new BFSE.WebSocketClient({
+        this.streamConnection = new WebSocketClient({
           url: wsUrl,
           requestHandler: this.theStreamHandler,
           disconnectionHandler: (e) => resolve(e)
@@ -287,7 +295,7 @@ export class DirectLineStreaming implements IBotConnection {
 
         this.queueActivities = true;
         await this.streamConnection.connect();
-        const request = BFSE.StreamingRequest.create('POST', '/v3/directline/conversations');
+        const request = StreamingRequest.create('POST', '/v3/directline/conversations');
         const response = await this.streamConnection.send(request);
         if (response.statusCode !== 200) throw new Error("Connection response code " + response.statusCode);
         if (response.streams.length !== 1) throw new Error("Expected 1 stream but got " + response.streams.length);
@@ -307,7 +315,7 @@ export class DirectLineStreaming implements IBotConnection {
     });
   }
 
-  private async connectWithRetryAsync() {
+  private async connectWithRetryAsync(): Promise<void> {
     let numRetries = MAX_RETRY_COUNT;
     while (numRetries > 0) {
       numRetries--;
@@ -332,7 +340,7 @@ export class DirectLineStreaming implements IBotConnection {
   }
 
   // Returns the delay duration in milliseconds
-  private getRetryDelay() {
+  private getRetryDelay(): number {
     return Math.floor(3000 + Math.random() * 12000);
   }
 }

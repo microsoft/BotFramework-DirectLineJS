@@ -18,7 +18,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 
-- Refactor generated types from `directLine.ts` to new `types.ts`
+- Refactor generated types from `directLine.ts` to new `types.ts`, by [@stevengum](https://github.com/stevengum), in PR [#305](https://github.com/microsoft/BotFramework-DirectLineJS/pull/305)
+- Cleanup lint in `directLineStreaming.ts`, by [@stevengum](https://github.com/stevengum), in PR [#305](https://github.com/microsoft/BotFramework-DirectLineJS/pull/305)
+- `DirectLineStreaming` now uses `browser` dist from `botframework-streaming`, by [@stevengum](https://github.com/stevengum), in PR [#305](https://github.com/microsoft/BotFramework-DirectLineJS/pull/305)
 
 ## [0.13.0] - 2020-08-17
 
