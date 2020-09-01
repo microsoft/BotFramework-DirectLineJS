@@ -3,7 +3,7 @@
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 import { Observable } from 'rxjs/Observable';
 import { Subscriber } from 'rxjs/Subscriber';
-import * as BFSE from 'botframework-streaming';
+import * as BFSE from 'botframework-streaming/browser/index-browser';
 import fetch from 'cross-fetch';
 
 import {
