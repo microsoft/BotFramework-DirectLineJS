@@ -30,6 +30,7 @@
     "botframework-streaming": "4.10.3",
     "core-js": "3.6.4",
     "cross-fetch": "3.0.4",
+    "jsonwebtoken": "8.5.1",
     "rxjs": "5.5.10",
     "url-search-params-polyfill": "8.0.0"
   },
@@ -42,6 +43,7 @@
     "@babel/preset-env": "^7.6.0",
     "@babel/preset-typescript": "^7.6.0",
     "@types/jest": "^24.0.18",
+    "@types/jsonwebtoken": "^8.5.0",
     "@types/node": "^12.7.4",
     "@types/p-defer": "^2.0.0",
     "babel-jest": "^24.9.0",

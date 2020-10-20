@@ -1032,7 +1032,7 @@ export class DirectLine implements IBotConnection {
             throw new Error('DirectLineJS: It is connected, we cannot set user id.');
         }
 
-        const { user: userIDFromToken } = decode(this.token) || {};
+        const { user: userIDFromToken } = decode(this.token) as { [key: string]: any; } || {};
         if (userIDFromToken) {
             return console.warn('DirectLineJS: user id is already set in token, will ignore this user id.');
         }
