@@ -1,7 +1,10 @@
-import * as DirectLineExport from "./directLine";
-import { TestScheduler, Observable } from "rxjs";
-import { AjaxCreationMethod, AjaxRequest, AjaxResponse } from "rxjs/observable/dom/AjaxObservable";
+import * as DirectLineExport from './directLine';
+import { Observable } from 'rxjs';
+import { TestScheduler } from 'rxjs/testing';
 import { URL, URLSearchParams } from 'url';
+import { AjaxRequest, AjaxResponse } from 'rxjs/ajax';
+import { AjaxCreationMethod } from 'rxjs/internal/ajax/ajax';
+import { Conversation as DirectlineConversation } from './directline.interface';
 
 // MOCK helpers
 
@@ -43,18 +46,18 @@ export const mockServer = (scheduler: TestScheduler): Server => ({
   }
 });
 
-const tokenResponse = (server: Server, request: AjaxRequest): AjaxResponse | null => {
+const tokenResponse = (server: Server, request: AjaxRequest): AjaxResponse<DirectlineConversation> | null => {
   const { headers } = request;
   const authorization = headers['Authorization'];
   if (authorization === `Bearer ${server.conversation.token}`) {
     return null;
   }
 
-  const response: Partial<AjaxResponse> = {
+  const response: Partial<AjaxResponse<DirectlineConversation>> = {
     status: 403,
   }
 
-  return response as AjaxResponse;
+  return response as AjaxResponse<DirectlineConversation>;
 }
 
 export const injectClose = (server: Server): void =>
@@ -68,7 +71,7 @@ export const injectNewToken = (server: Server): void => {
 
 const keyWatermark = 'watermark';
 
-type ajaxType = (urlOrRequest: string | AjaxRequest) => AjaxResponse;
+type ajaxType = (urlOrRequest: string | AjaxRequest) => AjaxResponse<DirectlineConversation>;
 
 // MOCK Observable.ajax (uses shared state in Server)
 
@@ -86,7 +89,7 @@ export const mockAjax = (server: Server, customAjax?: ajaxType): AjaxCreationMet
     return uri.toString();
   }
 
-  const jax = customAjax || ((urlOrRequest: string | AjaxRequest): AjaxResponse => {
+  const jax = customAjax || ((urlOrRequest: string | AjaxRequest): AjaxResponse<DirectlineConversation> => {
     if (typeof urlOrRequest === 'string') {
       throw new Error();
     }
@@ -99,11 +102,11 @@ export const mockAjax = (server: Server, customAjax?: ajaxType): AjaxCreationMet
 
     if (parts[3] === 'tokens' && parts[4] === 'refresh') {
 
-      const response: Partial<AjaxResponse> = {
+      const response: Partial<AjaxResponse<Partial<DirectlineConversation>>> = {
         response: { token: server.conversation.token }
       };
 
-      return response as AjaxResponse;
+      return response as AjaxResponse<DirectlineConversation>;
     }
 
     if (parts[3] !== 'conversations') {
@@ -117,11 +120,11 @@ export const mockAjax = (server: Server, customAjax?: ajaxType): AjaxCreationMet
         streamUrl: createStreamUrl(0),
       };
 
-      const response: Partial<AjaxResponse> = {
+      const response: Partial<AjaxResponse<DirectlineConversation>> = {
         response: conversation,
       }
 
-      return response as AjaxResponse;
+      return response as AjaxResponse<DirectlineConversation>;
     }
 
     if (parts[4] !== server.conversation.conversationId) {
@@ -143,13 +146,12 @@ export const mockAjax = (server: Server, customAjax?: ajaxType): AjaxCreationMet
         socket.play(start, after);
       }
 
-      const response: Partial<AjaxResponse> = {
+      const response: Partial<AjaxResponse<Partial<DirectLineExport.Activity>>> = {
         response: { id: 'messageId' },
       }
 
-      return response as AjaxResponse;
-    }
-    else if (parts.length === 5) {
+      return response as AjaxResponse<DirectlineConversation>;
+    } else if (parts.length === 5) {
       const responseToken = tokenResponse(server, urlOrRequest);
       if (responseToken !== null) {
         return responseToken;
@@ -164,23 +166,22 @@ export const mockAjax = (server: Server, customAjax?: ajaxType): AjaxCreationMet
         streamUrl: createStreamUrl(start),
       };
 
-      const response: Partial<AjaxResponse> = {
+      const response: Partial<AjaxResponse<DirectlineConversation>> = {
         response: conversation,
       }
 
-      return response as AjaxResponse;
+      return response as AjaxResponse<DirectlineConversation>;
     }
 
     throw new Error();
   });
 
-  const method = (urlOrRequest: string | AjaxRequest): Observable<AjaxResponse> =>
-    new Observable<AjaxResponse>(subscriber => {
+  const method = (urlOrRequest: AjaxRequest): Observable<AjaxResponse<DirectlineConversation>> =>
+    new Observable<AjaxResponse<DirectlineConversation>>(subscriber => {
       try {
         subscriber.next(jax(urlOrRequest));
         subscriber.complete();
-      }
-      catch (error) {
+      } catch (error) {
         subscriber.error(error);
       }
     });
@@ -191,16 +192,16 @@ export const mockAjax = (server: Server, customAjax?: ajaxType): AjaxCreationMet
 
   type Properties = ValueType<AjaxCreationMethod, Function>;
 
-  const properties: Properties = {
-    get: (url: string, headers?: Object): Observable<AjaxResponse> => notImplemented(),
-    post: (url: string, body?: any, headers?: Object): Observable<AjaxResponse> => notImplemented(),
-    put: (url: string, body?: any, headers?: Object): Observable<AjaxResponse> => notImplemented(),
-    patch: (url: string, body?: any, headers?: Object): Observable<AjaxResponse> => notImplemented(),
-    delete: (url: string, headers?: Object): Observable<AjaxResponse> => notImplemented(),
+  const properties: Properties = <Properties> {
+    get: (url: string, headers?: Object): Observable<AjaxResponse<DirectlineConversation>> => notImplemented(),
+    post: (url: string, body?: any, headers?: Object): Observable<AjaxResponse<DirectlineConversation>> => notImplemented(),
+    put: (url: string, body?: any, headers?: Object): Observable<AjaxResponse<DirectlineConversation>> => notImplemented(),
+    patch: (url: string, body?: any, headers?: Object): Observable<AjaxResponse<DirectlineConversation>> => notImplemented(),
+    delete: (url: string, headers?: Object): Observable<AjaxResponse<DirectlineConversation>> => notImplemented(),
     getJSON: (url: string, headers?: Object) => notImplemented(),
   };
 
-  return Object.assign(method, properties);
+  return <any> Object.assign(method, properties);
 }
 
 // MOCK WebSocket (uses shared state in Server)
@@ -247,10 +248,10 @@ export const mockWebSocket = (server: Server): WebSocketConstructor =>
     readonly protocol: string = 'https';
     readyState: number = WebSocket.CLOSED;
     readonly url: string = '';
-    readonly CLOSED: number = WebSocket.CLOSED;
-    readonly CLOSING: number = WebSocket.CLOSING;
-    readonly CONNECTING: number = WebSocket.CONNECTING;
-    readonly OPEN: number = WebSocket.OPEN;
+    readonly CLOSED: WebSocket["CLOSED"] = WebSocket.CLOSED;
+    readonly CLOSING: WebSocket["CLOSING"] = WebSocket.CLOSING;
+    readonly CONNECTING: WebSocket["CONNECTING"] = WebSocket.CONNECTING;
+    readonly OPEN: WebSocket["OPEN"] = WebSocket.OPEN;
 
     onclose: EventHandler<CloseEvent>;
     onerror: EventHandler<Event>;

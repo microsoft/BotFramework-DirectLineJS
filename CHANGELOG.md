@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+- Update DirectLine to rxjs v6 pipeable operators, PR [#102](https://github.com/microsoft/BotFramework-DirectLineJS/pull/102/files)
+
 ## [0.15.5] - 2023-10-10
 
 ### Added
@@ -48,7 +50,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
       - [`webpack@5.76.2`](https://npmjs.com/package/webpack)
 
 ## [0.15.1] - 2022-02-09
-
 ### Changed
 
 - Bumped dependencies, by [@compulim](https://github.com/compulim), in PR [#351](https://github.com/microsoft/BotFramework-DirectLineJS/pull/351) and PR [#366](https://github.com/microsoft/BotFramework-DirectLineJS/pull/366)
