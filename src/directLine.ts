@@ -953,7 +953,7 @@ export class DirectLine implements IBotConnection {
 
                 // RxJS.retryWhen has a bug that would cause "error" signal to be sent after the observable is completed/errored.
                 // We need to guard against extraneous "error" signal to workaround the bug.
-                !closed && subscriber.error(close);
+                closed || subscriber.error(close);
                 closed = true;
             }
 
@@ -963,7 +963,7 @@ export class DirectLine implements IBotConnection {
 
                 // RxJS.retryWhen has a bug that would cause "error" signal to be sent after the observable is completed/errored.
                 // We need to guard against extraneous "error" signal to workaround the bug.
-                !closed && subscriber.error(error);
+                closed || subscriber.error(error);
                 closed = true;
             }
 
