@@ -49,6 +49,7 @@
     "babel-plugin-transform-inline-environment-variables": "^0.4.3",
     "concurrently": "^4.1.2",
     "dotenv": "^8.1.0",
+    "event-target-shim": "^5.0.1",
     "get-port": "^5.0.0",
     "global-agent": "^2.0.2",
     "has-resolved": "^1.1.0",
