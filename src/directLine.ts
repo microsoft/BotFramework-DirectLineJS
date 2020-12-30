@@ -930,6 +930,7 @@ export class DirectLine implements IBotConnection {
             konsole.log("creating WebSocket", this.streamUrl);
             const ws = new this.services.WebSocket(this.streamUrl);
             let sub: Subscription;
+            let closed: boolean;
 
             ws.onopen = open => {
                 konsole.log("WebSocket open", open);
@@ -949,7 +950,21 @@ export class DirectLine implements IBotConnection {
             ws.onclose = close => {
                 konsole.log("WebSocket close", close);
                 if (sub) sub.unsubscribe();
-                subscriber.error(close);
+
+                // RxJS.retryWhen has a bug that would cause "error" signal to be sent after the observable is completed/errored.
+                // We need to guard against extraneous "error" signal to workaround the bug.
+                closed || subscriber.error(close);
+                closed = true;
+            }
+
+            ws.onerror = error => {
+                konsole.log("WebSocket error", error);
+                if (sub) sub.unsubscribe();
+
+                // RxJS.retryWhen has a bug that would cause "error" signal to be sent after the observable is completed/errored.
+                // We need to guard against extraneous "error" signal to workaround the bug.
+                closed || subscriber.error(error);
+                closed = true;
             }
 
             ws.onmessage = message => message.data && subscriber.next(JSON.parse(message.data));
