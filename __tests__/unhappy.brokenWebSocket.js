@@ -85,6 +85,10 @@ describe('Unhappy path', () => {
       defineEventAttribute(window.WebSocket.prototype, 'error');
     });
 
+    afterEach(() => {
+      nock.cleanAll();
+    });
+
     test('should reconnect only once for every error', async () => {
       const directLine = new DirectLine({
         token: '123',
