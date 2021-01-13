@@ -4,9 +4,9 @@ import onErrorResumeNext from 'on-error-resume-next';
 
 import { timeouts } from './constants.json';
 import * as createDirectLine from './setup/createDirectLine';
-import waitForBotToRespond from './setup/waitForBotToRespond';
+import waitForConnected from './setup/waitForConnected';
 
-describe('Happy path', () => {
+describe('Unhappy path', () => {
   let unsubscribes;
 
   beforeEach(() => unsubscribes = []);
@@ -36,10 +36,9 @@ describe('Happy path', () => {
       if (!directLine) { return; }
 
       unsubscribes.push(directLine.end.bind(directLine));
+      unsubscribes.push(await waitForConnected(directLine));
 
-      directLine.setUserId('u_test');
-
-      await waitForBotToRespond(directLine, ({ text }) => text === 'Welcome');
+      expect(() => directLine.setUserId('e_test')).toThrowError('DirectLineJS: It is connected, we cannot set user id.');
     });
   });
 });

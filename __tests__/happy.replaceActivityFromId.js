@@ -4,6 +4,7 @@ import onErrorResumeNext from 'on-error-resume-next';
 
 import { timeouts } from './constants.json';
 import * as createDirectLine from './setup/createDirectLine';
+import postActivity from './setup/postActivity';
 import waitForBotToRespond from './setup/waitForBotToRespond';
 
 describe('Happy path', () => {
@@ -39,7 +40,10 @@ describe('Happy path', () => {
 
       directLine.setUserId('u_test');
 
-      await waitForBotToRespond(directLine, ({ text }) => text === 'Welcome');
+      await Promise.all([
+        postActivity(directLine, { text: 'Hello, World!', type: 'message' }),
+        waitForBotToRespond(directLine, ({ from }) => from.id === 'u_test')
+      ]);
     });
   });
 });

@@ -9,7 +9,7 @@ import { IScheduler } from 'rxjs/Scheduler';
 import { Subscriber } from 'rxjs/Subscriber';
 import { Subscription } from 'rxjs/Subscription';
 import { async as AsyncScheduler } from 'rxjs/scheduler/async';
-import { decode } from 'jsonwebtoken';
+import jwtDecode, { JwtPayload, InvalidTokenError } from "jwt-decode";
 
 import 'rxjs/add/operator/catch';
 import 'rxjs/add/operator/combineLatest';
@@ -755,7 +755,7 @@ export class DirectLine implements IBotConnection {
 
     postActivity(activity: Activity) {
         // If user id is set, check if it match activity.from.id and always override it in activity
-        if (this.userIdOnStartConversation && activity.from && activity.from.id != this.userIdOnStartConversation) {
+        if (this.userIdOnStartConversation && activity.from && activity.from.id !== this.userIdOnStartConversation) {
             console.warn('DirectLineJS: Activity.from.id does not match with user id, ignoring activity.from.id');
             activity.from.id = this.userIdOnStartConversation;
         }
@@ -1047,8 +1047,8 @@ export class DirectLine implements IBotConnection {
             throw new Error('DirectLineJS: It is connected, we cannot set user id.');
         }
 
-        const { user: userIDFromToken } = decode(this.token) as { [key: string]: any; } || {};
-        if (userIDFromToken) {
+        const userIdFromToken = this.parseToken(this.token);
+        if (userIdFromToken) {
             return console.warn('DirectLineJS: user id is already set in token, will ignore this user id.');
         }
 
@@ -1057,6 +1057,17 @@ export class DirectLine implements IBotConnection {
         }
 
         this.userIdOnStartConversation = userId;
+    }
+
+    private parseToken(token: string) {
+        try {
+            const { user } = jwtDecode<JwtPayload>(token) as { [key: string]: any; };
+            return user;
+        } catch (e) {
+            if (e instanceof InvalidTokenError) {
+                return undefined;
+            }
+        }
     }
 
 }
