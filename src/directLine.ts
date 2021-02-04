@@ -9,7 +9,7 @@ import { IScheduler } from 'rxjs/Scheduler';
 import { Subscriber } from 'rxjs/Subscriber';
 import { Subscription } from 'rxjs/Subscription';
 import { async as AsyncScheduler } from 'rxjs/scheduler/async';
-import jwtDecode, { JwtPayload, InvalidTokenError } from "jwt-decode";
+import jwtDecode, { JwtPayload, InvalidTokenError } from 'jwt-decode';
 
 import 'rxjs/add/operator/catch';
 import 'rxjs/add/operator/combineLatest';
