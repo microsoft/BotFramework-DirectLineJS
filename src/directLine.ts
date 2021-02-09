@@ -9,6 +9,7 @@ import { IScheduler } from 'rxjs/Scheduler';
 import { Subscriber } from 'rxjs/Subscriber';
 import { Subscription } from 'rxjs/Subscription';
 import { async as AsyncScheduler } from 'rxjs/scheduler/async';
+import jwtDecode, { JwtPayload, InvalidTokenError } from 'jwt-decode';
 
 import 'rxjs/add/operator/catch';
 import 'rxjs/add/operator/combineLatest';
@@ -471,6 +472,7 @@ export class DirectLine implements IBotConnection {
     private retries: number;
 
     private localeOnStartConversation: string;
+    private userIdOnStartConversation: string;
 
     private pollingInterval: number = 1000; //ms
 
@@ -630,6 +632,9 @@ export class DirectLine implements IBotConnection {
         const body = this.conversationId
             ? undefined
             : {
+                user: {
+                    id: this.userIdOnStartConversation
+                },
                 locale: this.localeOnStartConversation
               };
         return this.services.ajax({
@@ -749,6 +754,11 @@ export class DirectLine implements IBotConnection {
     }
 
     postActivity(activity: Activity) {
+        // If user id is set, check if it match activity.from.id and always override it in activity
+        if (this.userIdOnStartConversation && activity.from && activity.from.id !== this.userIdOnStartConversation) {
+            console.warn('DirectLineJS: Activity.from.id does not match with user id, ignoring activity.from.id');
+            activity.from.id = this.userIdOnStartConversation;
+        }
         // Use postMessageWithAttachments for messages with attachments that are local files (e.g. an image to upload)
         // Technically we could use it for *all* activities, but postActivity is much lighter weight
         // So, since WebChat is partially a reference implementation of Direct Line, we implement both.
@@ -1032,5 +1042,32 @@ export class DirectLine implements IBotConnection {
         return `${DIRECT_LINE_VERSION} (${clientAgent} ${process.env.npm_package_version})`;
     }
 
+    setUserId(userId: string) {
+        if (this.connectionStatus$.getValue() === ConnectionStatus.Online) {
+            throw new Error('DirectLineJS: It is connected, we cannot set user id.');
+        }
+
+        const userIdFromToken = this.parseToken(this.token);
+        if (userIdFromToken) {
+            return console.warn('DirectLineJS: user id is already set in token, will ignore this user id.');
+        }
+
+        if (/^dl_/u.test(userId)) {
+            return console.warn('DirectLineJS: user id prefixed with "dl_" is reserved and must be embedded into the Direct Line token to prevent forgery.');
+        }
+
+        this.userIdOnStartConversation = userId;
+    }
+
+    private parseToken(token: string) {
+        try {
+            const { user } = jwtDecode<JwtPayload>(token) as { [key: string]: any; };
+            return user;
+        } catch (e) {
+            if (e instanceof InvalidTokenError) {
+                return undefined;
+            }
+        }
+    }
 
 }
