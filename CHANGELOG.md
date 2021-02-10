@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.14.1] - 2021-02-10
+
 ### Changed
 
 - Bumped [`botframework-streaming@4.11.0`](https://npmjs.com/package/botframework-streaming), by [@stevengum](https://github.com/stevengum), in PR [#323](https://github.com/microsoft/BotFramework-DirectLineJS/pull/323)
