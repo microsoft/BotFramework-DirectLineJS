@@ -20,6 +20,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - Bumped [`botframework-streaming@4.11.0`](https://npmjs.com/package/botframework-streaming), by [@stevengum](https://github.com/stevengum), in PR [#323](https://github.com/microsoft/BotFramework-DirectLineJS/pull/323)
 
+## [0.14.0] - 2021-02-09
+
+### Added
+
+- Create better handling of Web Socket errors, by [@compulim](https://github.com/compulim), in PR [#324](https://github.com/microsoft/BotFramework-DirectLineJS/pull/324)
+- Added `setUserId()` function to set user ID before connection, by [@timenick](https://github.com/timenick), in PR [#316](https://github.com/microsoft/BotFramework-DirectLineJS/pull/316)
+
 ## [0.13.1] - 2020-09-09
 
 ### Changed
@@ -30,7 +37,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
-- Added `conversationStartProperties` and `locale`, by [@zhiwang](https://github.com/zhiwang), in PR [#293](https://github.com/microsoft/BotFramework-DirectLineJS/pull/293)
+- Added `conversationStartProperties` and `locale`, by [@timenick](https://github.com/timenick), in PR [#293](https://github.com/microsoft/BotFramework-DirectLineJS/pull/293)
 
 ### Fixed
 
