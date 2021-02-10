@@ -24,7 +24,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
-- Better handling of Web Socket errors, by [@compulim](https://github.com/compulim), in PR [#324](https://github.com/microsoft/BotFramework-DirectLineJS/pull/324)
+- Create better handling of Web Socket errors, by [@compulim](https://github.com/compulim), in PR [#324](https://github.com/microsoft/BotFramework-DirectLineJS/pull/324)
 - Added `setUserId()` function to set user ID before connection, by [@timenick](https://github.com/timenick), in PR [#316](https://github.com/microsoft/BotFramework-DirectLineJS/pull/316)
 
 ## [0.13.1] - 2020-09-09
