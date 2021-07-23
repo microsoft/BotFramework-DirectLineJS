@@ -1,6 +1,4 @@
-const { DefinePlugin } = require('webpack');
 const { join } = require('path');
-const Visualizer = require('webpack-visualizer-plugin');
 
 module.exports = {
   entry: {
@@ -14,12 +12,10 @@ module.exports = {
     libraryTarget: 'umd',
     path: join(__dirname, 'dist')
   },
-  plugins: [
-    new DefinePlugin({
-      'process.env': {
-        'VERSION': JSON.stringify(process.env.npm_package_version)
-      }
-    }),
-    new Visualizer()
-  ]
+  resolve: {
+    fallback: {
+      buffer: require.resolve('buffer'),
+      stream: require.resolve('stream-browserify')
+    }
+  }
 };

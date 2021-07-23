@@ -1,6 +1,7 @@
 // In order to keep file size down, only import the parts of rxjs that we use
 
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
+import { Buffer } from 'buffer';
 import { Observable } from 'rxjs/Observable';
 import { Subscriber } from 'rxjs/Subscriber';
 import * as BFSE from 'botframework-streaming';
@@ -231,7 +232,7 @@ export class DirectLineStreaming implements IBotConnection {
           }));
 
           arrayBuffers.forEach(({ arrayBuffer, media }) => {
-            const buffer = new Buffer(arrayBuffer);
+            const buffer = Buffer.from(arrayBuffer);
             console.log(buffer);
             const stream = new BFSE.SubscribableStream();
             stream.write(buffer);

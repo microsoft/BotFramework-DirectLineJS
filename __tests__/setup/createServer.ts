@@ -41,10 +41,12 @@ export default async function (options: CreateServerOptions): Promise<CreateServ
         deferred: createDeferred()
       }));
     } else {
-      return [{
-        ...unorderedPlaybacks,
-        deferred: createDeferred()
-      }];
+      return [
+        {
+          ...unorderedPlaybacks,
+          deferred: createDeferred()
+        }
+      ];
     }
   });
 
@@ -58,11 +60,7 @@ export default async function (options: CreateServerOptions): Promise<CreateServ
     const unorderedPlaybacks = Array.isArray(firstPlayback) ? firstPlayback : [firstPlayback];
     let handled;
 
-    unorderedPlaybacks.forEach(({
-      deferred,
-      req: preq = {},
-      res: pres = {}
-    }, index) => {
+    unorderedPlaybacks.forEach(({ deferred, req: preq = {}, res: pres = {} }, index) => {
       if (req.url === (preq.url || '/')) {
         if (req.method === 'OPTIONS') {
           res.send(200, '', {
@@ -80,14 +78,13 @@ export default async function (options: CreateServerOptions): Promise<CreateServ
             headers['Content-Type'] = 'text/plain';
           }
 
-          res.send(
-            pres.code || 200,
-            pres.body,
-            {
-              ...headers,
-              ...pres.headers
-            }
-          );
+          res.send(pres.code || 200, pres.body, {
+            // JSDOM requires all HTTP response, including those already pre-flighted, to have "Access-Control-Allow-Origin".
+            // https://github.com/jsdom/jsdom/issues/2024
+            'Access-Control-Allow-Origin': req.header('Origin') || '*',
+            ...headers,
+            ...pres.headers
+          });
 
           handled = true;
           deferred.resolve();
@@ -114,11 +111,11 @@ export default async function (options: CreateServerOptions): Promise<CreateServ
       return new Promise(resolve => server.close(resolve));
     },
     port,
-    promises: options.playbacks.map((unorderedPlayback: (Playback | Playback[]), index) => {
+    promises: options.playbacks.map((unorderedPlayback: Playback | Playback[], index) => {
       if (Array.isArray(unorderedPlayback)) {
         return (orderedPlaybacks[index] as PlaybackWithDeferred[]).map(({ deferred: { promise } }) => promise);
       } else {
-        return (orderedPlaybacks[index][0]).deferred.promise;
+        return orderedPlaybacks[index][0].deferred.promise;
       }
     })
   };

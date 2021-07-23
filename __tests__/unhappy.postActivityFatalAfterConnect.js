@@ -13,7 +13,7 @@ import waitForConnected from './setup/waitForConnected';
 describe('Unhappy path', () => {
   let unsubscribes;
 
-  beforeEach(() => unsubscribes = []);
+  beforeEach(() => (unsubscribes = []));
   afterEach(() => unsubscribes.forEach(fn => onErrorResumeNext(fn)));
 
   describe('channel returned 404 on post activity after connected', () => {
@@ -23,7 +23,7 @@ describe('Unhappy path', () => {
 
     beforeEach(async () => {
       proxyPort = await getPort();
-      proxyDomain = `http://localhost:${ proxyPort }/v3/directline`;
+      proxyDomain = `http://localhost:${proxyPort}/v3/directline`;
     });
 
     describe('using REST', () => {
@@ -57,12 +57,16 @@ describe('Unhappy path', () => {
 
     afterEach(async () => {
       // If directLine object is undefined, that means the test is failing.
-      if (!directLine) { return; }
+      if (!directLine) {
+        return;
+      }
 
       let lastConnectionStatus;
 
       const connectionStatusSubscription = directLine.connectionStatus$.subscribe({
-        next(value) { lastConnectionStatus = value; }
+        next(value) {
+          lastConnectionStatus = value;
+        }
       });
 
       unsubscribes.push(connectionStatusSubscription.unsubscribe.bind(connectionStatusSubscription));
@@ -70,10 +74,10 @@ describe('Unhappy path', () => {
       let alwaysReturn404;
 
       const { unsubscribe } = await createDirectLineForwarder(proxyPort, (req, res, next) => {
-        if (
-          req.method !== 'OPTIONS'
-          && alwaysReturn404
-        ) {
+        if (req.method !== 'OPTIONS' && alwaysReturn404) {
+          // JSDOM requires all HTTP response, including those already pre-flighted, to have "Access-Control-Allow-Origin".
+          // https://github.com/jsdom/jsdom/issues/2024
+          res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
           res.statusCode = 404;
           res.end();
         } else {
