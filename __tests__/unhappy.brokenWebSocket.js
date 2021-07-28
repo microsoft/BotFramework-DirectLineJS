@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import 'global-agent/bootstrap';
 
-import { defineEventAttribute, EventTarget } from 'event-target-shim';
+import { EventTarget, getEventAttributeValue, setEventAttributeValue } from 'event-target-shim';
 import nock from 'nock';
 import onErrorResumeNext from 'on-error-resume-next';
 
@@ -64,9 +64,7 @@ describe('Unhappy path', () => {
           .options(uri => uri.startsWith('/v3/directline/conversations'))
       );
 
-      window.WebSocket = class extends (
-        EventTarget
-      ) {
+      window.WebSocket = class extends EventTarget {
         constructor() {
           super();
 
@@ -79,10 +77,23 @@ describe('Unhappy path', () => {
             this.dispatchEvent(new CustomEvent('close'));
           }, 10);
         }
-      };
 
-      defineEventAttribute(window.WebSocket.prototype, 'close');
-      defineEventAttribute(window.WebSocket.prototype, 'error');
+        get onclose() {
+          return getEventAttributeValue(this, 'close');
+        }
+
+        set onclose(value) {
+          setEventAttributeValue(this, 'close', value);
+        }
+
+        get onerror() {
+          return getEventAttributeValue(this, 'error');
+        }
+
+        set onerror(value) {
+          setEventAttributeValue(this, 'error', value);
+        }
+      };
     });
 
     afterEach(() => {
