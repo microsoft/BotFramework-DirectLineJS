@@ -16,7 +16,7 @@
     "clean": "rimraf dist lib",
     "prepublishOnly": "npm run build:typecheck && npm run build:babel && npm run build:webpack",
     "start": "npm run build && concurrently --names \"babel,typecheck,webpack\" \"npm run build:babel -- --watch\" \"npm run build:typecheck -- --preserveWatchOutput --watch\" \"npm run build:webpack -- --config webpack-watch.config.js --watch\"",
-    "test": "jest",
+    "test": "jest --silent",
     "watch": "npm run start"
   },
   "repository": {
