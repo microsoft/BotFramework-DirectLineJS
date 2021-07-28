@@ -46,6 +46,7 @@
     "@types/node": "^16.4.0",
     "@types/p-defer": "^2.0.0",
     "babel-jest": "^27.0.6",
+    "babel-loader": "^8.2.2",
     "babel-plugin-istanbul": "^6.0.0",
     "babel-plugin-transform-inline-environment-variables": "^0.4.3",
     "concurrently": "^6.2.0",
