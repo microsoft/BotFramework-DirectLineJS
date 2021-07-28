@@ -47,7 +47,6 @@
     "babel-jest": "^27.0.6",
     "babel-plugin-istanbul": "^6.0.0",
     "babel-plugin-transform-inline-environment-variables": "^0.4.3",
-    "buffer": "^6.0.3",
     "concurrently": "^6.2.0",
     "dotenv": "^10.0.0",
     "event-target-shim": "^6.0.2",
@@ -64,9 +63,9 @@
     "restify": "^8.5.1",
     "rimraf": "^3.0.2",
     "simple-update-in": "^2.2.0",
-    "stream-browserify": "^3.0.0",
     "typescript": "^4.3.5",
     "webpack": "^5.45.1",
-    "webpack-cli": "^4.7.2"
+    "webpack-cli": "^4.7.2",
+    "webpack-stats-plugin": "^1.0.3"
   }
 }

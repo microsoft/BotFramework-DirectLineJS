@@ -1,4 +1,4 @@
-const { join } = require('path');
+const { StatsWriterPlugin } = require('webpack-stats-plugin');
 
 module.exports = {
   entry: {
@@ -7,15 +7,13 @@ module.exports = {
   externals: ['net'],
   mode: 'production',
   output: {
-    filename: '[name].js',
     library: 'DirectLine',
-    libraryTarget: 'umd',
-    path: join(__dirname, 'dist')
+    libraryTarget: 'umd'
   },
-  resolve: {
-    fallback: {
-      buffer: require.resolve('buffer'),
-      stream: require.resolve('stream-browserify')
-    }
-  }
+  plugins: [
+    new StatsWriterPlugin({
+      filename: 'stats.json',
+      transform: (_, opts) => JSON.stringify(opts.compiler.getStats().toJson({ chunkModules: true }), null, 2)
+    })
+  ]
 };
