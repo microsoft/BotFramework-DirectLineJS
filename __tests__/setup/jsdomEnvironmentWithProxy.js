@@ -2,7 +2,7 @@ require('global-agent/bootstrap');
 
 // To use proxy, SET GLOBAL_AGENT_HTTP_PROXY=http://localhost:8888
 
-const JSDOMEnvironment = require('jest-environment-jsdom-fourteen');
+const JSDOMEnvironment = require('jest-environment-jsdom');
 
 class JSDOMEnvironmentWithProxy extends JSDOMEnvironment {
   setup() {
@@ -14,9 +14,9 @@ class JSDOMEnvironmentWithProxy extends JSDOMEnvironment {
       //       This is because the ResourceLoader instance constructor is of "slightly" different type when on runtime (probably Jest magic).
       //       Thus, when we set it thru testEnvironmentOptions.resources, it will fail on "--watch" but succeed when running without watch.
       this.global._resourceLoader = resources;
-
-      return super.setup();
     }
+
+    return super.setup();
   }
 }
 

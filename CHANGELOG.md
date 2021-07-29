@@ -16,6 +16,47 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Changed
+
+- Bumped dependencies, by [@compulim](https://github.com/compulim), in PR [#351](https://github.com/microsoft/BotFramework-DirectLineJS/pull/351)
+   - Production dependencies
+      - [`@babel/runtime@7.14.8`](https://npmjs.com/package/@babel/runtime)
+      - [`botframework-streaming@4.14.1`](https://npmjs.com/package/botframework-streaming)
+      - [`buffer@6.0.3`](https://npmjs.com/package/buffer)
+      - [`core-js@3.15.2`](https://npmjs.com/package/core-js)
+      - [`cross-fetch@3.1.4`](https://npmjs.com/package/cross-fetch)
+      - [`rxjs@5.5.12`](https://npmjs.com/package/rxjs)
+      - [`url-search-params-polyfill@8.1.1`](https://npmjs.com/package/url-search-params-polyfill)
+   - Development dependencies
+      - [`@babel/cli@7.14.8`](https://npmjs.com/package/@babel/cli)
+      - [`@babel/core@7.14.8`](https://npmjs.com/package/@babel/core)
+      - [`@babel/plugin-transform-runtime@7.14.5`](https://npmjs.com/package/@babel/plugin-transform-runtime)
+      - [`@babel/preset-env@7.14.8`](https://npmjs.com/package/@babel/preset-env)
+      - [`@babel/preset-typescript@7.14.5`](https://npmjs.com/package/@babel/preset-typescript)
+      - [`@types/jest@26.0.24`](https://npmjs.com/package/@types/jest)
+      - [`@types/jsonwebtoken@8.5.4`](https://npmjs.com/package/@types/jsonwebtoken)
+      - [`@types/node@16.4.0`](https://npmjs.com/package/@types/node)
+      - [`babel-loader@8.2.2`](https://npmjs.com/package/babel-loader)
+      - [`babel-jest@27.0.6`](https://npmjs.com/package/babel-jest)
+      - [`babel-plugin-istanbul@6.0.0`](https://npmjs.com/package/babel-plugin-istanbul)
+      - [`concurrently@6.2.0`](https://npmjs.com/package/concurrently)
+      - [`dotenv@10.0.0`](https://npmjs.com/package/dotenv)
+      - [`event-target-shim@6.0.2`](https://npmjs.com/package/event-target-shim)
+      - [`get-port@5.1.1`](https://npmjs.com/package/get-port)
+      - [`global-agent@2.2.0`](https://npmjs.com/package/global-agent)
+      - [`jest@27.0.6`](https://npmjs.com/package/jest)
+      - [`jest-environment-jsdom@27.0.6`](https://npmjs.com/package/jest-environment-jsdom)
+      - [`jsdom@16.6.0`](https://npmjs.com/package/jsdom)
+      - [`nock@13.1.1`](https://npmjs.com/package/nock)
+      - [`node-fetch@2.6.1`](https://npmjs.com/package/node-fetch)
+      - [`restify@8.5.1`](https://npmjs.com/package/restify)
+      - [`rimraf@3.0.2`](https://npmjs.com/package/rimraf)
+      - [`simple-update-in@2.2.0`](https://npmjs.com/package/simple-update-in)
+      - [`typescript@4.3.5`](https://npmjs.com/package/typescript)
+      - [`webpack@5.45.1`](https://npmjs.com/package/webpack)
+      - [`webpack-cli@4.7.2`](https://npmjs.com/package/webpack-cli)
+      - [`webpack-stats-plugin@1.0.3`](https://npmjs.com/package/webpack-stats-plugin)
+
 ## [0.14.1] - 2021-02-10
 
 ### Changed

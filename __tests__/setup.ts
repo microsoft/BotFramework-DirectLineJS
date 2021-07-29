@@ -21,3 +21,7 @@ test('createServer setup correctly', async () => {
     dispose();
   }
 });
+
+test('test environment has Web Cryptography API', () => {
+  expect(typeof global.crypto.getRandomValues).toBe('function');
+});
