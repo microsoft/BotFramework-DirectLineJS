@@ -28,7 +28,14 @@ interface DirectLineStreamingOptions {
   conversationId?: string,
   domain: string,
   // Attached to all requests to identify requesting agent.
-  botAgent?: string
+  botAgent?: string,
+  conversationStartProperties?: {
+    user?: {
+      id?: string,
+      name?: string
+    },
+    locale?: string
+  }
 }
 
 class StreamHandler implements BFSE.RequestHandler {
@@ -103,6 +110,9 @@ export class DirectLineStreaming implements IBotConnection {
   private token: string;
   private streamConnection: BFSE.WebSocketClient;
   private queueActivities: boolean;
+  private readonly userIdOnStartConversation: string;
+  private readonly localeOnStartConversation: string;
+  private readonly usernameOnStartConversation: string;
 
   private _botAgent = '';
 
@@ -115,6 +125,12 @@ export class DirectLineStreaming implements IBotConnection {
 
     if (options.conversationId) {
       this.conversationId = options.conversationId;
+    }
+
+    if (options.conversationStartProperties) {
+      this.localeOnStartConversation = options.conversationStartProperties.locale;
+      this.userIdOnStartConversation = options.conversationStartProperties.user && options.conversationStartProperties.user.id;
+      this.usernameOnStartConversation = options.conversationStartProperties.user && options.conversationStartProperties.user.name;
     }
 
     this._botAgent = this.getBotAgent(options.botAgent);
@@ -289,6 +305,17 @@ export class DirectLineStreaming implements IBotConnection {
         this.queueActivities = true;
         await this.streamConnection.connect();
         const request = BFSE.StreamingRequest.create('POST', '/v3/directline/conversations');
+        request.setBody(
+          JSON.stringify(
+            {
+            user: {
+              id: this.userIdOnStartConversation,
+              name: this.usernameOnStartConversation
+            },
+            locale: this.localeOnStartConversation
+            }
+          )
+        );
         const response = await this.streamConnection.send(request);
         if (response.statusCode !== 200) throw new Error("Connection response code " + response.statusCode);
         if (response.streams.length !== 1) throw new Error("Expected 1 stream but got " + response.streams.length);

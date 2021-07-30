@@ -4,7 +4,9 @@ import onErrorResumeNext from 'on-error-resume-next';
 
 import { timeouts } from './constants.json';
 import * as createDirectLine from './setup/createDirectLine';
+import postActivity from './setup/postActivity';
 import waitForBotToRespond from './setup/waitForBotToRespond';
+import waitForConnected from './setup/waitForConnected';
 
 describe('Happy path', () => {
   let unsubscribes;
@@ -40,6 +42,28 @@ describe('Happy path', () => {
       directLine.setUserId('u_test');
 
       await waitForBotToRespond(directLine, ({ text }) => text === 'Welcome');
+    });
+  });
+
+  describe('should use conversationStartProperties when starting conversation', () => {
+    let directLine;
+
+    test('using Streaming Extensions', async () => {
+      jest.setTimeout(timeouts.streamingExtensions);
+      directLine = await createDirectLine.forStreamingExtensions({ conversationStartProperties: { user: { id: 'u_test' } }});
+    });
+
+    afterEach(async () => {
+      // If directLine object is undefined, that means the test is failing.
+      if (!directLine) { return; }
+
+      unsubscribes.push(directLine.end.bind(directLine));
+      unsubscribes.push(await waitForConnected(directLine));
+
+      await Promise.all([
+        postActivity(directLine, { text: 'Hello, World!', type: 'message' }),
+        waitForBotToRespond(directLine, ({ from }) => from.id === 'u_test')
+      ]);
     });
   });
 });

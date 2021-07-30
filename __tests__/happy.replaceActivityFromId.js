@@ -13,7 +13,7 @@ describe('Happy path', () => {
   beforeEach(() => unsubscribes = []);
   afterEach(() => unsubscribes.forEach(fn => onErrorResumeNext(fn)));
 
-  describe('should receive the welcome message from bot', () => {
+  describe('should replace from.id on messages to bot', () => {
     let directLine;
 
     describe('using REST', () => {
