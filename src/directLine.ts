@@ -363,6 +363,7 @@ export enum ConnectionStatus {
 export interface DirectLineOptions {
     secret?: string,
     token?: string,
+    refreshToken$: Observable<string>,
     conversationId?: string,
     watermark?: string,
     domain?: string,
@@ -462,6 +463,7 @@ export class DirectLine implements IBotConnection {
     private expiredTokenExhaustion: Function;
     private secret: string;
     private token: string;
+    private refreshToken$: Observable<string>;
     private watermark = '';
     private streamUrl: string;
     private _botAgent = '';
@@ -481,6 +483,7 @@ export class DirectLine implements IBotConnection {
     constructor(options: DirectLineOptions & Partial<Services>) {
         this.secret = options.secret;
         this.token = options.secret || options.token;
+        this.refreshToken$ = options.refreshToken$;
         this.webSocket = (options.webSocket === undefined ? true : options.webSocket) && typeof WebSocket !== 'undefined' && WebSocket !== undefined;
 
         if (options.conversationStartProperties && options.conversationStartProperties.locale) {
@@ -543,6 +546,17 @@ export class DirectLine implements IBotConnection {
         ).share();
     }
 
+    private ensureInitialToken() : Observable<void> {
+        if (!this.token && !this.secret && this.refreshToken$) {
+            return this.refreshToken$.map(token => {
+                konsole.log("fetching first token", token, "at", new Date());
+                this.token = token;
+            });
+        }
+        return Observable.of(null);
+    }
+
+
     // Every time we're about to make a Direct Line REST call, we call this first to see check the current connection status.
     // Either throws an error (indicating an error state) or emits a null, indicating a (presumably) healthy connection
     private checkConnection(once = false) {
@@ -556,19 +570,24 @@ export class DirectLine implements IBotConnection {
                     this.connectionStatus$.next(ConnectionStatus.Online);
                     return Observable.of(connectionStatus, this.services.scheduler);
                 } else {
-                    return this.startConversation().do(conversation => {
-                        this.conversationId = conversation.conversationId;
-                        this.token = this.secret || conversation.token;
-                        this.streamUrl = conversation.streamUrl;
-                        this.referenceGrammarId = conversation.referenceGrammarId;
-                        if (!this.secret)
-                            this.refreshTokenLoop();
+                    return this.ensureInitialToken().map(_ => {
+                                return this.startConversation().do(conversation => {
+                                    this.conversationId = conversation.conversationId;
+                                    this.token = this.secret || conversation.token;
+                                    this.streamUrl = conversation.streamUrl;
+                                    this.referenceGrammarId = conversation.referenceGrammarId;
+                                    if (!this.secret)
+                                        this.refreshTokenLoop();
 
-                        this.connectionStatus$.next(ConnectionStatus.Online);
-                    }, error => {
-                        this.connectionStatus$.next(ConnectionStatus.FailedToConnect);
-                    })
-                    .map(_ => connectionStatus);
+                                    this.connectionStatus$.next(ConnectionStatus.Online);
+                                }, error => {
+                                    this.connectionStatus$.next(ConnectionStatus.FailedToConnect);
+                                }).map(_ => connectionStatus);
+                        },
+                        error => {
+                            konsole.log("Did not have an initial token");
+                            this.connectionStatus$.next(ConnectionStatus.FailedToConnect);
+                        });
                 }
             }
             else {
@@ -665,7 +684,13 @@ export class DirectLine implements IBotConnection {
 
     private refreshTokenLoop() {
         this.tokenRefreshSubscription = Observable.interval(intervalRefreshToken, this.services.scheduler)
-        .flatMap(_ => this.refreshToken())
+        .flatMap(_ =>
+            {
+                if (this.refreshToken$)
+                    return this.refreshToken$;
+                else
+                    return this.refreshToken();
+            })
         .subscribe(token => {
             konsole.log("refreshing token", token, "at", new Date());
             this.token = token;
