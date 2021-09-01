@@ -13,7 +13,6 @@ import jwtDecode, { JwtPayload, InvalidTokenError } from 'jwt-decode';
 
 import 'rxjs/add/operator/catch';
 import 'rxjs/add/operator/combineLatest';
-import 'rxjs/add/operator/concat';
 import 'rxjs/add/operator/count';
 import 'rxjs/add/operator/delay';
 import 'rxjs/add/operator/do';
@@ -560,19 +559,19 @@ export class DirectLine implements IBotConnection {
                     this.connectionStatus$.next(ConnectionStatus.Online);
                     return Observable.of(connectionStatus, this.services.scheduler);
                 } else {
-                        return this.startConversation().do(conversation => {
-                            this.conversationId = conversation.conversationId;
-                            this.token = this.secret || conversation.token;
-                            this.streamUrl = conversation.streamUrl;
-                            this.referenceGrammarId = conversation.referenceGrammarId;
-                            if (!this.secret)
-                                this.refreshTokenLoop();
+                    return this.startConversation().do(conversation => {
+                        this.conversationId = conversation.conversationId;
+                        this.token = this.secret || conversation.token;
+                        this.streamUrl = conversation.streamUrl;
+                        this.referenceGrammarId = conversation.referenceGrammarId;
+                        if (!this.secret)
+                            this.refreshTokenLoop();
 
-                            this.connectionStatus$.next(ConnectionStatus.Online);
-                        }, error => {
-                            this.connectionStatus$.next(ConnectionStatus.FailedToConnect);
-                        })
-                        .map(_ => connectionStatus);
+                        this.connectionStatus$.next(ConnectionStatus.Online);
+                    }, error => {
+                        this.connectionStatus$.next(ConnectionStatus.FailedToConnect);
+                    })
+                    .map(_ => connectionStatus);
                 }
             }
             else {
