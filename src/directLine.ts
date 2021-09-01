@@ -13,6 +13,7 @@ import jwtDecode, { JwtPayload, InvalidTokenError } from 'jwt-decode';
 
 import 'rxjs/add/operator/catch';
 import 'rxjs/add/operator/combineLatest';
+import 'rxjs/add/operator/concat';
 import 'rxjs/add/operator/count';
 import 'rxjs/add/operator/delay';
 import 'rxjs/add/operator/do';
@@ -546,17 +547,6 @@ export class DirectLine implements IBotConnection {
         ).share();
     }
 
-    private ensureInitialToken() : Observable<void> {
-        if (!this.token && !this.secret && this.refreshToken$) {
-            return this.refreshToken$.map(token => {
-                konsole.log("fetching first token", token, "at", new Date());
-                this.token = token;
-            });
-        }
-        return Observable.of(null);
-    }
-
-
     // Every time we're about to make a Direct Line REST call, we call this first to see check the current connection status.
     // Either throws an error (indicating an error state) or emits a null, indicating a (presumably) healthy connection
     private checkConnection(once = false) {
@@ -570,24 +560,19 @@ export class DirectLine implements IBotConnection {
                     this.connectionStatus$.next(ConnectionStatus.Online);
                     return Observable.of(connectionStatus, this.services.scheduler);
                 } else {
-                    return this.ensureInitialToken().map(_ => {
-                                return this.startConversation().do(conversation => {
-                                    this.conversationId = conversation.conversationId;
-                                    this.token = this.secret || conversation.token;
-                                    this.streamUrl = conversation.streamUrl;
-                                    this.referenceGrammarId = conversation.referenceGrammarId;
-                                    if (!this.secret)
-                                        this.refreshTokenLoop();
+                        return this.startConversation().do(conversation => {
+                            this.conversationId = conversation.conversationId;
+                            this.token = this.secret || conversation.token;
+                            this.streamUrl = conversation.streamUrl;
+                            this.referenceGrammarId = conversation.referenceGrammarId;
+                            if (!this.secret)
+                                this.refreshTokenLoop();
 
-                                    this.connectionStatus$.next(ConnectionStatus.Online);
-                                }, error => {
-                                    this.connectionStatus$.next(ConnectionStatus.FailedToConnect);
-                                }).map(_ => connectionStatus);
-                        },
-                        error => {
-                            konsole.log("Did not have an initial token");
+                            this.connectionStatus$.next(ConnectionStatus.Online);
+                        }, error => {
                             this.connectionStatus$.next(ConnectionStatus.FailedToConnect);
-                        });
+                        })
+                        .map(_ => connectionStatus);
                 }
             }
             else {
