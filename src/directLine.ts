@@ -373,6 +373,8 @@ export interface DirectLineOptions {
     // Attached to all requests to identify requesting agent.
     botAgent?: string,
     conversationStartProperties?: any
+    siteId?: string,
+    acquireToken: () => string;
 }
 
 export interface Services {
@@ -470,6 +472,8 @@ export class DirectLine implements IBotConnection {
     public referenceGrammarId: string;
     private timeout = 20 * 1000;
     private retries: number;
+    private acquireToken: () => string;
+    private siteId: string;
 
     private localeOnStartConversation: string;
     private userIdOnStartConversation: string;
@@ -479,8 +483,10 @@ export class DirectLine implements IBotConnection {
     private tokenRefreshSubscription: Subscription;
 
     constructor(options: DirectLineOptions & Partial<Services>) {
+        this.acquireToken = options.acquireToken;
+        this.siteId = options.siteId;
         this.secret = options.secret;
-        this.token = options.secret || options.token;
+        this.token = this.acquireToken ? this.acquireToken() : options.secret || options.token;
         this.webSocket = (options.webSocket === undefined ? true : options.webSocket) && typeof WebSocket !== 'undefined' && WebSocket !== undefined;
 
         if (options.conversationStartProperties && options.conversationStartProperties.locale) {
@@ -558,7 +564,8 @@ export class DirectLine implements IBotConnection {
                 } else {
                     return this.startConversation().do(conversation => {
                         this.conversationId = conversation.conversationId;
-                        this.token = this.secret || conversation.token;
+                        // Don't invoke acquireToken(), coulf fetch anew AAD token
+                        this.token = (this.acquireToken ? this.token : this.secret) || conversation.token;
                         this.streamUrl = conversation.streamUrl;
                         this.referenceGrammarId = conversation.referenceGrammarId;
                         if (!this.secret)
@@ -635,7 +642,8 @@ export class DirectLine implements IBotConnection {
                 user: {
                     id: this.userIdOnStartConversation
                 },
-                locale: this.localeOnStartConversation
+                locale: this.localeOnStartConversation,
+                siteId: this.siteId
               };
         return this.services.ajax({
             method,
@@ -673,15 +681,22 @@ export class DirectLine implements IBotConnection {
     }
 
     private refreshToken() {
+        const url = this.acquireToken ? `${this.domain}/tokens/refresh/${this.conversationId}` : `${this.domain}/tokens/refresh`;
+        const headers = this.acquireToken ? {
+            // Invoke acquireToken() to fetch a new AAD token.
+            // Note that AAD token refresh is not handled by DirectLineJS but rather should be in the callback
+            "Refresh-Token" : this.acquireToken(), ...this.commonHeaders()
+        } : {
+            ...this.commonHeaders()
+        }
+
         return this.checkConnection(true)
         .flatMap(_ =>
             this.services.ajax({
                 method: "POST",
-                url: `${this.domain}/tokens/refresh`,
+                url: url,
                 timeout: this.timeout,
-                headers: {
-                    ...this.commonHeaders()
-                }
+                headers: headers
             })
             .map(ajaxResponse => ajaxResponse.response.token as string)
             .retryWhen(error$ => error$
