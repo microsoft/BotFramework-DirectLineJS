@@ -1,0 +1,59 @@
+{
+    "Sample": {
+      "Title": "A Node.js console application secured by MSAL Node on Microsoft identity platform",
+      "Level": 200,
+      "Client": "Node.js console app",
+      "Service": "Microsoft Graph",
+      "RepositoryUrl": "ms-identity-javascript-nodejs-console",
+      "Endpoint": "AAD v2.0"
+    },
+    "AADApps": [    
+      {
+        "Id": "client",
+        "Name": "msal-node-console",
+        "Kind": "Daemon",
+        "Audience": "AzureADMyOrg",      
+        "PasswordCredentials": "Auto",
+        "RequiredResourcesAccess": [
+          {
+            "Resource": "Microsoft Graph",
+            "ApplicationPermissions": [ "User.Read.All" ]
+          }
+        ],
+        "ManualSteps": [
+          {
+            "Comment" :  "Navigate to the API permissions page and click on 'Grant admin consent for {tenant}'"
+          }
+        ] 
+      }
+    ],
+    "CodeConfiguration": [    
+      {
+        "App": "client",
+        "SettingKind": "Replace",
+        "SettingFile": "\\..\\.env",
+        "Mappings": [
+          {
+            "key": "Enter_the_Tenant_Info_Here",
+            "value": "$tenantId"
+          },
+          {
+            "key": "Enter_the_Application_Id_Here",
+            "value": ".AppId"
+          },
+          {
+            "key": "Enter_the_Client_Secret_Here",
+            "value": ".AppKey"
+          },
+          {
+            "key": "Enter_the_Cloud_Instance_Id_Here",
+            "value": "'https://login.microsoftonline.com/'"
+          },
+          {
+            "key": "Enter_the_Graph_Endpoint_Here",
+            "value": "'https://graph.microsoft.com/'"
+          }
+        ]
+      }
+    ]
+  }

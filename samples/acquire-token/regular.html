@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <title>Direct Line Streaming Sample</title>
+    <!-- Path to directline.js with updated code to support AAD Token us: Follow PR/Changes: https://github.com/microsoft/BotFramework-DirectLineJS/compare/edwinb/aad-token-dirctline?expand=1-->
+    <script src="dist/directline.js"></script>
+    <script src="https://cdn.botframework.com/botframework-webchat/master/webchat-es5.js"></script>
+    <style>
+        html, body {
+            height: 100%
+        }
+
+        body {
+            margin: 0
+        }
+
+        #webchat,
+        #webchat > * {
+            height: 100%;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div id="webchat" role="main"></div>
+    <script>
+        const siteId = ""; // Add the siteId here from Direct Line channel settings
+        const tokenSourceUrl = "http://localhost:3000/token";
+        var aadToken = null;
+
+        function getToken() {
+           return aadToken;
+        }
+
+        var refreshToken = function() {
+           return fetch(tokenSourceUrl)
+            .then(data => {
+                return data.json();
+            })
+            .then(res => {
+                aadToken = res.token.accessToken;
+            })
+            .catch(e => {{
+                console.log("Token Refresh Error: " + e);
+            }});
+        }
+
+        function loadWebChat() {
+            fetch(tokenSourceUrl)
+            .then(data => {
+                return data.json();
+            })
+            .then(res => {
+                aadToken = res.token.accessToken;
+                var dl = new DirectLine.DirectLine({
+                    acquireToken: function() {  return getToken(); },
+                    siteId: siteId,
+                    domain: 'https://webchat.botframework.com/v3/directline',
+                    webSocket: false
+                });
+
+                window.WebChat.renderWebChat({
+                    directLine: dl
+                }, document.getElementById('webchat'));
+            })
+            .catch(e => {{
+                console.log("Error: " + e);
+            }});
+        }
+
+        setInterval(refreshToken, 60000); // Get a new token after every minute
+        loadWebChat();
+    </script>
+</body>
+</html>
