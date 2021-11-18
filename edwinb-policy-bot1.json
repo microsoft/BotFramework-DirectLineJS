@@ -1,0 +1,81 @@
+{
+	"id": "558ec08e-b54f-4d45-8e39-94d4c45a7bff",
+	"acceptMappedClaims": null,
+	"accessTokenAcceptedVersion": 2,
+	"addIns": [],
+	"allowPublicClient": null,
+	"appId": "a37354a1-8ea1-42d8-8e52-ea615b2dabc4",
+	"appRoles": [],
+	"oauth2AllowUrlPathMatching": false,
+	"createdDateTime": "2021-08-12T22:01:00Z",
+	"disabledByMicrosoftStatus": null,
+	"groupMembershipClaims": "None",
+	"identifierUris": [],
+	"informationalUrls": {
+		"termsOfService": null,
+		"support": null,
+		"privacy": null,
+		"marketing": null
+	},
+	"keyCredentials": [],
+	"knownClientApplications": [],
+	"logoUrl": null,
+	"logoutUrl": null,
+	"name": "edwinb-policy-bot1",
+	"oauth2AllowIdTokenImplicitFlow": false,
+	"oauth2AllowImplicitFlow": false,
+	"oauth2Permissions": [],
+	"oauth2RequirePostResponse": false,
+	"optionalClaims": {
+		"idToken": [],
+		"accessToken": [
+			{
+				"name": "sid",
+				"source": null,
+				"essential": false,
+				"additionalProperties": []
+			},
+			{
+				"name": "sid",
+				"essential": false
+			}
+		],
+		"saml2Token": []
+	},
+	"orgRestrictions": [],
+	"parentalControlSettings": {
+		"countriesBlockedForMinors": [],
+		"legalAgeGroupRule": "Allow"
+	},
+	"passwordCredentials": [
+		{
+			"customKeyIdentifier": null,
+			"endDate": "2022-02-24T19:21:43.026Z",
+			"keyId": "65c15ce9-181b-4ee6-b7f1-594b7c17a59b",
+			"startDate": "2021-08-24T18:21:43.026Z",
+			"value": null,
+			"createdOn": "2021-08-24T18:21:53.6392378Z",
+			"hint": "2.5",
+			"displayName": "PolicyTest1"
+		},
+		{
+			"customKeyIdentifier": null,
+			"endDate": "2022-02-24T19:21:01.008Z",
+			"keyId": "4a7535c5-b020-480f-bdd2-5ab61972acbf",
+			"startDate": "2021-08-24T18:21:01.008Z",
+			"value": null,
+			"createdOn": "2021-08-24T18:21:17.7971128Z",
+			"hint": "N_b",
+			"displayName": "PolicyTestSecret"
+		}
+	],
+	"preAuthorizedApplications": [],
+	"publisherDomain": "microsoft.onmicrosoft.com",
+	"replyUrlsWithType": [],
+	"requiredResourceAccess": [],
+	"samlMetadataUrl": null,
+	"signInUrl": null,
+	"signInAudience": "AzureADandPersonalMicrosoftAccount",
+	"tags": [],
+	"tokenEncryptionKeyId": null
+}

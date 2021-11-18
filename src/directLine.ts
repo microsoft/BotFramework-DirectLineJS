@@ -561,6 +561,8 @@ export class DirectLine implements IBotConnection {
                         this.token = this.secret || conversation.token;
                         this.streamUrl = conversation.streamUrl;
                         this.referenceGrammarId = conversation.referenceGrammarId;
+
+                        this.refreshToken();
                         if (!this.secret)
                             this.refreshTokenLoop();
 
@@ -624,6 +626,7 @@ export class DirectLine implements IBotConnection {
     }
 
     private startConversation() {
+
         //if conversationid is set here, it means we need to call the reconnect api, else it is a new conversation
         const url = this.conversationId
             ? `${this.domain}/conversations/${this.conversationId}?watermark=${this.watermark}`
@@ -635,7 +638,8 @@ export class DirectLine implements IBotConnection {
                 user: {
                     id: this.userIdOnStartConversation
                 },
-                locale: this.localeOnStartConversation
+                locale: this.localeOnStartConversation,
+                siteId: "Hrea9nDoJcI" // Add your site ID here
               };
         return this.services.ajax({
             method,
@@ -664,7 +668,7 @@ export class DirectLine implements IBotConnection {
     }
 
     private refreshTokenLoop() {
-        this.tokenRefreshSubscription = Observable.interval(intervalRefreshToken, this.services.scheduler)
+        this.tokenRefreshSubscription = Observable.interval(3000, this.services.scheduler)
         .flatMap(_ => this.refreshToken())
         .subscribe(token => {
             konsole.log("refreshing token", token, "at", new Date());
@@ -673,6 +677,19 @@ export class DirectLine implements IBotConnection {
     }
 
     private refreshToken() {
+
+        this.services.ajax({
+            method: "POST",
+            url: `${this.domain}/tokens/refresh`,
+            timeout: this.timeout,
+            headers: {
+                "Site-Id": "Hrea9nDoJcI",
+                "Refresh-Token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImtpZCI6Imwzc1EtNTBjQ0g0eEJWWkxIVEd3blNSNzY4MCJ9.eyJhdWQiOiJhMzczNTRhMS04ZWExLTQyZDgtOGU1Mi1lYTYxNWIyZGFiYzQiLCJpc3MiOiJodHRwczovL2xvZ2luLm1pY3Jvc29mdG9ubGluZS5jb20vNzJmOTg4YmYtODZmMS00MWFmLTkxYWItMmQ3Y2QwMTFkYjQ3L3YyLjAiLCJpYXQiOjE2MzExNTc2MzgsIm5iZiI6MTYzMTE1NzYzOCwiZXhwIjoxNjMxMjQ0MzM4LCJhaW8iOiJFMlpnWUhqMTVMR1o5TmZnenJXblpwN2ZXS0Y0RkFBPSIsImF6cCI6ImEzNzM1NGExLThlYTEtNDJkOC04ZTUyLWVhNjE1YjJkYWJjNCIsImF6cGFjciI6IjEiLCJvaWQiOiJjY2VkNTFiOC1jY2I4LTQzZTgtOTg4ZS00NjNhNzEyNDhmMzQiLCJyaCI6IjAuQVJvQXY0ajVjdkdHcjBHUnF5MTgwQkhiUjZGVWM2T2hqdGhDamxMcVlWc3RxOFFhQUFBLiIsInNpZCI6ImM4NGM3N2RhLTI2YjktNGYxNi1iMzhhLTRhODVhNGNlYzRhMCIsInN1YiI6ImNjZWQ1MWI4LWNjYjgtNDNlOC05ODhlLTQ2M2E3MTI0OGYzNCIsInRpZCI6IjcyZjk4OGJmLTg2ZjEtNDFhZi05MWFiLTJkN2NkMDExZGI0NyIsInV0aSI6IjJXUmhNUFhrR0U2a1B3TUliU3RCQUEiLCJ2ZXIiOiIyLjAifQ.O1OM0uZX7DdQyPeIy80AsYJW0noxxQC-0PL48qSHbPBtKmhC_B6oUx0GvHcIRJ7l0IdxaF11CeU3_fBohQi7L6Azu8m9WQN-ZBcoGb-F9rg_hqMj6EtQAD9ALG-oBgIc1aQ5mXPwg8gqAK1y2xLEmz2-5Qzn-A1LgWpcxAgGF1CVgeNVeggC7T9_lMt832bPKuHvC0HbueQ-4oUcmN_4KOlvNLsJ_YEByxFMguaY3md5rT9SSaLteol6kN_bs8fjWFBaB0XB1ZF6vOF5sdEY3x0FOUzX7ayW5tbh63nb4azrGi_-EVcswgVBDqfG5dD5g6pA7hshKV_GRYYrraq23A",
+                ...this.commonHeaders()
+            }
+        })
+        .map(ajaxResponse => ajaxResponse.response.token as string);
+
         return this.checkConnection(true)
         .flatMap(_ =>
             this.services.ajax({
@@ -680,6 +697,8 @@ export class DirectLine implements IBotConnection {
                 url: `${this.domain}/tokens/refresh`,
                 timeout: this.timeout,
                 headers: {
+                    "Site-Id": "Hrea9nDoJcI",
+                    "Refresh-Token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImtpZCI6Imwzc1EtNTBjQ0g0eEJWWkxIVEd3blNSNzY4MCJ9.eyJhdWQiOiJhMzczNTRhMS04ZWExLTQyZDgtOGU1Mi1lYTYxNWIyZGFiYzQiLCJpc3MiOiJodHRwczovL2xvZ2luLm1pY3Jvc29mdG9ubGluZS5jb20vNzJmOTg4YmYtODZmMS00MWFmLTkxYWItMmQ3Y2QwMTFkYjQ3L3YyLjAiLCJpYXQiOjE2MzExNTc2MzgsIm5iZiI6MTYzMTE1NzYzOCwiZXhwIjoxNjMxMjQ0MzM4LCJhaW8iOiJFMlpnWUhqMTVMR1o5TmZnenJXblpwN2ZXS0Y0RkFBPSIsImF6cCI6ImEzNzM1NGExLThlYTEtNDJkOC04ZTUyLWVhNjE1YjJkYWJjNCIsImF6cGFjciI6IjEiLCJvaWQiOiJjY2VkNTFiOC1jY2I4LTQzZTgtOTg4ZS00NjNhNzEyNDhmMzQiLCJyaCI6IjAuQVJvQXY0ajVjdkdHcjBHUnF5MTgwQkhiUjZGVWM2T2hqdGhDamxMcVlWc3RxOFFhQUFBLiIsInNpZCI6ImM4NGM3N2RhLTI2YjktNGYxNi1iMzhhLTRhODVhNGNlYzRhMCIsInN1YiI6ImNjZWQ1MWI4LWNjYjgtNDNlOC05ODhlLTQ2M2E3MTI0OGYzNCIsInRpZCI6IjcyZjk4OGJmLTg2ZjEtNDFhZi05MWFiLTJkN2NkMDExZGI0NyIsInV0aSI6IjJXUmhNUFhrR0U2a1B3TUliU3RCQUEiLCJ2ZXIiOiIyLjAifQ.O1OM0uZX7DdQyPeIy80AsYJW0noxxQC-0PL48qSHbPBtKmhC_B6oUx0GvHcIRJ7l0IdxaF11CeU3_fBohQi7L6Azu8m9WQN-ZBcoGb-F9rg_hqMj6EtQAD9ALG-oBgIc1aQ5mXPwg8gqAK1y2xLEmz2-5Qzn-A1LgWpcxAgGF1CVgeNVeggC7T9_lMt832bPKuHvC0HbueQ-4oUcmN_4KOlvNLsJ_YEByxFMguaY3md5rT9SSaLteol6kN_bs8fjWFBaB0XB1ZF6vOF5sdEY3x0FOUzX7ayW5tbh63nb4azrGi_-EVcswgVBDqfG5dD5g6pA7hshKV_GRYYrraq23A",
                     ...this.commonHeaders()
                 }
             })
