@@ -2,9 +2,10 @@
 <html lang="en-US">
 <head>
     <title>Direct Line Streaming Sample</title>
-    <!-- Path to directline.js with updated code to support AAD Token us: Follow PR/Changes: https://github.com/microsoft/BotFramework-DirectLineJS/compare/edwinb/aad-token-dirctline?expand=1-->
-    <script src="dist/directline.js"></script>
-    <script src="https://cdn.botframework.com/botframework-webchat/master/webchat-es5.js"></script>
+    <script
+      crossorigin="anonymous"
+      src="https://cdn.botframework.com/botframework-webchat/latest/webchat.js"
+    ></script>
     <style>
         html, body {
             height: 100%
@@ -25,7 +26,7 @@
     <div id="webchat" role="main"></div>
     <script>
         const siteId = ""; // Add the siteId here from Direct Line channel settings
-        const tokenSourceUrl = "http://localhost:3000/token";
+        const tokenSourceUrl = "http://localhost:3000/token"; // Replace with your token server endpoint
         var aadToken = null;
 
         function getToken() {
