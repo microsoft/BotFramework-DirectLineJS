@@ -60,7 +60,7 @@
     "jest-environment-jsdom": "^27.0.6",
     "jsdom": "^16.6.0",
     "nock": "^13.1.1",
-    "node-fetch": "^2.6.1",
+    "node-fetch": "^3.1.1",
     "on-error-resume-next": "^1.1.0",
     "restify": "^8.5.1",
     "rimraf": "^3.0.2",
