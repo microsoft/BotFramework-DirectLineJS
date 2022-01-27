@@ -9,6 +9,8 @@ import postActivity from './setup/postActivity';
 import waitForBotToEcho from './setup/waitForBotToEcho';
 import waitForConnected from './setup/waitForConnected';
 
+jest.setTimeout(10000);
+
 describe('Happy path', () => {
   let unsubscribes;
 
