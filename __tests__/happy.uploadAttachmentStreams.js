@@ -9,6 +9,8 @@ import postActivity from './setup/postActivity';
 import waitForBotToEcho from './setup/waitForBotToEcho';
 import waitForConnected from './setup/waitForConnected';
 
+jest.setTimeout(10000);
+
 describe('Happy path', () => {
   let unsubscribes;
 
@@ -34,10 +36,10 @@ describe('Happy path', () => {
         // DirectLine.postActivityWithAttachments support "contentUrl" only but not "content"
         attachments: [{
           contentType: 'image/jpg',
-          contentUrl: 'http://dljstestbot.azurewebsites.net/177KB.jpg'
+          contentUrl: 'https://dljstestbot.azurewebsites.net/177KB.jpg'
         }, {
           contentType: 'image/jpg',
-          contentUrl: 'http://dljstestbot.azurewebsites.net/100KB.jpg'
+          contentUrl: 'https://dljstestbot.azurewebsites.net/100KB.jpg'
         }],
         text: 'Hello, World!',
         type: 'message',

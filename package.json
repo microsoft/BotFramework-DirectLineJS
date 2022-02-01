@@ -30,7 +30,7 @@
     "botframework-streaming": "4.14.1",
     "buffer": "6.0.3",
     "core-js": "3.15.2",
-    "cross-fetch": "3.1.4",
+    "cross-fetch": "^3.1.5",
     "jwt-decode": "3.1.2",
     "rxjs": "5.5.12",
     "url-search-params-polyfill": "8.1.1"
@@ -60,7 +60,7 @@
     "jest-environment-jsdom": "^27.0.6",
     "jsdom": "^16.6.0",
     "nock": "^13.1.1",
-    "node-fetch": "^2.6.1",
+    "node-fetch": "^2.6.7",
     "on-error-resume-next": "^1.1.0",
     "restify": "^8.5.1",
     "rimraf": "^3.0.2",
