@@ -16,15 +16,27 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.15.1] - 2022-02-09
+
 ### Changed
 
 - Bumped dependencies, by [@compulim](https://github.com/compulim), in PR [#351](https://github.com/microsoft/BotFramework-DirectLineJS/pull/351) and PR [#366](https://github.com/microsoft/BotFramework-DirectLineJS/pull/366)
+   - Production dependencies
+      - [`cross-fetch@3.1.5`](https://npmjs.com/package/cross-fetch)
+   - Development dependencies
+      - [`node-fetch@2.6.7`](https://npmjs.com/package/node-fetch)
+
+## [0.15.0] - 2021-07-29
+
+### Changed
+
+- Bumped dependencies, by [@compulim](https://github.com/compulim), in PR [#351](https://github.com/microsoft/BotFramework-DirectLineJS/pull/351)
    - Production dependencies
       - [`@babel/runtime@7.14.8`](https://npmjs.com/package/@babel/runtime)
       - [`botframework-streaming@4.14.1`](https://npmjs.com/package/botframework-streaming)
       - [`buffer@6.0.3`](https://npmjs.com/package/buffer)
       - [`core-js@3.15.2`](https://npmjs.com/package/core-js)
-      - [`cross-fetch@3.1.5`](https://npmjs.com/package/cross-fetch)
+      - [`cross-fetch@3.1.4`](https://npmjs.com/package/cross-fetch)
       - [`rxjs@5.5.12`](https://npmjs.com/package/rxjs)
       - [`url-search-params-polyfill@8.1.1`](https://npmjs.com/package/url-search-params-polyfill)
    - Development dependencies
@@ -48,7 +60,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
       - [`jest-environment-jsdom@27.0.6`](https://npmjs.com/package/jest-environment-jsdom)
       - [`jsdom@16.6.0`](https://npmjs.com/package/jsdom)
       - [`nock@13.1.1`](https://npmjs.com/package/nock)
-      - [`node-fetch@2.6.7`](https://npmjs.com/package/node-fetch)
+      - [`node-fetch@2.6.1`](https://npmjs.com/package/node-fetch)
       - [`restify@8.5.1`](https://npmjs.com/package/restify)
       - [`rimraf@3.0.2`](https://npmjs.com/package/rimraf)
       - [`simple-update-in@2.2.0`](https://npmjs.com/package/simple-update-in)
