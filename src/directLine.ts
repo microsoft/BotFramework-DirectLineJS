@@ -564,7 +564,7 @@ export class DirectLine implements IBotConnection {
                 } else {
                     return this.startConversation().do(conversation => {
                         this.conversationId = conversation.conversationId;
-                        // Don't invoke acquireToken(), coulf fetch anew AAD token
+                        // Don't invoke acquireToken(), could fetch anew AAD token
                         this.token = (this.acquireToken ? this.token : this.secret) || conversation.token;
                         this.streamUrl = conversation.streamUrl;
                         this.referenceGrammarId = conversation.referenceGrammarId;
@@ -675,7 +675,7 @@ export class DirectLine implements IBotConnection {
     }
 
     private refreshTokenLoop() {
-        this.tokenRefreshSubscription = Observable.interval(3000, this.services.scheduler)
+        this.tokenRefreshSubscription = Observable.interval(intervalRefreshToken, this.services.scheduler)
         .flatMap(_ => this.refreshToken())
         .subscribe(token => {
             konsole.log("refreshing token", token, "at", new Date());
