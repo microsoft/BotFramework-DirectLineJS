@@ -3,8 +3,6 @@ name: Pull request validation
 on:
   pull_request:
     branches:
-      # TODO: Remove fix-ci-*
-      - fix-ci-*
       - main
       - master
 

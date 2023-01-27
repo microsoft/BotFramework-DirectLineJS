@@ -3,8 +3,6 @@ name: Continuous deployment
 on:
   push:
     branches:
-      # TODO: Remove fix-ci-*
-      - fix-ci-*
       - main
       - master
 
