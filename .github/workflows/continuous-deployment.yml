@@ -64,6 +64,6 @@ jobs:
         run: |
           echo Cannot publish production version
           exit 1
-      - run: npm publish --tag ${{ github.ref_name }} `ls *.tgz`
+      - run: npm publish --access public --tag ${{ github.ref_name }} `ls *.tgz`
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
