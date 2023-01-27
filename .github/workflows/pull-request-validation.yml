@@ -1,0 +1,39 @@
+name: Pull request validation
+
+on:
+  pull_request:
+    branches:
+      # TODO: Remove fix-ci-*
+      - fix-ci-*
+      - main
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [16.x]
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+      - run: npm clean-install
+      - run: npm run prepublishOnly
+      - name: Upload tarball artifact
+        uses: actions/upload-artifact@v3.1.1
+        with:
+          name: bundle
+          path: ./dist
+      - run: npm pack
+      - name: Upload tarball artifact
+        uses: actions/upload-artifact@v3.1.1
+        with:
+          name: tarball
+          path: ./*.tgz
+      - run: npm test
