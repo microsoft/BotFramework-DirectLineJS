@@ -37,7 +37,7 @@ jobs:
           name: tarball
           path: ./*.tgz
       - name: Draft a new release
-        run: gh release create ${{ github.ref_name }} ./*.tgz --draft --notes-file ./CHANGELOG.md
+        run: gh release create ${{ github.ref_name }} ./dist/directline.js ./*.tgz --draft --notes-file ./CHANGELOG.md
         env:
           GH_TOKEN: ${{ github.token }}
 
