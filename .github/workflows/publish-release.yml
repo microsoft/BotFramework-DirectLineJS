@@ -64,9 +64,7 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: Generate job summary
-        run: |
-          echo "NPM package has published to https://npmjs.com/package/${{ steps.get-version.outputs.package-name }}/v/${{ steps.get-version.outputs.version }}." > $GITHUB_STEP_SUMMARY
-          echo page_url=https://npmjs.com/package/${{ steps.get-version.outputs.package-name }}/v/${{ steps.get-version.outputs.version }} >> $GITHUB_OUTPUT
+        run: echo "NPM package has been published to https://npmjs.com/package/${{ steps.get-version.outputs.package-name }}/v/${{ steps.get-version.outputs.version }}." > $GITHUB_STEP_SUMMARY
 
   publish-release:
     needs:
@@ -80,6 +78,4 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
       - name: Generate job summary
-        run: |
-          echo "GitHub release created at https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}." >> $GITHUB_STEP_SUMMARY
-          echo page_url=https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }} >> $GITHUB_OUTPUT
+        run: echo "GitHub release created at https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}." >> $GITHUB_STEP_SUMMARY
