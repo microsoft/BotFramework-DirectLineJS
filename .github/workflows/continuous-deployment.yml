@@ -1,0 +1,71 @@
+name: Continuous deployment
+
+on:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [16.x]
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+      - id: set-version
+        name: Run npx version-from-git --no-git-tag-version
+        run: |
+          npx version-from-git --no-git-tag-version
+          echo version=`cat package.json | jq -r '.version'` > $GITHUB_OUTPUT
+      - run: npm clean-install
+      - run: npm run prepublishOnly
+      - name: Upload tarball artifact
+        uses: actions/upload-artifact@v3.1.1
+        with:
+          name: bundle
+          path: ./dist
+      - run: npm pack
+      - name: Upload tarball artifact
+        uses: actions/upload-artifact@v3.1.1
+        with:
+          name: tarball
+          path: ./*.tgz
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: prerelease
+
+    steps:
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16
+          registry-url: https://registry.npmjs.org/
+      - name: Download tarball artifact
+        uses: actions/download-artifact@v3.0.1
+        with:
+          name: tarball
+      - id: get-version
+        name: Get version
+        run: |
+          echo package-name=`tar --extract --file=\`ls ./*.tgz\` --to-stdout package/package.json | jq -r .name` >> $GITHUB_OUTPUT
+          echo version=`tar --extract --file=\`ls ./*.tgz\` --to-stdout package/package.json | jq -r .version` >> $GITHUB_OUTPUT
+      - if: ${{ !contains(steps.get-version.outputs.version, '-') }}
+        name: Validate version
+        run: |
+          echo Cannot publish production version
+          exit 1
+      - run: npm publish --access public --tag ${{ github.ref_name }} `ls *.tgz`
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Generate job summary
+        run: echo "NPM package has been published to https://npmjs.com/package/${{ steps.get-version.outputs.package-name }}/v/${{ steps.get-version.outputs.version }}." > $GITHUB_STEP_SUMMARY

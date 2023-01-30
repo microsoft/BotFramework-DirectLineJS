@@ -62,11 +62,11 @@
     "nock": "^13.1.1",
     "node-fetch": "^2.6.7",
     "on-error-resume-next": "^1.1.0",
-    "restify": "^8.5.1",
+    "restify": "^11.0.0",
     "rimraf": "^3.0.2",
     "simple-update-in": "^2.2.0",
     "typescript": "^4.3.5",
-    "webpack": "^5.45.1",
+    "webpack": "^5.75.0",
     "webpack-cli": "^4.7.2",
     "webpack-stats-plugin": "^1.0.3"
   }

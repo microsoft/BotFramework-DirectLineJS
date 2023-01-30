@@ -1,5 +1,6 @@
 /.env
-dist
-lib
-node_modules
-.vscode
+/.vscode
+/*.tgz
+/dist
+/lib
+/node_modules
