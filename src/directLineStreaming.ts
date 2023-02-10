@@ -316,6 +316,10 @@ export class DirectLineStreaming implements IBotConnection {
       try {
         this.connectionStatus$.next(ConnectionStatus.Connecting);
         const res = await this.connectAsync();
+        if (this.connectionStatus$.getValue() === ConnectionStatus.Ended){
+          console.warn('Connection end');
+          break;
+        }
         console.warn(`Retrying connection ${res}`);
         if (60000 < Date.now() - start) {
           // reset the retry counter and retry immediately
