@@ -6,6 +6,11 @@ import { timeouts } from './constants.json';
 import * as createDirectLine from './setup/createDirectLine';
 import waitForConnected from './setup/waitForConnected';
 
+// TODO: Need more realistic testing.
+//       - Able to connect to a Web Socket server
+//       - Make sure after `end` is called, the client will not reconnect
+//       - If the connection is disrupted, make sure the client will reconnect
+//       - Use a fake timer to speed up the test
 describe('test dl streaming end', () => {
   let unsubscribes;
   let directLine;
