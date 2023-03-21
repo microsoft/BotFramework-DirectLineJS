@@ -6,7 +6,8 @@ import { timeouts } from './constants.json';
 import * as createDirectLine from './setup/createDirectLine';
 import waitForBotToRespond from './setup/waitForBotToRespond';
 
-describe('Unhappy path', () => {
+// Skipping because the bot at dljstestbot.azurewebsites.net is not available.
+describe.skip('Unhappy path', () => {
   let unsubscribes;
 
   beforeEach(() => unsubscribes = []);

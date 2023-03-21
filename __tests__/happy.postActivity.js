@@ -8,7 +8,8 @@ import postActivity from './setup/postActivity';
 import waitForBotToEcho from './setup/waitForBotToEcho';
 import waitForConnected from './setup/waitForConnected';
 
-describe('Happy path', () => {
+// Skipping because the bot at dljstestbot.azurewebsites.net is not available.
+describe.skip('Happy path', () => {
   let unsubscribes;
 
   beforeEach(() => unsubscribes = []);
