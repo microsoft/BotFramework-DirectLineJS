@@ -11,7 +11,9 @@ import waitForConnected from './setup/waitForConnected';
 //       - Make sure after `end` is called, the client will not reconnect
 //       - If the connection is disrupted, make sure the client will reconnect
 //       - Use a fake timer to speed up the test
-describe('test dl streaming end', () => {
+
+// Skipping because the bot at dljstestbot.azurewebsites.net is not available.
+describe.skip('test dl streaming end', () => {
   let unsubscribes;
   let directLine;
   const ConnectionStatusEnd = 5;

@@ -11,7 +11,8 @@ import waitForConnected from './setup/waitForConnected';
 
 jest.setTimeout(10000);
 
-describe('Happy path', () => {
+// Skipping because the bot at dljstestbot.azurewebsites.net is not available.
+describe.skip('Happy path', () => {
   let unsubscribes;
 
   beforeEach(() => unsubscribes = []);
@@ -55,11 +56,11 @@ describe('Happy path', () => {
         // DirectLine.postActivityWithAttachments support "contentUrl" only but not "content"
         attachments: [{
           contentType: 'image/jpg',
-          contentUrl: 'https://dljstestbot.azurewebsites.net/177KB.jpg',
+          contentUrl: 'https://webchat-mockbot.azurewebsites.net/public/assets/surface1.jpg',
           thumbnailUrl: 'data:image/png;base64,===177KB.jpg'
         }, {
           contentType: 'image/png',
-          contentUrl: 'https://dljstestbot.azurewebsites.net/100KB.jpg',
+          contentUrl: 'https://webchat-mockbot.azurewebsites.net/public/assets/surface2.jpg',
           thumbnailUrl: 'data:image/png;base64,===100KB.jpb'
         }],
         text: 'Hello, World!',

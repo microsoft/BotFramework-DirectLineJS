@@ -10,7 +10,8 @@ import waitForBotToEcho from './setup/waitForBotToEcho';
 import waitForConnected from './setup/waitForConnected';
 import waitForBotToRespond from './setup/waitForBotToRespond.js';
 
-describe('Happy path', () => {
+// Skipping because the bot at dljstestbot.azurewebsites.net is not available.
+describe.skip('Happy path', () => {
   let unsubscribes;
 
   beforeEach(() => unsubscribes = []);
@@ -31,8 +32,8 @@ describe('Happy path', () => {
       unsubscribes.push(directLine.end.bind(directLine));
       unsubscribes.push(await waitForConnected(directLine));
 
-      let url1 = 'http://dljstestbot.azurewebsites.net/177KB.jpg';
-      let url2 = 'http://dljstestbot.azurewebsites.net/100KB.jpg';
+      let url1 = 'https://webchat-mockbot.azurewebsites.net/public/assets/surface1.jpg';
+      let url2 = 'https://webchat-mockbot.azurewebsites.net/public/assets/surface2.jpg';
 
       const activityFromUser = {
         text: 'attach ' + url1 + ' ' + url2,
