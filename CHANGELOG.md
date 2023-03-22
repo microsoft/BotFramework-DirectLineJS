@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.15.2] - 2023-03-21
+
 ### Changed
 
 - Bumped dependencies, by [@compulim](https://github.com/compulim), in PR [#390](https://github.com/microsoft/BotFramework-DirectLineJS/pull/390) and PR [#396](https://github.com/microsoft/BotFramework-DirectLineJS/pull/396)
