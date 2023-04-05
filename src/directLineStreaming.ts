@@ -109,7 +109,9 @@ export class DirectLineStreaming implements IBotConnection {
   constructor(options: DirectLineStreamingOptions) {
     this.token = options.token;
 
-    this.refreshToken();
+    this.refreshToken().catch(() => {
+      this.connectionStatus$.next(ConnectionStatus.ExpiredToken);
+    });
 
     this.domain = options.domain;
 
@@ -123,14 +125,20 @@ export class DirectLineStreaming implements IBotConnection {
     this.activity$ = Observable.create(async (subscriber: Subscriber<Activity>) => {
       this.activitySubscriber = subscriber;
       this.theStreamHandler = new StreamHandler(subscriber, this.connectionStatus$, () => this.queueActivities);
-      this.connectWithRetryAsync();
+
+      try {
+        await this.connectWithRetryAsync();
+      } catch (error) {
+        this.connectionStatus$.next(ConnectionStatus.FailedToConnect);
+      }
     }).share();
   }
 
-  public reconnect({ conversationId, token } : Conversation) {
+  public async reconnect({ conversationId, token } : Conversation) {
     this.conversationId = conversationId;
     this.token = token;
-    this.connectAsync();
+
+    await this.connectAsync();
   }
 
   end() {
