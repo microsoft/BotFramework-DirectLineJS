@@ -18,7 +18,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
-- Fixed [#398](https://github.com/microsoft/BotFramework-DirectLineJS/issues/398). In `DirectLineStreaming`, all calls to async function should be caught and rethrow appropriately, by [@compulim](https://github.com/compulim) in PR [#XXX](https://github.com/microsoft/BotFramework-DirectLineJS/pull/XXX)
+- Fixed [#398](https://github.com/microsoft/BotFramework-DirectLineJS/issues/398). In `DirectLineStreaming`, all calls to async function should be caught and rethrow appropriately, by [@compulim](https://github.com/compulim) in PR [#399](https://github.com/microsoft/BotFramework-DirectLineJS/pull/399)
 
 ## [0.15.2] - 2023-03-21
 
