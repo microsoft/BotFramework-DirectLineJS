@@ -37,5 +37,5 @@ module.exports = {
       transform: (_, opts) => JSON.stringify(opts.compiler.getStats().toJson({ chunkModules: true }), null, 2)
     })
   ],
-  target: ['web', 'es5']
+  target: ['web', 'es2019']
 };
