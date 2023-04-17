@@ -337,11 +337,11 @@ export class DirectLineStreaming implements IBotConnection {
         }
       } catch (err) {
         console.error(`Failed to connect ${err}`);
-        throw(err);
       }
 
       await new Promise(r => setTimeout(r, this.getRetryDelay()));
     }
+    throw new Error(`Failed to connect after ${MAX_RETRY_COUNT} attempts`);
   }
 
   // Returns the delay duration in milliseconds
