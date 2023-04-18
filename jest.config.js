@@ -1,5 +1,6 @@
 module.exports = {
   setupFiles: ['./__tests__/setup/setupCrypto'],
+  setupFilesAfterEnv: ['./__tests__/directLineStreaming/__setup__/expect/activityContaining.ts'],
   testEnvironment: './__tests__/setup/jsdomEnvironmentWithProxy',
   testMatch: ['**/__tests__/**/*.[jt]s?(x)', '**/?(*.)(spec|test).[jt]s?(x)'],
   testPathIgnorePatterns: ['<rootDir>/__tests__/setup/', '<rootDir>/__tests__/[\d\w]*/__setup__/'],

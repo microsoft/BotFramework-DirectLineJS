@@ -1,5 +1,6 @@
 import fetch from 'node-fetch';
 
+import { ConnectionStatus } from '../../src/directLine';
 import { DirectLineStreaming } from '../../src/directLineStreaming';
 import mockObserver from './__setup__/mockObserver';
 import setupProxy from './__setup__/proxy';
@@ -10,10 +11,10 @@ const TOKEN_URL = 'https://webchat-mockbot3.azurewebsites.net/api/token/directli
 
 afterEach(() => jest.useRealTimers());
 
-test('reconnect successful should continue to function properly', async () => {
+test('should connect', async () => {
   jest.useFakeTimers();
 
-  const [{ closeAllWebSocketConnections, directLineStreamingURL }, { token }] = await Promise.all([
+  const [{ directLineStreamingURL }, { token }] = await Promise.all([
     setupProxy(MOCKBOT3_URL),
     fetch(TOKEN_URL, { method: 'POST' }).then(res => res.json())
   ]);
@@ -30,38 +31,30 @@ test('reconnect successful should continue to function properly', async () => {
 
   // THEN: Should observe "Uninitialized" -> "Connecting" -> "Online".
   await waitFor(
-    () => {
+    () =>
       expect(connectionStatusObserver).toHaveProperty('observations', [
         [expect.any(Number), 'next', ConnectionStatus.Uninitialized],
         [expect.any(Number), 'next', ConnectionStatus.Connecting],
         [expect.any(Number), 'next', ConnectionStatus.Online]
-      ]);
-    },
+      ]),
     { timeout: 5000 }
   );
 
-  // WHEN: All Web Sockets are forcibly closed.
-  const closeTime = Date.now();
+  // WHEN: Call end().
+  directLine.end();
 
-  closeAllWebSocketConnections();
-
-  // THEN: Should observe "Uninitialized" -> "Connecting" -> "Online" -> "Connecting" -> "Online".
-  await waitFor(() => {
+  // THEN: Should observe "Uninitialized" -> "Connecting" -> "Online" -> "Ended" -> Complete.
+  await waitFor(() =>
     expect(connectionStatusObserver).toHaveProperty('observations', [
       [expect.any(Number), 'next', ConnectionStatus.Uninitialized],
       [expect.any(Number), 'next', ConnectionStatus.Connecting],
       [expect.any(Number), 'next', ConnectionStatus.Online],
-      [expect.any(Number), 'next', ConnectionStatus.Connecting],
-      [expect.any(Number), 'next', ConnectionStatus.Online]
-    ]);
-  });
+      [expect.any(Number), 'next', ConnectionStatus.Ended],
+      [expect.any(Number), 'complete']
+    ])
+  );
 
-  // THEN: "Connecting" should happen immediately after connection is closed.
-  const connectingTime = connectionStatusObserver.observations[3][0];
-
-  expect(connectingTime - closeTime).toBeLessThan(200);
-
-  // WHEN: Send a message to the bot.
+  // THEN: Should error when calling postActivity().
   const postActivityObserver = mockObserver();
 
   directLine
@@ -71,30 +64,15 @@ test('reconnect successful should continue to function properly', async () => {
     })
     .subscribe(postActivityObserver);
 
-  // THEN: Should send successfully and completed the observable.
   await waitFor(() =>
-    expect(postActivityObserver).toHaveProperty('observations', [
-      [expect.any(Number), 'next', expect.any(String)],
+    expect(postActivityObserver).toHaveProperty('observations', [[expect.any(Number), 'error', expect.any(Error)]])
+  );
+
+  // THEN: Should complete activity$.
+  await waitFor(() =>
+    expect(activityObserver).toHaveProperty('observations', [
+      [expect.any(Number), 'next', expect.any(Object)],
       [expect.any(Number), 'complete']
     ])
   );
-
-  // THEN: Bot should reply and the activity should echo back.
-  await waitFor(() => {
-    expect(
-      [...activityObserver.observations].sort(
-        ([, , { timestamp: x }], [, , { timestamp: y }]) => new Date(x).getTime() - new Date(y).getTime()
-      )
-    ).toEqual([
-      [expect.any(Number), 'next', expect.activityContaining('Hello and welcome!')],
-      [expect.any(Number), 'next', expect.activityContaining('Hello and welcome!')],
-      [
-        expect.any(Number),
-        'next',
-        expect.activityContaining('Hello, World!', { id: postActivityObserver.observations[0][2] })
-      ],
-      [expect.any(Number), 'next', expect.activityContaining('Echo: Hello, World!')]
-    ]),
-      { timeout: 5000 };
-  });
-}, 15000);
+});

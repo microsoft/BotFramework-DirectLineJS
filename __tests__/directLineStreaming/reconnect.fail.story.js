@@ -1,8 +1,9 @@
 import fetch from 'node-fetch';
-import { DirectLineStreaming } from '../../src/directLineStreaming';
 
-import setupProxy from './__setup__/proxy';
+import { ConnectionStatus } from '../../src/directLine';
+import { DirectLineStreaming } from '../../src/directLineStreaming';
 import mockObserver from './__setup__/mockObserver';
+import setupProxy from './__setup__/proxy';
 import waitFor from './__setup__/external/testing-library/waitFor';
 
 const MOCKBOT3_URL = 'https://webchat-mockbot3.azurewebsites.net/';
@@ -10,27 +11,21 @@ const TOKEN_URL = 'https://webchat-mockbot3.azurewebsites.net/api/token/directli
 
 afterEach(() => jest.useRealTimers());
 
-test('should reconnect', async () => {
+test('reconnect fail should stop', async () => {
   jest.useFakeTimers();
 
   const onUpgrade = jest.fn();
 
   onUpgrade.mockImplementation((req, socket, head, next) => next(req, socket, head));
 
-  const [{ close, closeAllWebSocketConnections, directLineStreamingURL }, { token }] = await Promise.all([
-    setupProxy(MOCKBOT3_URL, {
-      onUpgrade
-    }),
+  const [{ closeAllWebSocketConnections, directLineStreamingURL }, { token }] = await Promise.all([
+    setupProxy(MOCKBOT3_URL, { onUpgrade }),
     fetch(TOKEN_URL, { method: 'POST' }).then(res => res.json())
   ]);
 
-  const directLine = new DirectLineStreaming({
-    domain: directLineStreamingURL,
-    token
-  });
-
   const activityObserver = mockObserver();
   const connectionStatusObserver = mockObserver();
+  const directLine = new DirectLineStreaming({ domain: directLineStreamingURL, token });
 
   // GIVEN: Observer observing connectionStatus$.
   directLine.connectionStatus$.subscribe(connectionStatusObserver);
@@ -45,9 +40,9 @@ test('should reconnect', async () => {
   await waitFor(
     () => {
       expect(connectionStatusObserver).toHaveProperty('observations', [
-        [expect.any(Number), 'next', 0],
-        [expect.any(Number), 'next', 1],
-        [expect.any(Number), 'next', 2]
+        [expect.any(Number), 'next', ConnectionStatus.Uninitialized],
+        [expect.any(Number), 'next', ConnectionStatus.Connecting],
+        [expect.any(Number), 'next', ConnectionStatus.Online]
       ]);
     },
     { timeout: 5000 }
@@ -69,11 +64,14 @@ test('should reconnect', async () => {
   // THEN: Should observe "Uninitialized" -> "Connecting" -> "Online" -> "Connecting" -> "FailedToConnect".
   await waitFor(() => {
     expect(connectionStatusObserver).toHaveProperty('observations', [
-      [expect.any(Number), 'next', 0],
-      [expect.any(Number), 'next', 1],
-      [expect.any(Number), 'next', 2],
-      [expect.any(Number), 'next', 1],
-      [expect.any(Number), 'next', 4]
+      [expect.any(Number), 'next', ConnectionStatus.Uninitialized],
+      [expect.any(Number), 'next', ConnectionStatus.Connecting],
+      [expect.any(Number), 'next', ConnectionStatus.Online],
+      [expect.any(Number), 'next', ConnectionStatus.Connecting],
+      [expect.any(Number), 'next', ConnectionStatus.FailedToConnect],
+      [expect.any(Numebr), 'complete']
     ]);
   });
+
+  // TODO: Assert the delay between reconnect to make sure it reconnects only once every 3-15 seconds.
 });

@@ -11,7 +11,7 @@ const TOKEN_URL = 'https://webchat-mockbot3.azurewebsites.net/api/token/directli
 
 afterEach(() => jest.useRealTimers());
 
-test('should send activity', async () => {
+test('should connect', async () => {
   jest.useFakeTimers();
 
   const [{ directLineStreamingURL }, { token }] = await Promise.all([
@@ -46,42 +46,4 @@ test('should send activity', async () => {
       [expect.any(Number), 'next', expect.activityContaining('Hello and welcome!')]
     ])
   );
-
-  // WHEN: Send a message to the bot.
-  const postActivityObserver = mockObserver();
-
-  directLine
-    .postActivity({
-      text: 'Hello, World!',
-      type: 'message'
-    })
-    .subscribe(postActivityObserver);
-
-  // THEN: Should send successfully and completed the observable.
-  await waitFor(() =>
-    expect(postActivityObserver).toHaveProperty('observations', [
-      [expect.any(Number), 'next', expect.any(String)],
-      [expect.any(Number), 'complete']
-    ])
-  );
-
-  // THEN: Bot should reply and the activity should echo back.
-  await waitFor(
-    () =>
-      expect(
-        activityObserver.observations
-          .slice(1, 3)
-          .sort(([, , { timestamp: x }], [, , { timestamp: y }]) => new Date(x).getTime() - new Date(y).getTime())
-      ).toEqual([
-        [
-          expect.any(Number),
-          'next',
-          expect.activityContaining('Hello, World!', {
-            id: postActivityObserver.observations[0][2]
-          })
-        ],
-        [expect.any(Number), 'next', expect.activityContaining('Echo: Hello, World!')]
-      ]),
-    { timeout: 5000 }
-  );
-}, 15000);
+});
