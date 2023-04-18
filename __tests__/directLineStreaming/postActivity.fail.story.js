@@ -2,6 +2,7 @@ import fetch from 'node-fetch';
 
 import { ConnectionStatus } from '../../src/directLine';
 import { DirectLineStreaming } from '../../src/directLineStreaming';
+import activityTimestampComparer from './__setup__/activityTimestampComparer';
 import mockObserver from './__setup__/mockObserver';
 import setupProxy from './__setup__/proxy';
 import waitFor from './__setup__/external/testing-library/waitFor';
@@ -51,6 +52,10 @@ test('should send activity', async () => {
 
   // ---
 
+  // TODO: Setup to fail.
+  //       We need to intercept Web Socket messages and kill the connection when a specific pattern of the message has received.
+  //       In other words, we need to build a full-blown Web Socket proxy, rather than relying on TCP Socket.
+
   // WHEN: Send a message to the bot.
   const postActivityObserver = mockObserver();
 
@@ -64,7 +69,7 @@ test('should send activity', async () => {
   // THEN: Should send successfully and completed the observable.
   await waitFor(() =>
     expect(postActivityObserver).toHaveProperty('observations', [
-      [expect.any(Number), 'next', expect.any(String)],
+      [expect.any(Number), 'next', expect.any(String)]
       [expect.any(Number), 'complete']
     ])
   );
@@ -72,11 +77,8 @@ test('should send activity', async () => {
   // THEN: Bot should reply and the activity should echo back.
   await waitFor(
     () =>
-      expect(
-        activityObserver.observations
-          .slice(1, 3)
-          .sort(([, , { timestamp: x }], [, , { timestamp: y }]) => new Date(x).getTime() - new Date(y).getTime())
-      ).toEqual([
+      expect([...activityObserver.observations].sort(([, , x], [, , y]) => activityTimestampComparer(x, y))).toEqual([
+        [expect.any(Number), 'next', expect.activityContaining('Hello and welcome!')],
         [
           expect.any(Number),
           'next',

@@ -5,15 +5,15 @@ import express from 'express';
 import type { IncomingMessage } from 'http';
 import type { Socket } from 'net';
 
+type OnUpgradeHandler = (req: IncomingMessage, socket: Socket, head: Buffer, next: OnUpgradeHandler) => void;
+
+type SetupProxyInit = {
+  onUpgrade?: OnUpgradeHandler;
+};
+
 let app;
 let server: ReturnType<typeof createServer>;
 let sockets: Socket[];
-
-type UpgradeHandler = (req: IncomingMessage, socket: Socket, head: Buffer, next: UpgradeHandler) => void;
-
-type SetupProxyInit = {
-  onUpgrade?: UpgradeHandler;
-};
 
 beforeEach(() => {
   sockets = [];
@@ -28,7 +28,10 @@ export default function setupProxy(
   return new Promise((resolve, reject) => {
     app = express();
 
-    app.use('/.bot', createProxyMiddleware({ changeOrigin: true, logLevel: 'silent', target: streamingBotURL }));
+    app.use(
+      '/.bot',
+      createProxyMiddleware({ changeOrigin: true, logLevel: 'silent', target: streamingBotURL })
+    );
 
     app.use(
       ['/v3/directline/conversations', '/v3/directline/conversations/:id'],
