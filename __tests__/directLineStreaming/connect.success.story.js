@@ -19,12 +19,14 @@ test('should connect', async () => {
     fetch(TOKEN_URL, { method: 'POST' }).then(res => res.json())
   ]);
 
+  // GIVEN: A Direct Line Streaming chat adapter.
   const activityObserver = mockObserver();
   const connectionStatusObserver = mockObserver();
   const directLine = new DirectLineStreaming({ domain: directLineStreamingURL, token });
 
-  // GIVEN: Observer observing connectionStatus$.
   directLine.connectionStatus$.subscribe(connectionStatusObserver);
+
+  // ---
 
   // WHEN: Connect.
   directLine.activity$.subscribe(activityObserver);

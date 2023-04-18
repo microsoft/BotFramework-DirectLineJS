@@ -23,12 +23,14 @@ test('reconnect fail should stop', async () => {
     fetch(TOKEN_URL, { method: 'POST' }).then(res => res.json())
   ]);
 
+  // GIVEN: A Direct Line Streaming chat adapter.
   const activityObserver = mockObserver();
   const connectionStatusObserver = mockObserver();
   const directLine = new DirectLineStreaming({ domain: directLineStreamingURL, token });
 
-  // GIVEN: Observer observing connectionStatus$.
   directLine.connectionStatus$.subscribe(connectionStatusObserver);
+
+  // ---
 
   // WHEN: Connect.
   directLine.activity$.subscribe(activityObserver);
@@ -48,10 +50,12 @@ test('reconnect fail should stop', async () => {
     { timeout: 5000 }
   );
 
+  // ---
+
   // GIVEN: Tick for 1 minute. DLJS will consider this connection as stable and reset retry count to 3.
   jest.advanceTimersByTime(60000);
 
-  // WHEN: Forcibly kill all future Web Socket connections.
+  // WHEN: Kill all future Web Socket connections.
   onUpgrade.mockClear();
   onUpgrade.mockImplementation((_, socket) => socket.end());
 
@@ -69,7 +73,7 @@ test('reconnect fail should stop', async () => {
       [expect.any(Number), 'next', ConnectionStatus.Online],
       [expect.any(Number), 'next', ConnectionStatus.Connecting],
       [expect.any(Number), 'next', ConnectionStatus.FailedToConnect],
-      [expect.any(Numebr), 'complete']
+      [expect.any(Number), 'complete']
     ]);
   });
 

@@ -19,12 +19,14 @@ test('should connect', async () => {
     fetch(TOKEN_URL, { method: 'POST' }).then(res => res.json())
   ]);
 
+  // GIVEN: A Direct Line Streaming chat adapter.
   const activityObserver = mockObserver();
   const connectionStatusObserver = mockObserver();
   const directLine = new DirectLineStreaming({ domain: directLineStreamingURL, token });
 
-  // GIVEN: Observer observing connectionStatus$.
   directLine.connectionStatus$.subscribe(connectionStatusObserver);
+
+  // ---
 
   // WHEN: Connect.
   directLine.activity$.subscribe(activityObserver);
@@ -40,6 +42,8 @@ test('should connect', async () => {
     { timeout: 5000 }
   );
 
+  // ---
+
   // WHEN: Call end().
   directLine.end();
 
@@ -54,7 +58,7 @@ test('should connect', async () => {
     ])
   );
 
-  // THEN: Should error when calling postActivity().
+  // THEN: Should fail all postActivity() calls.
   const postActivityObserver = mockObserver();
 
   directLine
@@ -71,7 +75,7 @@ test('should connect', async () => {
   // THEN: Should complete activity$.
   await waitFor(() =>
     expect(activityObserver).toHaveProperty('observations', [
-      [expect.any(Number), 'next', expect.any(Object)],
+      [expect.any(Number), 'next', expect.activityContaining('Hello and welcome!')],
       [expect.any(Number), 'complete']
     ])
   );

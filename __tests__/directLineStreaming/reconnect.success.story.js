@@ -1,5 +1,6 @@
 import fetch from 'node-fetch';
 
+import { ConnectionStatus } from '../../src/directLine';
 import { DirectLineStreaming } from '../../src/directLineStreaming';
 import mockObserver from './__setup__/mockObserver';
 import setupProxy from './__setup__/proxy';
@@ -18,12 +19,14 @@ test('reconnect successful should continue to function properly', async () => {
     fetch(TOKEN_URL, { method: 'POST' }).then(res => res.json())
   ]);
 
+  // GIVEN: A Direct Line Streaming chat adapter.
   const activityObserver = mockObserver();
   const connectionStatusObserver = mockObserver();
   const directLine = new DirectLineStreaming({ domain: directLineStreamingURL, token });
 
-  // GIVEN: Observer observing connectionStatus$.
   directLine.connectionStatus$.subscribe(connectionStatusObserver);
+
+  // ---
 
   // WHEN: Connect.
   directLine.activity$.subscribe(activityObserver);
@@ -39,6 +42,8 @@ test('reconnect successful should continue to function properly', async () => {
     },
     { timeout: 5000 }
   );
+
+  // ---
 
   // WHEN: All Web Sockets are forcibly closed.
   const closeTime = Date.now();
@@ -60,6 +65,8 @@ test('reconnect successful should continue to function properly', async () => {
   const connectingTime = connectionStatusObserver.observations[3][0];
 
   expect(connectingTime - closeTime).toBeLessThan(200);
+
+  // ---
 
   // WHEN: Send a message to the bot.
   const postActivityObserver = mockObserver();
