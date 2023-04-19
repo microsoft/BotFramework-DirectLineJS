@@ -11,13 +11,14 @@ import type { IncomingMessage } from 'http';
 import type { Options } from 'http-proxy-middleware';
 import type { Socket } from 'net';
 
+type OnUpgradeHandler = (req: IncomingMessage, socket: Socket, head: Buffer, next: OnUpgradeHandler) => void;
+
 type OnWebSocketMessageHandler = (
   data: Data,
   socket: WebSocket,
   req: IncomingMessage,
   next: OnWebSocketMessageHandler
 ) => void;
-type OnUpgradeHandler = (req: IncomingMessage, socket: Socket, head: Buffer, next: OnUpgradeHandler) => void;
 
 type CreateBotProxyInit = {
   onUpgrade?: OnUpgradeHandler;
@@ -29,8 +30,8 @@ type CreateBotProxyInit = {
 type CreateBotProxyReturnValue = {
   cleanUp: () => void;
   closeAllWebSocketConnections: () => void;
-  directLineURL: string;
   directLineStreamingURL: string;
+  directLineURL: string;
 };
 
 const matchDirectLineStreamingProtocol = match('/.bot/', { decode: decodeURIComponent, end: false });
@@ -172,8 +173,8 @@ export default function createBotProxy(init?: CreateBotProxyInit): Promise<Creat
             closeAllWebSocketConnections();
           },
           closeAllWebSocketConnections,
-          directLineURL: new URL('/v3/directline', url).href,
-          directLineStreamingURL: new URL('/.bot/v3/directline', url).href
+          directLineStreamingURL: new URL('/.bot/v3/directline', url).href,
+          directLineURL: new URL('/v3/directline', url).href
         });
       });
     } catch (error) {
