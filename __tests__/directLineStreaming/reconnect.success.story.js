@@ -119,7 +119,7 @@ test.each([['with stable connection'], ['without stable connection']])(
     // THEN: Should send successfully and completed the observable.
     await waitFor(() =>
       expect(postActivityObserver).toHaveProperty('observations', [
-        [expect.any(Number), 'next', expect.any(String)]
+        [expect.any(Number), 'next', expect.any(String)],
         [expect.any(Number), 'complete']
       ])
     );
