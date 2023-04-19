@@ -3,7 +3,7 @@ import fetch from 'node-fetch';
 import { ConnectionStatus } from '../../src/directLine';
 import { DirectLineStreaming } from '../../src/directLineStreaming';
 import mockObserver from './__setup__/mockObserver';
-import setupProxy from './__setup__/setupProxy';
+import setupBotProxy from './__setup__/setupBotProxy';
 import waitFor from './__setup__/external/testing-library/waitFor';
 
 const MOCKBOT3_URL = 'https://webchat-mockbot3.azurewebsites.net/';
@@ -19,7 +19,7 @@ test('reconnect fail should stop', async () => {
   onUpgrade.mockImplementation((req, socket, head, next) => next(req, socket, head));
 
   const [{ closeAllWebSocketConnections, directLineStreamingURL }, { token }] = await Promise.all([
-    setupProxy({ onUpgrade, streamingBotURL: MOCKBOT3_URL }),
+    setupBotProxy({ onUpgrade, streamingBotURL: MOCKBOT3_URL }),
     fetch(TOKEN_URL, { method: 'POST' }).then(res => res.json())
   ]);
 

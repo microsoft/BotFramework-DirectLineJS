@@ -118,9 +118,17 @@ export default function setupProxy(init?: CreateBotProxyInit): Promise<SetupProx
 
           const requestURL = req.url || '';
 
+          const isDirectLineStreaming = !!matchDirectLineStreamingProtocol(requestURL);
+
+          if (isDirectLineStreaming && !streamingBotURL) {
+            console.warn('Cannot proxy /.bot/ requests without specifying "streamingBotURL".');
+
+            return socket.end();
+          }
+
           const targetURL = new URL(
             requestURL,
-            matchDirectLineStreamingProtocol(requestURL) ? streamingBotURL : 'wss://directline.botframework.com/'
+            isDirectLineStreaming ? streamingBotURL : 'wss://directline.botframework.com/'
           );
 
           // "streamingBotURL" could be "https:" instead of "wss:".

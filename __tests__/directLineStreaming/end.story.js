@@ -3,7 +3,7 @@ import fetch from 'node-fetch';
 import { ConnectionStatus } from '../../src/directLine';
 import { DirectLineStreaming } from '../../src/directLineStreaming';
 import mockObserver from './__setup__/mockObserver';
-import setupProxy from './__setup__/setupProxy';
+import setupBotProxy from './__setup__/setupBotProxy';
 import waitFor from './__setup__/external/testing-library/waitFor';
 
 const MOCKBOT3_URL = 'https://webchat-mockbot3.azurewebsites.net/';
@@ -15,7 +15,7 @@ test('should connect', async () => {
   jest.useFakeTimers();
 
   const [{ directLineStreamingURL }, { token }] = await Promise.all([
-    setupProxy({ streamingBotURL: MOCKBOT3_URL }),
+    setupBotProxy({ streamingBotURL: MOCKBOT3_URL }),
     fetch(TOKEN_URL, { method: 'POST' }).then(res => res.json())
   ]);
 

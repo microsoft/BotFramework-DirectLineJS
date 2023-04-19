@@ -1,6 +1,6 @@
 import createBotProxy from './createBotProxy';
 
-type SetupProxyInit = Parameters<typeof createBotProxy>[0];
+type SetupBotProxyInit = Parameters<typeof createBotProxy>[0];
 type ValueOfPromise<T> = T extends Promise<infer V> ? V : never;
 
 type BotProxyReturnValue = ValueOfPromise<ReturnType<typeof createBotProxy>>;
@@ -11,7 +11,7 @@ beforeEach(() => {
   botProxies = [];
 });
 
-export default async function setupProxy(init?: SetupProxyInit) {
+export default async function setupBotProxy(init?: SetupBotProxyInit) {
   const botProxy = await createBotProxy(init);
 
   botProxies.push(botProxy);
