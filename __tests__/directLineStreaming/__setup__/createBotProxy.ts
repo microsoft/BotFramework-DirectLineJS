@@ -50,7 +50,7 @@ export default function createBotProxy(init?: CreateBotProxyInit): Promise<Creat
       const app = express();
 
       streamingBotURL &&
-        app.use('/.bot', createProxyMiddleware({ changeOrigin: true, logLevel: 'silent', target: streamingBotURL }));
+        app.use('/.bot/', createProxyMiddleware({ changeOrigin: true, logLevel: 'silent', target: streamingBotURL }));
 
       const onProxyRes: Options['onProxyRes'] = responseInterceptor(
         async (responseBuffer, proxyRes: IncomingMessage) => {
@@ -82,7 +82,7 @@ export default function createBotProxy(init?: CreateBotProxyInit): Promise<Creat
           // There is a typing bug in `http-proxy-middleware`.
           // The return type of `responseIntercept` does not match `onProxyRes`.
         }
-      ) as unknown as Options['onProxyRes'];
+      );
 
       app.use(
         '/v3/directline',
