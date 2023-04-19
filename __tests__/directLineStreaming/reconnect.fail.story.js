@@ -19,7 +19,7 @@ test('reconnect fail should stop', async () => {
   onUpgrade.mockImplementation((req, socket, head, next) => next(req, socket, head));
 
   const [{ closeAllWebSocketConnections, directLineStreamingURL }, { token }] = await Promise.all([
-    setupProxy(MOCKBOT3_URL, { onUpgrade }),
+    setupProxy({ onUpgrade, streamingBotURL: MOCKBOT3_URL }),
     fetch(TOKEN_URL, { method: 'POST' }).then(res => res.json())
   ]);
 

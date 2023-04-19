@@ -15,7 +15,7 @@ test('should connect', async () => {
   jest.useFakeTimers();
 
   const [{ directLineStreamingURL }, { token }] = await Promise.all([
-    setupProxy(MOCKBOT3_URL),
+    setupProxy({ streamingBotURL: MOCKBOT3_URL }),
     fetch(TOKEN_URL, { method: 'POST' }).then(res => res.json())
   ]);
 

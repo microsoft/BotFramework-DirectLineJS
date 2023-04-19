@@ -16,7 +16,7 @@ test('should send activity', async () => {
   jest.useFakeTimers();
 
   const [{ directLineStreamingURL }, { token }] = await Promise.all([
-    setupProxy(MOCKBOT3_URL),
+    setupProxy({ streamingBotURL: MOCKBOT3_URL }),
     fetch(TOKEN_URL, { method: 'POST' }).then(res => res.json())
   ]);
 
@@ -69,8 +69,7 @@ test('should send activity', async () => {
   // THEN: Should send successfully and completed the observable.
   await waitFor(() =>
     expect(postActivityObserver).toHaveProperty('observations', [
-      [expect.any(Number), 'next', expect.any(String)]
-      [expect.any(Number), 'complete']
+      [expect.any(Number), 'next', expect.any(String)][(expect.any(Number), 'complete')]
     ])
   );
 
