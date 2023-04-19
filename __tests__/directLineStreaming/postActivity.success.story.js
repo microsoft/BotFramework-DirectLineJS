@@ -4,7 +4,7 @@ import { ConnectionStatus } from '../../src/directLine';
 import { DirectLineStreaming } from '../../src/directLineStreaming';
 import activityTimestampComparer from './__setup__/activityTimestampComparer';
 import mockObserver from './__setup__/mockObserver';
-import setupProxy from './__setup__/proxy';
+import setupProxy from './__setup__/setupProxy';
 import waitFor from './__setup__/external/testing-library/waitFor';
 
 const MOCKBOT3_URL = 'https://webchat-mockbot3.azurewebsites.net/';
