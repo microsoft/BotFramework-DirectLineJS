@@ -1,7 +1,7 @@
 import { createProxyMiddleware, responseInterceptor } from 'http-proxy-middleware';
 import { createServer } from 'http';
 import { match } from 'path-to-regexp';
-import { WebSocket, WebSocketServer } from 'ws';
+import WebSocket, { WebSocketServer } from 'ws';
 import express from 'express';
 
 import removeInline from './removeInline';
@@ -99,11 +99,11 @@ export default function createBotProxy(init?: CreateBotProxyInit): Promise<Creat
 
       webSocketProxy.on('connection', (socket: WebSocket, proxySocket: WebSocket, req: IncomingMessage) => {
         socket.addEventListener('message', ({ data }) =>
-          onWebSocketReceiveMessage(data, proxySocket, req, (data, proxySocket) => proxySocket.send(data))
+          onWebSocketSendMessage(data, proxySocket, req, (data, proxySocket) => proxySocket.send(data))
         );
 
         proxySocket.addEventListener('message', ({ data }) =>
-          onWebSocketSendMessage(data, socket, req, (data, socket) => socket.send(data))
+          onWebSocketReceiveMessage(data, socket, req, (data, socket) => socket.send(data))
         );
       });
 
@@ -137,7 +137,7 @@ export default function createBotProxy(init?: CreateBotProxyInit): Promise<Creat
 
           const proxySocket = new WebSocket(targetURL);
 
-          proxySocket.addEventListener('close', () => webSocketProxy.close());
+          proxySocket.addEventListener('close', () => socket.end());
           proxySocket.addEventListener('open', () =>
             webSocketProxy.handleUpgrade(req, socket, head, ws =>
               webSocketProxy.emit('connection', ws, proxySocket, req)

@@ -13,10 +13,17 @@ const TOKEN_URL = 'https://webchat-mockbot3.azurewebsites.net/api/token/directli
 afterEach(() => jest.useRealTimers());
 
 test('reconnect successful should continue to function properly', async () => {
-  jest.useFakeTimers();
+  jest.useFakeTimers({ now: 0 });
+
+  const onUpgrade = jest.fn((req, socket, head, next) => {
+    next(req, socket, head);
+
+    // HACK: Returns the time when the connection is made.
+    return Date.now();
+  });
 
   const [{ closeAllWebSocketConnections, directLineStreamingURL }, { token }] = await Promise.all([
-    setupBotProxy({ streamingBotURL: MOCKBOT3_URL }),
+    setupBotProxy({ onUpgrade, streamingBotURL: MOCKBOT3_URL }),
     fetch(TOKEN_URL, { method: 'POST' }).then(res => res.json())
   ]);
 
@@ -44,28 +51,42 @@ test('reconnect successful should continue to function properly', async () => {
     { timeout: 5000 }
   );
 
+  // THEN: Should made the connection.
+  expect(onUpgrade).toBeCalledTimes(1);
+
   // ---
 
+  // TODO: Add tests that not marking the connection stable.
+  // GIVEN: Tick for 1 minute. DLJS will consider this connection as stable and reset retry count to 3.
+  jest.advanceTimersByTime(60000);
+
   // WHEN: All Web Sockets are forcibly closed.
-  const closeTime = Date.now();
+  const disconnectTime = Date.now();
 
   closeAllWebSocketConnections();
 
   // THEN: Should observe "Uninitialized" -> "Connecting" -> "Online" -> "Connecting" -> "Online".
-  await waitFor(() => {
-    expect(connectionStatusObserver).toHaveProperty('observations', [
-      [expect.any(Number), 'next', ConnectionStatus.Uninitialized],
-      [expect.any(Number), 'next', ConnectionStatus.Connecting],
-      [expect.any(Number), 'next', ConnectionStatus.Online],
-      [expect.any(Number), 'next', ConnectionStatus.Connecting],
-      [expect.any(Number), 'next', ConnectionStatus.Online]
-    ]);
-  });
+  await waitFor(
+    () => {
+      expect(connectionStatusObserver).toHaveProperty('observations', [
+        [expect.any(Number), 'next', ConnectionStatus.Uninitialized],
+        [expect.any(Number), 'next', ConnectionStatus.Connecting],
+        [expect.any(Number), 'next', ConnectionStatus.Online],
+        [expect.any(Number), 'next', ConnectionStatus.Connecting],
+        [expect.any(Number), 'next', ConnectionStatus.Online]
+      ]);
+    },
+    { timeout: 5000 }
+  );
 
   // THEN: "Connecting" should happen immediately after connection is closed.
   const connectingTime = connectionStatusObserver.observations[3][0];
 
-  expect(connectingTime - closeTime).toBeLessThan(200);
+  expect(connectingTime - disconnectTime).toBeLessThan(200);
+
+  // THEN: Should reconnect immediately.
+  expect(onUpgrade).toBeCalledTimes(2);
+  expect(onUpgrade.mock.results[1].value - disconnectTime).toBeLessThan(200);
 
   // ---
 

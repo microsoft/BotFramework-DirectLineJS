@@ -1,3 +1,5 @@
+/** @jest-environment ./__tests__/setup/jsdomEnvironmentWithProxy */
+
 import * as DirectLineExport from "./directLine";
 import * as DirectLineMock from './directLine.mock';
 import { TestScheduler, Observable, Subscription, AjaxResponse } from "rxjs";

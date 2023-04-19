@@ -12,7 +12,7 @@ const TOKEN_URL = 'https://webchat-mockbot3.azurewebsites.net/api/token/directli
 afterEach(() => jest.useRealTimers());
 
 test('reconnect fail should stop', async () => {
-  jest.useFakeTimers();
+  jest.useFakeTimers({ now: 0 });
 
   const onUpgrade = jest.fn();
 
@@ -57,13 +57,32 @@ test('reconnect fail should stop', async () => {
 
   // WHEN: Kill all future Web Socket connections.
   onUpgrade.mockClear();
-  onUpgrade.mockImplementation((_, socket) => socket.end());
+  onUpgrade.mockImplementation((_, socket) => {
+    socket.end();
+
+    // HACK: Returns the time when the connection is made, so we can expect() it later.
+    return Date.now();
+  });
 
   // WHEN: Forcibly close all Web Sockets to trigger a reconnect.
+  const disconnectTime = Date.now();
+
   closeAllWebSocketConnections();
 
   // THEN: Server should observe three Web Socket connections.
   await waitFor(() => expect(onUpgrade).toBeCalledTimes(3));
+
+  // THEN: Should not wait before reconnecting the first time.
+  //       This is because the connection has been established for more than 1 minute and is considered stable.
+  expect(onUpgrade.mock.results[0].value - disconnectTime).toBeLessThanOrEqual(3000);
+
+  // THEN: Should wait for 3-15 seconds before reconnecting the second time.
+  expect(onUpgrade.mock.results[1].value - onUpgrade.mock.results[0].value).toBeGreaterThanOrEqual(3000);
+  expect(onUpgrade.mock.results[1].value - onUpgrade.mock.results[0].value).toBeLessThanOrEqual(15000);
+
+  // THEN: Should wait for 3-15 seconds before reconnecting the third time.
+  expect(onUpgrade.mock.results[2].value - onUpgrade.mock.results[1].value).toBeGreaterThanOrEqual(3000);
+  expect(onUpgrade.mock.results[2].value - onUpgrade.mock.results[1].value).toBeLessThanOrEqual(15000);
 
   // THEN: Should observe "Uninitialized" -> "Connecting" -> "Online" -> "Connecting" -> "FailedToConnect".
   await waitFor(() => {
@@ -76,6 +95,4 @@ test('reconnect fail should stop', async () => {
       [expect.any(Number), 'complete']
     ]);
   });
-
-  // TODO: Assert the delay between reconnect to make sure it reconnects only once every 3-15 seconds.
 });

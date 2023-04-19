@@ -2,7 +2,6 @@ import fetch from 'node-fetch';
 
 import { ConnectionStatus } from '../../src/directLine';
 import { DirectLineStreaming } from '../../src/directLineStreaming';
-import activityTimestampComparer from './__setup__/activityTimestampComparer';
 import mockObserver from './__setup__/mockObserver';
 import setupBotProxy from './__setup__/setupBotProxy';
 import waitFor from './__setup__/external/testing-library/waitFor';
@@ -13,10 +12,14 @@ const TOKEN_URL = 'https://webchat-mockbot3.azurewebsites.net/api/token/directli
 afterEach(() => jest.useRealTimers());
 
 test('should send activity', async () => {
-  jest.useFakeTimers();
+  jest.useFakeTimers({ now: 0 });
+
+  const onWebSocketSendMessage = jest.fn();
+
+  onWebSocketSendMessage.mockImplementation((data, socket, req, next) => next(data, socket, req));
 
   const [{ directLineStreamingURL }, { token }] = await Promise.all([
-    setupBotProxy({ streamingBotURL: MOCKBOT3_URL }),
+    setupBotProxy({ onWebSocketSendMessage, streamingBotURL: MOCKBOT3_URL }),
     fetch(TOKEN_URL, { method: 'POST' }).then(res => res.json())
   ]);
 
@@ -52,9 +55,10 @@ test('should send activity', async () => {
 
   // ---
 
-  // TODO: Setup to fail.
-  //       We need to intercept Web Socket messages and kill the connection when a specific pattern of the message has received.
-  //       In other words, we need to build a full-blown Web Socket proxy, rather than relying on TCP Socket.
+  // GIVEN: Kill connection on next Web Socket message.
+
+  onWebSocketSendMessage.mockClear();
+  onWebSocketSendMessage.mockImplementation((_data, socket) => socket.close());
 
   // WHEN: Send a message to the bot.
   const postActivityObserver = mockObserver();
@@ -66,27 +70,21 @@ test('should send activity', async () => {
     })
     .subscribe(postActivityObserver);
 
-  // THEN: Should send successfully and completed the observable.
+  // THEN: Should send through Web Socket.
+  await waitFor(() => expect(onWebSocketSendMessage).toBeCalled());
+
+  // THEN: Should fail the call.
   await waitFor(() =>
-    expect(postActivityObserver).toHaveProperty('observations', [
-      [expect.any(Number), 'next', expect.any(String)][(expect.any(Number), 'complete')]
-    ])
+    expect(postActivityObserver).toHaveProperty('observations', [[expect.any(Number), 'error', expect.any(Error)]])
   );
 
-  // THEN: Bot should reply and the activity should echo back.
-  await waitFor(
-    () =>
-      expect([...activityObserver.observations].sort(([, , x], [, , y]) => activityTimestampComparer(x, y))).toEqual([
-        [expect.any(Number), 'next', expect.activityContaining('Hello and welcome!')],
-        [
-          expect.any(Number),
-          'next',
-          expect.activityContaining('Hello, World!', {
-            id: postActivityObserver.observations[0][2]
-          })
-        ],
-        [expect.any(Number), 'next', expect.activityContaining('Echo: Hello, World!')]
-      ]),
-    { timeout: 5000 }
+  // THEN: Should observe "Connecting" because the chat adapter should reconnect.
+  await waitFor(() =>
+    expect(connectionStatusObserver).toHaveProperty('observations', [
+      [expect.any(Number), 'next', ConnectionStatus.Uninitialized],
+      [expect.any(Number), 'next', ConnectionStatus.Connecting],
+      [expect.any(Number), 'next', ConnectionStatus.Online],
+      [expect.any(Number), 'next', ConnectionStatus.Connecting]
+    ])
   );
 }, 15000);

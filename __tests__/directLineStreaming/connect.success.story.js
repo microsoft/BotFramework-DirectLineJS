@@ -12,7 +12,7 @@ const TOKEN_URL = 'https://webchat-mockbot3.azurewebsites.net/api/token/directli
 afterEach(() => jest.useRealTimers());
 
 test('should connect', async () => {
-  jest.useFakeTimers();
+  jest.useFakeTimers({ now: 0 });
 
   const [{ directLineStreamingURL }, { token }] = await Promise.all([
     setupBotProxy({ streamingBotURL: MOCKBOT3_URL }),
