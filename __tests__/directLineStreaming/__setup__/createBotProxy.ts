@@ -26,8 +26,8 @@ type CreateBotProxyInit = {
   streamingBotURL?: string;
 };
 
-type SetupProxyReturnValue = {
-  close: () => void;
+type CreateBotProxyReturnValue = {
+  cleanUp: () => void;
   closeAllWebSocketConnections: () => void;
   directLineURL: string;
   directLineStreamingURL: string;
@@ -35,7 +35,7 @@ type SetupProxyReturnValue = {
 
 const matchDirectLineStreamingProtocol = match('/.bot/', { decode: decodeURIComponent, end: false });
 
-export default function setupProxy(init?: CreateBotProxyInit): Promise<SetupProxyReturnValue> {
+export default function createBotProxy(init?: CreateBotProxyInit): Promise<CreateBotProxyReturnValue> {
   const onUpgrade = init?.onUpgrade || ((req, socket, head, next) => next(req, socket, head, () => {}));
   const onWebSocketReceiveMessage =
     init?.onWebSocketReceiveMessage || ((data, socket, req, next) => next(data, socket, req, () => {}));
@@ -43,7 +43,7 @@ export default function setupProxy(init?: CreateBotProxyInit): Promise<SetupProx
     init?.onWebSocketSendMessage || ((data, socket, req, next) => next(data, socket, req, () => {}));
   const streamingBotURL = init?.streamingBotURL;
 
-  return new Promise<SetupProxyReturnValue>((resolve, reject) => {
+  return new Promise<CreateBotProxyReturnValue>((resolve, reject) => {
     try {
       const activeSockets: Socket[] = [];
       const app = express();
@@ -158,19 +158,20 @@ export default function setupProxy(init?: CreateBotProxyInit): Promise<SetupProx
 
         const url = new URL(`http://${typeof address === 'string' ? address : `${address.address}:${address.port}`}`);
 
+        const closeAllWebSocketConnections = () => {
+          activeSockets.map(socket => socket.end());
+          activeSockets.splice(0);
+        };
+
         resolve({
-          close: () => {
+          cleanUp: () => {
             server.close();
             server.closeAllConnections();
 
             // Calling close() and closeAllConnections() will not close all Web Socket connections.
-            activeSockets.map(socket => socket.end());
-            activeSockets.splice(0);
+            closeAllWebSocketConnections();
           },
-          closeAllWebSocketConnections: () => {
-            activeSockets.map(socket => socket.end());
-            activeSockets.splice(0);
-          },
+          closeAllWebSocketConnections,
           directLineURL: new URL('/v3/directline', url).href,
           directLineStreamingURL: new URL('/.bot/v3/directline', url).href
         });

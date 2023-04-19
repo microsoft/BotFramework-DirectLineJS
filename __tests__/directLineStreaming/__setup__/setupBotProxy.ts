@@ -3,23 +3,29 @@ import createBotProxy from './createBotProxy';
 type SetupBotProxyInit = Parameters<typeof createBotProxy>[0];
 type ValueOfPromise<T> = T extends Promise<infer V> ? V : never;
 
-type BotProxyReturnValue = ValueOfPromise<ReturnType<typeof createBotProxy>>;
+type CreateBotProxyReturnValue = ValueOfPromise<ReturnType<typeof createBotProxy>>;
 
-let botProxies: BotProxyReturnValue[] = [];
+let botProxies: CreateBotProxyReturnValue[] = [];
 
 beforeEach(() => {
   botProxies = [];
 });
 
-export default async function setupBotProxy(init?: SetupBotProxyInit) {
+export default async function setupBotProxy(
+  init?: SetupBotProxyInit
+): Promise<Omit<CreateBotProxyReturnValue, 'cleanUp'>> {
   const botProxy = await createBotProxy(init);
 
   botProxies.push(botProxy);
 
-  return botProxy;
+  return {
+    closeAllWebSocketConnections: botProxy.closeAllWebSocketConnections,
+    directLineURL: botProxy.directLineURL,
+    directLineStreamingURL: botProxy.directLineStreamingURL
+  };
 }
 
 afterEach(() => {
-  botProxies.map(botProxy => botProxy.close());
+  botProxies.map(botProxy => botProxy.cleanUp());
   botProxies.splice(0);
 });
