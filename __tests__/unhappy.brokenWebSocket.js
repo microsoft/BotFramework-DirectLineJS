@@ -1,3 +1,5 @@
+/** @jest-environment ./__tests__/setup/jsdomEnvironmentWithProxy */
+
 import 'dotenv/config';
 import 'global-agent/bootstrap';
 

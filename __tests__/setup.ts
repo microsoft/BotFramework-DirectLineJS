@@ -1,3 +1,5 @@
+/** @jest-environment ./__tests__/setup/jsdomEnvironmentWithProxy */
+
 /// <reference path="../node_modules/@types/jest/index.d.ts" />
 
 import createServer from './setup/createServer';

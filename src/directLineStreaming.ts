@@ -5,7 +5,10 @@ import { Buffer } from 'buffer';
 import { Observable } from 'rxjs/Observable';
 import { Subscriber } from 'rxjs/Subscriber';
 import * as BFSE from 'botframework-streaming';
+import createDeferred from './createDeferred';
 import fetch from 'cross-fetch';
+
+import type { Deferred } from './createDeferred';
 
 import {
   Activity,
@@ -88,6 +91,10 @@ class StreamHandler implements BFSE.RequestHandler {
     this.activityQueue.forEach((a) => this.subscriber.next(a));
     this.activityQueue = [];
   }
+
+  public end() {
+    this.subscriber.complete();
+  }
 }
 
 export class DirectLineStreaming implements IBotConnection {
@@ -95,6 +102,7 @@ export class DirectLineStreaming implements IBotConnection {
   public activity$: Observable<Activity>;
 
   private activitySubscriber: Subscriber<Activity>;
+  private connectDeferred: Deferred<void>;
   private theStreamHandler: StreamHandler;
 
   private domain: string;
@@ -126,23 +134,32 @@ export class DirectLineStreaming implements IBotConnection {
       this.activitySubscriber = subscriber;
       this.theStreamHandler = new StreamHandler(subscriber, this.connectionStatus$, () => this.queueActivities);
 
-      try {
-        await this.connectWithRetryAsync();
-      } catch (error) {
-        this.connectionStatus$.next(ConnectionStatus.FailedToConnect);
-      }
+      // Resolving connectDeferred will kick-off the connection.
+      this.connectDeferred.resolve();
     }).share();
+
+    // connectWithRetryAsync() will create the connectDeferred object required in activity$.
+    this.connectWithRetryAsync();
   }
 
-  public async reconnect({ conversationId, token } : Conversation) {
+  public reconnect({ conversationId, token } : Conversation) {
+    if (this.connectionStatus$.getValue() === ConnectionStatus.Ended) {
+      throw new Error('Connection has ended.');
+    }
+
     this.conversationId = conversationId;
     this.token = token;
 
-    await this.connectAsync();
+    this.connectDeferred.resolve();
   }
 
   end() {
+    // Once end() is called, no reconnection can be made.
+    this.activitySubscriber.complete();
+
     this.connectionStatus$.next(ConnectionStatus.Ended);
+    this.connectionStatus$.complete();
+
     this.streamConnection.disconnect();
   }
 
@@ -194,6 +211,10 @@ export class DirectLineStreaming implements IBotConnection {
   }
 
   postActivity(activity: Activity) {
+    if (this.connectionStatus$.value === ConnectionStatus.Ended || this.connectionStatus$.value === ConnectionStatus.FailedToConnect) {
+      return Observable.throw(new Error('Connection is closed'));
+    }
+
     if (activity.type === "message" && activity.attachments && activity.attachments.length > 0) {
       return this.postMessageWithAttachments(activity);
     }
@@ -201,15 +222,16 @@ export class DirectLineStreaming implements IBotConnection {
     const resp$ = Observable.create(async subscriber => {
       const request = BFSE.StreamingRequest.create('POST', '/v3/directline/conversations/' + this.conversationId + '/activities');
       request.setBody(JSON.stringify(activity));
-      const resp = await this.streamConnection.send(request);
 
       try {
+        const resp = await this.streamConnection.send(request);
         if (resp.statusCode !== 200) throw new Error("PostActivity returned " + resp.statusCode);
         const numberOfStreams = resp.streams.length;
         if (numberOfStreams !== 1) throw new Error("Expected one stream but got " + numberOfStreams)
         const idString = await resp.streams[0].readAsString();
         const {Id : id} = JSON.parse(idString);
-        return subscriber.next(id);
+        subscriber.next(id);
+        return subscriber.complete();
       } catch(e) {
           // If there is a network issue then its handled by
           // the disconnectionHandler. Everything else can
@@ -241,7 +263,6 @@ export class DirectLineStreaming implements IBotConnection {
 
           arrayBuffers.forEach(({ arrayBuffer, media }) => {
             const buffer = Buffer.from(arrayBuffer);
-            console.log(buffer);
             const stream = new BFSE.SubscribableStream();
             stream.write(buffer);
             const httpContent = new BFSE.HttpContent({ type: media.contentType, contentLength: buffer.length }, stream);
@@ -259,8 +280,9 @@ export class DirectLineStreaming implements IBotConnection {
           if (resp.streams && resp.streams.length !== 1) {
             subscriber.error(new Error(`Invalid stream count ${resp.streams.length}`));
           } else {
-            const {Id: id} = await resp.streams[0].readAsJson();
+            const {Id: id} = await resp.streams[0].readAsJson<{Id: string}>();
             subscriber.next(id);
+            subscriber.complete();
           }
         } catch(e) {
           subscriber.error(e);
@@ -286,6 +308,7 @@ export class DirectLineStreaming implements IBotConnection {
     const urlSearchParams = new URLSearchParams(params).toString();
     const wsUrl = `${this.domain.replace(re, 'ws$1')}/conversations/connect?${urlSearchParams}`;
 
+    // This promise will resolve when it is disconnected.
     return new Promise(async (resolve, reject) => {
       try {
         this.streamConnection = new BFSE.WebSocketClient({
@@ -317,29 +340,52 @@ export class DirectLineStreaming implements IBotConnection {
   }
 
   private async connectWithRetryAsync() {
-    let numRetries = MAX_RETRY_COUNT;
-    while (numRetries > 0) {
-      numRetries--;
-      const start = Date.now();
-      try {
-        this.connectionStatus$.next(ConnectionStatus.Connecting);
-        const res = await this.connectAsync();
-        if (this.connectionStatus$.getValue() === ConnectionStatus.Ended){
-          console.warn('Connection end');
-          break;
+    // This for-loop will break when someone call end() and it will signal ConnectionStatus.Ended.
+    for (;;) {
+      // Create a new signal and wait for someone kicking off the connection:
+      // - subscribe to activity$, or;
+      // - retries exhausted (FailedToConnect), then, someone call reconnect()
+      await (this.connectDeferred = createDeferred()).promise;
+
+      let numRetries = MAX_RETRY_COUNT;
+
+      this.connectionStatus$.next(ConnectionStatus.Connecting);
+
+      while (numRetries > 0) {
+        numRetries--;
+
+        const start = Date.now();
+
+        try {
+          // This promise will reject/resolve when disconnected.
+          await this.connectAsync();
+        } catch (err) {}
+
+        // If someone call end() to break the connection, we will never listen to any reconnect().
+        if (this.connectionStatus$.getValue() === ConnectionStatus.Ended) {
+          return;
         }
-        console.warn(`Retrying connection ${res}`);
+
+        // Make sure we don't signal ConnectionStatus.Connecting twice or more without an actual connection.
+        // Subsequent retries should be transparent.
+        if (this.connectionStatus$.getValue() !== ConnectionStatus.Connecting) {
+          this.connectionStatus$.next(ConnectionStatus.Connecting);
+        }
+
+        // If the current connection lasted for more than a minute, the previous connection is good, which means:
+        // - we should reset the retry counter, and;
+        // - we should reconnect immediately.
         if (60000 < Date.now() - start) {
-          // reset the retry counter and retry immediately
-          // if the connection lasted for more than a minute
           numRetries = MAX_RETRY_COUNT;
-          continue;
+        } else if (numRetries > 0) {
+          // Sleep only if we are doing retry. Otherwise, we are going to break the loop and signal FailedToConnect.
+          await new Promise(r => setTimeout(r, this.getRetryDelay()));
         }
-      } catch (err) {
-        console.error(`Failed to connect ${err}`);
       }
 
-      await new Promise(r => setTimeout(r, this.getRetryDelay()));
+      // TODO: [TEST] Make sure FailedToConnect is reported immediately after last disconnection, should be no getRetryDelay().
+      // Failed to reconnect after multiple retries.
+      this.connectionStatus$.next(ConnectionStatus.FailedToConnect);
     }
 
     throw (new Error(`Failed to connect after ${MAX_RETRY_COUNT} attempts`));
