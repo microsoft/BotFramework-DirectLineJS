@@ -17,10 +17,17 @@
     "declaration": true,
     "declarationDir": "lib",
     "emitDeclarationOnly": true,
+    "sourceMap": true,
 
-    // Failing with @types/jsdom@21.
-    "skipLibCheck": true,
-    "sourceMap": true
+    // @types/jsdom@21 is failing.
+    "types": [
+      "express",
+      "jest",
+      "jsonwebtoken",
+      "node",
+      "p-defer",
+      "ws"
+    ]
   },
   "exclude": [
     "__tests__/**/*.js",
