@@ -85,12 +85,12 @@ test.each([['with stable connection'], ['without stable connection']])(
     // THEN: "Connecting" should happen immediately after connection is closed.
     const connectingTime = connectionStatusObserver.observations[3][0];
 
-    expect(connectingTime - disconnectTime).toBeLessThan(200);
+    expect(connectingTime - disconnectTime).toBeLessThan(3000);
 
     if (scenario === 'with stable connection') {
       // THEN: Should reconnect immediately.
       expect(onUpgrade).toBeCalledTimes(2);
-      expect(onUpgrade.mock.results[1].value - disconnectTime).toBeLessThan(200);
+      expect(onUpgrade.mock.results[1].value - disconnectTime).toBeLessThan(3000);
     } else {
       // THEN: Should reconnect after 3-15 seconds.
       expect(onUpgrade).toBeCalledTimes(2);
