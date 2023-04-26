@@ -300,7 +300,7 @@ export class DirectLineStreaming implements IBotConnection {
     })
   }
 
-  private async connectAsync(connectedCallback?: () => void) {
+  private async connectAsync() {
     const re = new RegExp('^http(s?)');
     if (!re.test(this.domain)) throw ("Domain must begin with http or https");
     const params = {token: this.token};
@@ -333,7 +333,6 @@ export class DirectLineStreaming implements IBotConnection {
         await this.waitUntilOnline();
         this.theStreamHandler.flush();
         this.queueActivities = false;
-        connectedCallback?.();
       } catch(e) {
         reject(e);
       }
@@ -348,7 +347,6 @@ export class DirectLineStreaming implements IBotConnection {
       // - retries exhausted (FailedToConnect), then, someone call reconnect()
       await (this.connectDeferred = createDeferred()).promise;
 
-      let connected = false;
       let numRetries = MAX_RETRY_COUNT;
 
       this.connectionStatus$.next(ConnectionStatus.Connecting);
@@ -360,9 +358,7 @@ export class DirectLineStreaming implements IBotConnection {
 
         try {
           // This promise will reject/resolve when disconnected.
-          await this.connectAsync(() => {
-            connected = true;
-          });
+          await this.connectAsync();
         } catch (err) {}
 
         // If someone call end() to break the connection, we will never listen to any reconnect().
@@ -372,10 +368,8 @@ export class DirectLineStreaming implements IBotConnection {
 
         // Make sure we don't signal ConnectionStatus.Connecting twice or more without an actual connection.
         // Subsequent retries should be transparent.
-        if (connected) {
+        if (this.connectionStatus$.getValue() !== ConnectionStatus.Connecting) {
           this.connectionStatus$.next(ConnectionStatus.Connecting);
-
-          connected = false;
         }
 
         // If the current connection lasted for more than a minute, the previous connection is good, which means:
