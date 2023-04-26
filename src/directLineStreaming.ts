@@ -387,6 +387,8 @@ export class DirectLineStreaming implements IBotConnection {
       // Failed to reconnect after multiple retries.
       this.connectionStatus$.next(ConnectionStatus.FailedToConnect);
     }
+
+    throw (new Error(`Failed to connect after ${MAX_RETRY_COUNT} attempts`));
   }
 
   // Returns the delay duration in milliseconds
