@@ -14,7 +14,7 @@ stateDiagram-v2
    Uninitialized --> Connecting: Subscribe to activity$
    Connecting --> Online: Connected
    Online --> Connecting: Disconnected and will retry
-   Online --> FailedToConnect: Disconnected and retries exhausted
+   Online --> FailedToConnect: Disconnected while retries exhausted
    Online --> Ended: Call end()
    Connecting --> FailedToConnect: Retry failed and retries exhausted
    FailedToConnect --> Ended: Call end()
@@ -27,9 +27,9 @@ stateDiagram-v2
 
 This is the initial state of the chat adapter.
 
-From:
+### From states
 
-- Start: when the chat adapter object is created
+- Start terminator: when the chat adapter object is created
    - Call to `new DirectLine()`
 
 ## Connecting
@@ -42,7 +42,7 @@ When retrying to connect, it should first transit to this state, before performi
 
 The chat adapter will not transit from `Connecting` to `Connecting` when retrying multiple times. It is done transparently and cannot be observed.
 
-From:
+### From states
 
 - `Uninitialized`: when subscribing to `activity$`
    - Call to `directLine.activity$.subscribe()`
@@ -59,7 +59,7 @@ A connection will be marked as "stable" after it has been in this state for more
 - No backoff at `Connecting` state at the first attempt
 - Retry counter is reset
 
-From:
+### From states
 
 - `Connecting`: when connection established
 
@@ -67,7 +67,7 @@ From:
 
 When all retry attempts are exhausted.
 
-From:
+### From states
 
 - `Connecting`: retrying connection and failed to connect after all retry attempts are exhuasted
 - `Online`: when disconnected and all retry attempts are exhausted
@@ -82,14 +82,30 @@ The connection status observable (a.k.a. `connectionStatus$`) will be completed 
 
 After transitioned to this state, all resources should be released.
 
-From:
+### From states
 
 - `Uninitialized`: call `end()` before subscribing to `activity$`
 - `Connecting`: call `end()` while it is attempting to connect
 - `Online`: call `end()` while it is connected
 - `FailedToConnect`: call `end()` after all retry attempts are exhausted
 
-# Sending an activity
+# Scenarios/behaviors
+
+## Establishing connection
+
+To establish the connection, subscribe to the activity observable (a.k.a. `activity$`).
+
+Subscribing to the connection status observable (a.k.a. `connectionStatus$`) will *not* establish the connection.
+
+## Subscribing to activities
+
+To subscribe to incoming activities, call `activity$.subscribe()`. The `activity$` is an observable.
+
+Unlike ES Observable, the `activity$` is *shared* amongst subscribers. The first subscriber will kick off connection and observe all activities. Subscribers which joined later will only observe activities from the time they are subscribed.
+
+Similarly, `connectionStatus$` is also a *shared* observable.
+
+## Sending an activity
 
 To send an activity to the bot, call `postActivity()`. This would put the activity on the bot queue and returns an observable.
 
@@ -100,7 +116,7 @@ There will be two acknowledgements for the activity:
 
 Due to distributed nature of the system, these acknowledgements may come in random order.
 
-## The activity is on the bot queue
+### The activity is on the bot queue
 
 The observable returned by the `postActivity()` call will tell if the activity is successfully queued or not.
 
@@ -110,13 +126,13 @@ The observable returned by the `postActivity()` call will tell if the activity i
 - When the queue operation failed:
    - The observable will be errored out
 
-## The bot finished processing the activity
+### The bot finished processing the activity
 
 The activity will be echoed back via the activity observable (a.k.a. `activity$`). It may come with more details about the activity, such as activity ID, channel ID, conversation ID, timestamp, etc.
 
 Before the bot finished processing of the activity, it may send responses. In other words, bot response could arrive sooner than the read receipt. The `replyToId` in the activity should be used to determine which activity the bot is responding to.
 
-# Retrying connections
+## Retrying connections
 
 Connection should be automatically retried. A backoff should be applied if the network environment is unstable.
 
@@ -128,11 +144,11 @@ Depends on the service, a stable connection could means:
 - a certain number of activities are exchanged;
 - a certain size of packets are exchanged.
 
-## Optional: improve retry experience
+### Optional: improve retry experience
 
 If the connection was stable and is disconnected, it should retry the connection without backoff in its first attempt. This can be done through retry counter or exponential backoff.
 
-# Reconnecting
+## Reconnecting
 
 When all retry attempts are exhausted, the chat adapter will "hibernate". Calling `reconnect()` will wake up and revive the chat adapter and reset the retry counter.
 
@@ -142,6 +158,6 @@ Calling `reconnect()` while the chat adapter is active, should do nothing.
 
 Thus, if the chat adapter is not ended, `reconnect()` is safe to call immediately after app switching or visibility change, regardless of the connection status.
 
-# Ending the chat adapter
+## Ending the chat adapter
 
 When `end()` is called, all resources held by the chat adapter must be released. Further `postActivity()` or `reconnect()` should fail.
