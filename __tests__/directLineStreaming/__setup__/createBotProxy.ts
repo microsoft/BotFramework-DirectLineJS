@@ -169,7 +169,7 @@ export default function createBotProxy(init?: CreateBotProxyInit): Promise<Creat
             server.close();
 
             // `closeAllConnections` is introduced in Node.js 18.2.0.
-            server?.closeAllConnections();
+            server.closeAllConnections?.();
 
             // Calling close() and closeAllConnections() will not close all Web Socket connections.
             closeAllWebSocketConnections();
