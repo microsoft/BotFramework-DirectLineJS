@@ -1,0 +1,55 @@
+# To-dos
+
+Due to resources constraints, while we are working on PR #404 to improve the code quality, there are scenarios we missed.
+
+- [ ] TEST: Connect with an invalid token
+   - WHEN: Create chat adapter with an invalid token
+      - THEN: Should observe `Connecting` -> `FailedToConnect`
+   - WHEN: Call `reconnect()` with a valid token
+      - THEN: Should observe `Online`
+   - WHEN: Call `postActivity()`
+      - THEN: Should send message
+      - THEN: Should receive bot reply
+- [ ] TEST: Connect with a non-existing conversation ID
+   - WHEN: Create chat adapter with a non-existing conversation ID
+      - THEN: Should observe `Connecting` -> `FailedToConnect`
+   - WHEN: Call `reconnect()` with a valid conversation ID
+      - THEN: Should observe `Online`
+   - WHEN: Call `postActivity()`
+      - THEN: Should send message
+      - THEN: Should receive bot reply
+- [ ] TEST: Renew token should work
+- [ ] TEST: Call `end()` after `FailedToConnect`
+   - WHEN: Call `connect()` without a server running
+      - THEN: Should connect 3 times
+      - THEN: Should observe `FailedToConnect`
+   - WHEN: Call `end()`
+      - THEN: `activity$` should observe completion
+      - THEN: `connectionStatus$` Should observe `Ended` -> completion
+   - WHEN: Call `reconnect()`
+      - THEN: Should throw
+- [ ] TEST: `FailedToConnect` should be observed immediately after 3 unstable connections
+   - WHEN: Call connect()
+      - THEN: Should observe `Online`
+   - WHEN: Kill the socket immediately
+      - THEN: Should observe `Connecting`
+         - The observation should be immediate (< 3 seconds)
+      - THEN: Should reconnect after 3-15 seconds
+   - WHEN: Allow it to retry-connect successfully
+      - THEN: Should observe `Online`
+   - WHEN: Kill the socket immediately again
+      - THEN: Should observe `Connecting`
+         - The observation should be immediate (< 3 seconds)
+      - THEN: Should reconnect after 3-15 seconds
+   - WHEN: Kill the socket immediately one more time
+      - THEN: Should observe `FailedToConnect`
+         - The observation should be immediate (< 3 seconds)
+   - WHEN: Call reconnect()
+      - THEN: Should reconnect immediately
+      - THEN: Should observe `Online`
+- [ ] Make sure all state transitions are tested (see `API.md`)
+   - In the state diagram in `API.md`, make sure all edges (arrows) has their own tests
+   - Certain scenarios are time-sensitive, the time to the call must be verified
+      - For example, when transitioning from `Online` to `Connecting` for the first time, the Web Socket connection must be established within first 3 seconds
+         - If the connection is being established after 3 seconds, it means a backoff is done
+         - Backoff is undesirable for the first retry attempt
