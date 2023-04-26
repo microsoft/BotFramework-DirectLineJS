@@ -82,22 +82,16 @@ test.each([['with stable connection'], ['without stable connection']])(
       { timeout: 5000 }
     );
 
+    // THEN: "Connecting" should happen immediately after connection is closed.
+    const connectingTime = connectionStatusObserver.observations[3][0];
+
+    expect(connectingTime - disconnectTime).toBeLessThan(200);
+
     if (scenario === 'with stable connection') {
-      // THEN: "Connecting" should happen immediately after connection is closed.
-      const connectingTime = connectionStatusObserver.observations[3][0];
-
-      expect(connectingTime - disconnectTime).toBeLessThan(200);
-
       // THEN: Should reconnect immediately.
       expect(onUpgrade).toBeCalledTimes(2);
       expect(onUpgrade.mock.results[1].value - disconnectTime).toBeLessThan(200);
     } else {
-      // THEN: "Connecting" should happen between 3-15 seconds.
-      const connectingTime = connectionStatusObserver.observations[3][0];
-
-      expect(connectingTime - disconnectTime).toBeGreaterThanOrEqual(3000);
-      expect(connectingTime - disconnectTime).toBeLessThanOrEqual(15000);
-
       // THEN: Should reconnect after 3-15 seconds.
       expect(onUpgrade).toBeCalledTimes(2);
       expect(onUpgrade.mock.results[1].value - disconnectTime).toBeGreaterThanOrEqual(3000);
@@ -106,7 +100,7 @@ test.each([['with stable connection'], ['without stable connection']])(
 
     // ---
 
-    // WHEN: Send a message to the bot.
+    // WHEN: Send a message to the bot after reconnected.
     const postActivityObserver = mockObserver();
 
     directLine

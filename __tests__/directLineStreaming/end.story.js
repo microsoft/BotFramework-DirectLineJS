@@ -58,7 +58,9 @@ test('should connect', async () => {
     ])
   );
 
-  // THEN: Should fail all postActivity() calls.
+  // ---
+
+  // WHEN: Send a message after disconnection.
   const postActivityObserver = mockObserver();
 
   directLine
@@ -68,6 +70,7 @@ test('should connect', async () => {
     })
     .subscribe(postActivityObserver);
 
+  // THEN: Should fail all postActivity() calls.
   await waitFor(() =>
     expect(postActivityObserver).toHaveProperty('observations', [[expect.any(Number), 'error', expect.any(Error)]])
   );
@@ -79,4 +82,12 @@ test('should connect', async () => {
       [expect.any(Number), 'complete']
     ])
   );
+
+  // THEN: Call reconnect() should throw.
+  expect(() =>
+    directLine.reconnect({
+      conversationId: directLine.conversationId,
+      token: directLine.token
+    })
+  ).toThrow('Connection has ended.');
 });

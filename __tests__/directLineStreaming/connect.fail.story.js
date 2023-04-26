@@ -17,6 +17,7 @@ test('connect fail should signal properly', async () => {
   const onUpgrade = jest.fn();
 
   onUpgrade.mockImplementation((_req, socket) => {
+    // Kill the socket when it tries to connect.
     socket.end();
 
     return Date.now();
@@ -45,8 +46,7 @@ test('connect fail should signal properly', async () => {
   await waitFor(() => expect(onUpgrade).toBeCalledTimes(3));
 
   // THEN: Should not wait before connecting the first time.
-  //       This is because the connection has been established for more than 1 minute and is considered stable.
-  expect(onUpgrade.mock.results[0].value - connectTime).toBeLessThanOrEqual(3000);
+  expect(onUpgrade.mock.results[0].value - connectTime).toBeLessThan(3000);
 
   // THEN: Should wait for 3-15 seconds before connecting the second time.
   expect(onUpgrade.mock.results[1].value - onUpgrade.mock.results[0].value).toBeGreaterThanOrEqual(3000);
@@ -56,12 +56,48 @@ test('connect fail should signal properly', async () => {
   expect(onUpgrade.mock.results[2].value - onUpgrade.mock.results[1].value).toBeGreaterThanOrEqual(3000);
   expect(onUpgrade.mock.results[2].value - onUpgrade.mock.results[1].value).toBeLessThanOrEqual(15000);
 
-  // THEN: Should observe "Uninitialized" -> "Connecting" -> "FailedToConnect" -> Complete.
+  // THEN: Should observe "Uninitialized" -> "Connecting" -> "FailedToConnect".
   await waitFor(() =>
     expect(connectionStatusObserver).toHaveProperty('observations', [
       [expect.any(Number), 'next', ConnectionStatus.Uninitialized],
       [expect.any(Number), 'next', ConnectionStatus.Connecting],
-      [expect.any(Number), 'next', ConnectionStatus.FailedToConnect][(expect.any(Number), 'complete')]
+      [expect.any(Number), 'next', ConnectionStatus.FailedToConnect]
+    ])
+  );
+
+  // ---
+
+  // WHEN: Call reconnect().
+  const reconnectTime = Date.now();
+
+  directLine.reconnect({
+    conversationId: directLine.conversationId,
+    token: directLine.token
+  });
+
+  // THEN: Should try to reconnect 3 times again.
+  await waitFor(() => expect(onUpgrade).toBeCalledTimes(6));
+
+  // THEN: Should not wait before reconnecting.
+  //       This is because calling reconnect() should not by delayed.
+  expect(onUpgrade.mock.results[3].value - reconnectTime).toBeLessThan(3000);
+
+  // THEN: Should wait for 3-15 seconds before reconnecting the second time.
+  expect(onUpgrade.mock.results[4].value - onUpgrade.mock.results[3].value).toBeGreaterThanOrEqual(3000);
+  expect(onUpgrade.mock.results[4].value - onUpgrade.mock.results[3].value).toBeLessThanOrEqual(15000);
+
+  // THEN: Should wait for 3-15 seconds before reconnecting the third time.
+  expect(onUpgrade.mock.results[5].value - onUpgrade.mock.results[4].value).toBeGreaterThanOrEqual(3000);
+  expect(onUpgrade.mock.results[5].value - onUpgrade.mock.results[4].value).toBeLessThanOrEqual(15000);
+
+  // THEN: Should observe "Uninitialized" -> "Connecting" -> "FailedToConnect" -> "Connecting" -> "FailedToConnect".
+  await waitFor(() =>
+    expect(connectionStatusObserver).toHaveProperty('observations', [
+      [expect.any(Number), 'next', ConnectionStatus.Uninitialized],
+      [expect.any(Number), 'next', ConnectionStatus.Connecting],
+      [expect.any(Number), 'next', ConnectionStatus.FailedToConnect],
+      [expect.any(Number), 'next', ConnectionStatus.Connecting],
+      [expect.any(Number), 'next', ConnectionStatus.FailedToConnect]
     ])
   );
 });

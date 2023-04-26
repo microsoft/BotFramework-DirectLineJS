@@ -56,9 +56,9 @@ test('should send activity', async () => {
   // ---
 
   // GIVEN: Kill connection on next Web Socket message.
-
+  //        This mimic TCP behavior that disconnection may not be detected until next send.
   onWebSocketSendMessage.mockClear();
-  onWebSocketSendMessage.mockImplementation((_data, socket) => socket.close());
+  onWebSocketSendMessage.mockImplementationOnce((_data, socket) => socket.close());
 
   // WHEN: Send a message to the bot.
   const postActivityObserver = mockObserver();
@@ -78,13 +78,14 @@ test('should send activity', async () => {
     expect(postActivityObserver).toHaveProperty('observations', [[expect.any(Number), 'error', expect.any(Error)]])
   );
 
-  // THEN: Should observe "Connecting" because the chat adapter should reconnect.
+  // THEN: Should observe "Connecting" -> "Online" because the chat adapter should reconnect.
   await waitFor(() =>
     expect(connectionStatusObserver).toHaveProperty('observations', [
       [expect.any(Number), 'next', ConnectionStatus.Uninitialized],
       [expect.any(Number), 'next', ConnectionStatus.Connecting],
       [expect.any(Number), 'next', ConnectionStatus.Online],
-      [expect.any(Number), 'next', ConnectionStatus.Connecting]
+      [expect.any(Number), 'next', ConnectionStatus.Connecting],
+      [expect.any(Number), 'next', ConnectionStatus.Online],
     ])
   );
 }, 15000);

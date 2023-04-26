@@ -17,6 +17,9 @@
     "declaration": true,
     "declarationDir": "lib",
     "emitDeclarationOnly": true,
+
+    // Failing with @types/jsdom@21.
+    "skipLibCheck": true,
     "sourceMap": true
   },
   "exclude": [
