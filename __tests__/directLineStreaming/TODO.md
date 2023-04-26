@@ -49,7 +49,10 @@ Due to resources constraints, while we are working on PR #404 to improve the cod
       - THEN: Should observe `Online`
 - [ ] Make sure all state transitions are tested (see `API.md`)
    - In the state diagram in `API.md`, make sure all edges (arrows) has their own tests
-   - Certain scenarios are time-sensitive, the time to the call must be verified
+   - Certain scenarios are time-sensitive, the time to the call must be asserted
       - For example, when transitioning from `Online` to `Connecting` for the first time, the Web Socket connection must be established within first 3 seconds
          - If the connection is being established after 3 seconds, it means a backoff is done
          - Backoff is undesirable for the first retry attempt
+   - Class functions works differently when in different state, make sure they are properly tested
+      - For example, when the state is `Ended`, call to `reconnect()` will throw immediately
+      - When the state is `Connecting`, call to `postActivity()` should fail
