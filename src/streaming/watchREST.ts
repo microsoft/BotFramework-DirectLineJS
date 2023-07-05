@@ -44,6 +44,8 @@ export default function watchREST(url: string | URL, { pingInterval, signal }: W
   const abortController = new AbortController();
 
   (async () => {
+    let warnedReturnTooSoon = false;
+
     try {
       // Rectifying `pingInterval`.
       if (typeof pingInterval === 'number') {
@@ -57,33 +59,33 @@ export default function watchREST(url: string | URL, { pingInterval, signal }: W
         signal = undefined;
       }
 
+      // Instead of listening to signal.addEventListener('abort'), we will just let fetch() handle all aborts.
       while (!signal?.aborted) {
         const pingAt = Date.now();
-
-        console.log(`WATCHDOG ${Date.now()}: Connecting to ${url}.`, signal);
-
         const res = await fetch(url, { signal });
 
         if (!res.ok) {
-          console.log(`WATCHDOG ${Date.now()}: Failed to ping.`);
-
           throw new Error('Failed to ping REST endpoint.');
         }
 
-        console.log(`WATCHDOG ${Date.now()}: Connected.`);
-
         await res.arrayBuffer();
 
-        console.log(`WATCHDOG ${Date.now()}: Got response.`, pingAt + pingInterval - Date.now());
-
         // TODO: Warns if the API returns sooner than `pingInterval`.
+        const timeToSleep = pingAt + pingInterval - Date.now();
 
-        await sleep(pingAt + pingInterval - Date.now(), { signal });
+        if (timeToSleep > 0) {
+          warnedReturnTooSoon ||
+            console.warn(
+              `botframework-directlinejs: REST API should not return sooner than the predefined \`pingInterval\` of ${pingInterval} ms.`
+            );
+
+          warnedReturnTooSoon = true;
+        }
+
+        await sleep(timeToSleep, { signal });
       }
-
-      console.log(`WATCHDOG ${Date.now()}: Aborted.`);
     } catch (error) {
-      console.log(`WATCHDOG ${Date.now()}: Exception caught.`, error.message);
+      // If any error occurred, probably it is about connection issues.
     } finally {
       abortController.abort();
     }

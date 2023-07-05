@@ -80,12 +80,15 @@ beforeEach(async () => {
   [serverURL, server, teardownServer] = await setup();
 
   abortController = new AbortController();
+
+  jest.spyOn(console, 'warn').mockImplementation(() => {});
 });
 
 afterEach(() => {
   teardownServer();
 
   jest.useRealTimers();
+  console.warn['mockRestore']?.();
 
   return new Promise<void>(resolve => {
     signal.addEventListener('abort', () => resolve());
@@ -118,6 +121,7 @@ describe('with default options', () => {
       test('should have called API twice', () => waitFor(() => expect(pollFn).toBeCalledTimes(2)));
       test('should have first API response', () =>
         expect(hasResolved(pollReturnDeferred[0].promise)).resolves.toBe(true));
+      test('should not warn', () => expect(console.warn).not.toBeCalled());
 
       describe('after 30 seconds again', () => {
         beforeEach(async () => {
@@ -129,6 +133,7 @@ describe('with default options', () => {
         test('should have called API three times', () => waitFor(() => expect(pollFn).toBeCalledTimes(3)));
         test('should have second API response', () =>
           expect(hasResolved(pollReturnDeferred[1].promise)).resolves.toBe(true));
+        test('should not warn', () => expect(console.warn).not.toBeCalled());
       });
     });
 
@@ -142,7 +147,8 @@ describe('with default options', () => {
       beforeEach(() => abortController.abort());
 
       test('should signal', () => expect(signal.aborted).toBe(true));
-      test('server should get the "close" event', () => expect(() => pollReturnDeferred[0].promise).rejects.toThrow('Socket closed.'));
+      test('server should get the "close" event', () =>
+        expect(() => pollReturnDeferred[0].promise).rejects.toThrow('Socket closed.'));
     });
   });
 });
@@ -168,6 +174,13 @@ describe('with pingInterval=45_000', () => {
       test('should have called API once', () => expect(pollFn).toBeCalledTimes(1));
       test('should have first API response', () =>
         expect(hasResolved(pollReturnDeferred[0].promise)).resolves.toBe(true));
+      test('should warn once', () =>
+        waitFor(() =>
+          expect(console.warn).toHaveBeenNthCalledWith(
+            1,
+            expect.stringContaining('REST API should not return sooner than the predefined `pingInterval` of 45000 ms.')
+          )
+        ));
 
       describe('after 30 seconds', () => {
         beforeEach(() => jest.advanceTimersByTime(30_000));
@@ -210,6 +223,7 @@ describe('with pingInterval=15_000', () => {
           expect(hasResolved(pollReturnDeferred[0].promise)).resolves.toBe(true));
         test('should not have second API response', () =>
           expect(hasResolved(pollReturnDeferred[1].promise)).resolves.toBe(false));
+        test('should not warn', () => expect(console.warn).not.toBeCalled());
       });
     });
   });
