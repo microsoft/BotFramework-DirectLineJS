@@ -115,6 +115,16 @@ describe('Direct Line Streaming chat adapter with watchdog on REST API', () => {
         test('should reconnect watchdog', () =>
           waitFor(() => expect(botProxy.numOverTheLifetimeWatchdogConnection).toBe(2), { timeout: 5_000 }));
       });
+
+      describe('when connection is closed', () => {
+        beforeEach(() => directLine.end());
+
+        test('should close the REST connection', () =>
+          waitFor(() => {
+            expect(botProxy.numOverTheLifetimeWatchdogConnection).toBe(1);
+            expect(botProxy.numWatchdogConnection).toBe(0);
+          }));
+      });
     });
   });
 });
