@@ -29,9 +29,14 @@ type CreateBotProxyInit = {
 
 type CreateBotProxyReturnValue = {
   cleanUp: () => void;
+  closeAllWatchdogConnections: () => void;
   closeAllWebSocketConnections: () => void;
   directLineStreamingURL: string;
   directLineURL: string;
+  watchdogURL: string;
+
+  get numWatchdogConnection(): number;
+  get numOverTheLifetimeWatchdogConnection(): number;
 };
 
 const matchDirectLineStreamingProtocol = match('/.bot/', { decode: decodeURIComponent, end: false });
@@ -48,6 +53,8 @@ export default function createBotProxy(init?: CreateBotProxyInit): Promise<Creat
     try {
       const activeSockets: Socket[] = [];
       const app = express();
+      const closeAllWatchdogConnections: (() => void)[] = [];
+      let numOverTheLifetimeWatchdogConnection = 0;
 
       streamingBotURL &&
         app.use('/.bot/', createProxyMiddleware({ changeOrigin: true, logLevel: 'silent', target: streamingBotURL }));
@@ -94,6 +101,30 @@ export default function createBotProxy(init?: CreateBotProxyInit): Promise<Creat
           target: 'https://directline.botframework.com/'
         })
       );
+
+      app.get('/test/watchdog', (req, res) => {
+        const destroyResponse = () => {
+          res.destroy();
+        };
+
+        closeAllWatchdogConnections.push(destroyResponse);
+        numOverTheLifetimeWatchdogConnection++;
+
+        req.once('error', destroyResponse);
+        res.once('close', () => removeInline(closeAllWatchdogConnections, destroyResponse));
+
+        res.chunkedEncoding = true;
+        res.statusCode = 200;
+
+        res.setHeader('cache-control', 'no-cache');
+        res.setHeader('content-type', 'text/plain');
+        res.write(' ');
+
+        setTimeout(() => {
+          req.off('error', destroyResponse);
+          res.end();
+        }, 30_000);
+      });
 
       const webSocketProxy = new WebSocketServer({ noServer: true });
 
@@ -143,6 +174,7 @@ export default function createBotProxy(init?: CreateBotProxyInit): Promise<Creat
               webSocketProxy.emit('connection', ws, proxySocket, req)
             )
           );
+          proxySocket.addEventListener('error', () => {});
 
           socket.once('close', () => proxySocket.close());
         })
@@ -174,9 +206,22 @@ export default function createBotProxy(init?: CreateBotProxyInit): Promise<Creat
             // Calling close() and closeAllConnections() will not close all Web Socket connections.
             closeAllWebSocketConnections();
           },
+          closeAllWatchdogConnections: () => {
+            closeAllWatchdogConnections.forEach(close => close());
+            closeAllWatchdogConnections.splice(0);
+          },
           closeAllWebSocketConnections,
           directLineStreamingURL: new URL('/.bot/v3/directline', url).href,
-          directLineURL: new URL('/v3/directline', url).href
+          directLineURL: new URL('/v3/directline', url).href,
+          watchdogURL: new URL('/test/watchdog', url).href,
+
+          get numWatchdogConnection(): number {
+            return closeAllWatchdogConnections.length;
+          },
+
+          get numOverTheLifetimeWatchdogConnection(): number {
+            return numOverTheLifetimeWatchdogConnection;
+          }
         });
       });
     } catch (error) {

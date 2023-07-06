@@ -31,6 +31,7 @@ export default class WebSocketClientWithWatchdog extends WebSocketClient {
   // TODO: Better, the `watchdog` should be passed to `BrowserWebSocketClient` -> `BrowserWebSocket`.
   //       `BrowserWebSocket` is where it creates `WebSocket` object.
   //       The `watchdog` object should accompany `WebSocket` and forcibly close it on abort.
+  //       Maybe `botframework-streaming` should accept ponyfills.
   connect(): Promise<void> {
     if (this.#connectCalled) {
       console.warn('botframework-directlinejs: connect() can only be called once.');

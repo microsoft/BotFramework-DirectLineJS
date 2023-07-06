@@ -141,32 +141,27 @@ export class DirectLineStreaming implements IBotConnection {
 
   private _botAgent = '';
 
-  #watchdog:
-    | ((init: { signal: AbortSignal }) => AbortSignal)
-    | {
-        pingInterval?: number;
-        url: string | URL;
-      }
-    | undefined;
+  #watchdog: ((init: { signal: AbortSignal }) => AbortSignal) | undefined;
 
   constructor(options: DirectLineStreamingOptions) {
-    // Verifies options.watchdog.
+    // Rectifies options.watchdog.
     const watchdog = options?.watchdog;
 
-    if (
-      !(
-        typeof watchdog === 'undefined' ||
-        typeof watchdog === 'function' ||
-        ((typeof watchdog.pingInterval === 'number' || typeof watchdog.pingInterval === 'undefined') &&
-          (typeof watchdog.url === 'string' || watchdog.url instanceof URL))
-      )
+    if (typeof watchdog === 'function') {
+      this.#watchdog = watchdog;
+    } else if (typeof watchdog === 'undefined') {
+      // Intentionally left blank.
+    } else if (
+      (typeof watchdog.pingInterval === 'number' || typeof watchdog.pingInterval === 'undefined') &&
+      (typeof watchdog.url === 'string' || watchdog.url instanceof URL)
     ) {
+      this.#watchdog = ({ signal }: { signal: AbortSignal }) =>
+        watchREST(watchdog.url, { pingInterval: watchdog.pingInterval, signal });
+    } else {
       throw new Error(
         'botframework-directlinejs: "watchdog" option must be either a function returning an AbortSignal, an object, or undefined.'
       );
     }
-
-    this.#watchdog = options?.watchdog;
 
     this.token = options.token;
 
@@ -196,8 +191,6 @@ export class DirectLineStreaming implements IBotConnection {
   }
 
   public reconnect({ conversationId, token }: Conversation) {
-    console.log('DLASE: reconnect', conversationId);
-
     if (this.connectionStatus$.getValue() === ConnectionStatus.Ended) {
       throw new Error('Connection has ended.');
     }
@@ -393,14 +386,7 @@ export class DirectLineStreaming implements IBotConnection {
     return new Promise(async (resolve, reject) => {
       try {
         const watchdog: AbortSignal | undefined =
-          typeof this.#watchdog === 'function'
-            ? this.#watchdog({ signal: abortController.signal })
-            : typeof this.#watchdog === 'undefined'
-            ? undefined
-            : watchREST(this.#watchdog.url, {
-                pingInterval: this.#watchdog.pingInterval,
-                signal: abortController.signal
-              });
+          typeof this.#watchdog === 'function' ? this.#watchdog({ signal: abortController.signal }) : undefined;
 
         this.streamConnection = new WebSocketClientWithWatchdog({
           disconnectionHandler: resolve,
@@ -471,20 +457,14 @@ export class DirectLineStreaming implements IBotConnection {
         const start = Date.now();
 
         try {
-          console.log('DLASE: connectAsync', numRetries);
-
           // This promise will reject/resolve when disconnected.
           await this.connectAsync();
         } catch (err) {
           console.error(err);
         }
 
-        console.log('DLASE: connection broken');
-
         // If someone call end() to break the connection, we will never listen to any reconnect().
         if (this.connectionStatus$.getValue() === ConnectionStatus.Ended) {
-          console.log('DLASE: ended');
-
           // This is the only place the loop in this function will be broke.
           return;
         }
@@ -499,16 +479,13 @@ export class DirectLineStreaming implements IBotConnection {
         // - we should reset the retry counter, and;
         // - we should reconnect immediately.
         if (60000 < Date.now() - start) {
-          console.log('DLASE: good connection, reset retry and no delay');
           numRetries = MAX_RETRY_COUNT;
         } else if (numRetries > 0) {
           // Sleep only if we are doing retry. Otherwise, we are going to break the loop and signal FailedToConnect.
-          console.log('DLASE: poor connection, delay');
           await new Promise(r => setTimeout(r, this.getRetryDelay()));
         }
       }
 
-      console.log('DLASE: failed to connect');
       // TODO: [TEST] Make sure FailedToConnect is reported immediately after last disconnection, should be no getRetryDelay().
       // Failed to reconnect after multiple retries.
       this.connectionStatus$.next(ConnectionStatus.FailedToConnect);
