@@ -24,9 +24,9 @@ type WatchNetworkInformationInit = {
 };
 
 /**
- * Watches the connection a device is using to communicate with the network.
+ * Watches the connection a device is using to communicate with the network via [Network Information API](https://developer.mozilla.org/en-US/docs/Web/API/Network_Information_API).
  *
- * When the connection change, watchdog will fail.
+ * When the connection change, watchdog will treat it as a fault.
  */
 export default function watchNetworkInformation({ signal }: WatchNetworkInformationInit): AbortSignal {
   const abortController = new AbortController();
@@ -42,7 +42,7 @@ export default function watchNetworkInformation({ signal }: WatchNetworkInformat
       abortController.abort();
     });
   } else {
-    console.warn('botframework-directlinejs: NetworkInformation API is not supported in the current environment.');
+    console.warn('botframework-directlinejs: Network Information API is not supported in the current environment, liveness probe will not report fault.');
   }
 
   return abortController.signal;

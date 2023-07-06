@@ -8,6 +8,7 @@ import * as BFSE from 'botframework-streaming';
 import createDeferred from './createDeferred';
 import fetch from 'cross-fetch';
 
+import watchNetworkInformation from './streaming/watchNetworkInformation';
 import watchREST from './streaming/watchREST';
 import WebSocketClientWithWatchdog from './streaming/WebSocketClientWithWatchdog';
 
@@ -36,12 +37,13 @@ interface DirectLineStreamingOptions {
    * The probe is intended to assist `WebSocket`. Some implementations of `WebSocket` did not emit `error` event timely in case of connection issues.
    * This probe will help declaring connection outages sooner. For example, on iOS/iPadOS 15 and up, the newer "NSURLSession WebSocket" did not signal error on network change.
    *
-   * There are 2 ways to set the probe: `object` or `function`.
+   * There are 3 ways to set the probe: `object` (REST API watchdog), `function`, or `"network information"` (via [Network Information API](https://developer.mozilla.org/en-US/docs/Web/API/Network_Information_API)).
    *
-   * When the probe is an object:
+   * When the probe is an object, it will watch the liveness of a long-polling REST API:
    *
    * - `url` is the URL of a REST long-polling API. The REST API must keep the connection for a period of time and returns HTTP 2xx when it end.
    *   [RFC6202](https://www.rfc-editor.org/rfc/rfc6202) recommends the connection should be kept for 30 seconds.
+   *    - If non-2XX status code is received, it will be treated as a fault.
    * - `pingInterval` is the time between pings in milliseconds, minimum is 10 seconds, default to 25 seconds.
    *   It must be shorter than the time the API would keep the connection.
    *
@@ -52,13 +54,20 @@ interface DirectLineStreamingOptions {
    * - The function should create a new probe on every call and probe should not be reused.
    * - When a probe is no longer needed, the `AbortSignal` passed to the function will signal release of underlying resources.
    * - At any point of time, there should be no more than 1 probe active. The chat adapter is expected to signal the release of probe before requesting for a new one.
+   *
+   * When the probe is `"network information"`:
+   *
+   * - It will use [Network Information API](https://developer.mozilla.org/en-US/docs/Web/API/Network_Information_API).
+   *    - If the environment does not support Network Information API, it will be treated as if no probe is defined.
+   * - When `change` event is received, the watchdog will treat it as a fault.
    */
   watchdog?:
     | ((init: { signal: AbortSignal }) => AbortSignal)
     | {
         pingInterval?: number;
         url: string | URL;
-      };
+      }
+    | 'network information';
 }
 
 class StreamHandler implements BFSE.RequestHandler {
@@ -149,6 +158,8 @@ export class DirectLineStreaming implements IBotConnection {
 
     if (typeof watchdog === 'function') {
       this.#watchdog = watchdog;
+    } else if (watchdog === 'network information') {
+      this.#watchdog = watchNetworkInformation;
     } else if (typeof watchdog === 'undefined') {
       // Intentionally left blank.
     } else if (
