@@ -16,8 +16,8 @@ const TOKEN_URL = 'https://webchat-mockbot3.azurewebsites.net/api/token/directli
 
 jest.setTimeout(10_000);
 
-// GIVEN: A Direct Line Streaming chat adapter with watchdog on Network Information API.
-describe('Direct Line Streaming chat adapter with watchdog on Network Information API', () => {
+// GIVEN: A Direct Line Streaming chat adapter with network probe on REST API.
+describe('Direct Line Streaming chat adapter with network probe on REST API', () => {
   let activityObserver: MockObserver<any>;
   let botProxy: ResultOfPromise<ReturnType<typeof setupBotProxy>>;
   let connectionStatusObserver: MockObserver<ConnectionStatus>;
@@ -25,14 +25,6 @@ describe('Direct Line Streaming chat adapter with watchdog on Network Informatio
 
   beforeEach(async () => {
     jest.useFakeTimers({ now: 0 });
-
-    const networkInformation = new EventTarget();
-
-    (global as any).navigator = {
-      get connection() {
-        return networkInformation;
-      }
-    };
 
     let token: string;
 
@@ -45,8 +37,8 @@ describe('Direct Line Streaming chat adapter with watchdog on Network Informatio
     connectionStatusObserver = mockObserver();
     directLine = new DirectLineStreaming({
       domain: botProxy.directLineStreamingURL,
-      token,
-      watchdog: navigator.connection
+      networkProbe: { url: botProxy.networkProbeURL },
+      token
     });
 
     directLine.connectionStatus$.subscribe(connectionStatusObserver);
@@ -74,16 +66,20 @@ describe('Direct Line Streaming chat adapter with watchdog on Network Informatio
         { timeout: 5_000 }
       ));
 
-    // WHEN: Connection status become "Online".
-    describe('after online', () => {
+    // WHEN: Connection status become "Online" and the network probe is connected.
+    describe('after online and the network probe is connected', () => {
       beforeEach(() =>
         waitFor(
-          () =>
+          () => {
             expect(connectionStatusObserver.observe).toHaveBeenLastCalledWith([
               expect.any(Number),
               'next',
               ConnectionStatus.Online
-            ]),
+            ]);
+
+            expect(botProxy.numNetworkProbingConnection).toBe(1);
+            expect(botProxy.numOverTheLifetimeNetworkProbingConnection).toBe(1);
+          },
           { timeout: 5_000 }
         )
       );
@@ -98,9 +94,9 @@ describe('Direct Line Streaming chat adapter with watchdog on Network Informatio
           { timeout: 5_000 }
         ));
 
-      // WHEN: "change" event is received.
-      describe('when "change" event is received', () => {
-        beforeEach(() => navigator.connection.dispatchEvent(new Event('change')));
+      // WHEN: The network probing connection is forcibly closed.
+      describe('when the network probing connection is forcibly closed', () => {
+        beforeEach(() => botProxy.closeAllNetworkProbingConnections());
 
         // THEN: Should observe "Connecting" -> "Online" again.
         test('should observe ... -> "Connecting" -> "Online"', () =>
@@ -115,6 +111,19 @@ describe('Direct Line Streaming chat adapter with watchdog on Network Informatio
               ]),
             { timeout: 5_000 }
           ));
+
+        test('should reconnect the network probe', () =>
+          waitFor(() => expect(botProxy.numOverTheLifetimeNetworkProbingConnection).toBe(2), { timeout: 5_000 }));
+      });
+
+      describe('when the chat adapter is closed', () => {
+        beforeEach(() => directLine.end());
+
+        test('should close the network probing connection', () =>
+          waitFor(() => {
+            expect(botProxy.numOverTheLifetimeNetworkProbingConnection).toBe(1);
+            expect(botProxy.numNetworkProbingConnection).toBe(0);
+          }));
       });
     });
   });

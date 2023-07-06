@@ -19,18 +19,18 @@ declare global {
   }
 }
 
-type WatchNetworkInformationInit = {
+type ProbeNetworkInformationInit = {
   signal: AbortSignal;
 };
 
 /**
- * Watches the connection a device is using to communicate with the network via [Network Information API](https://developer.mozilla.org/en-US/docs/Web/API/Network_Information_API).
+ * Probes the connection a device is using to communicate with the network via [Network Information API](https://developer.mozilla.org/en-US/docs/Web/API/Network_Information_API).
  *
- * When the connection change, watchdog will treat it as a fault.
+ * When the connection change, the probe will treat it as a fault.
  */
-export default function watchNetworkInformation(
+export default function probeNetworkInformation(
   connection: NetworkInformation,
-  { signal }: WatchNetworkInformationInit
+  { signal }: ProbeNetworkInformationInit
 ): AbortSignal {
   const abortController = new AbortController();
   const handleNetworkInformationChange = () => abortController.abort();

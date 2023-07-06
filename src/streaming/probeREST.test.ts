@@ -3,8 +3,8 @@ import express from 'express';
 import hasResolved from 'has-resolved';
 
 import createDeferred from '../createDeferred';
+import probeREST from './probeREST';
 import waitFor from './__setup__/waitFor';
-import watchREST from './watchREST';
 
 import type { Deferred } from '../createDeferred';
 import type { IncomingMessage, Server, ServerResponse } from 'http';
@@ -101,7 +101,7 @@ afterEach(() => {
 
 describe('with default options', () => {
   beforeEach(() => {
-    signal = watchREST(serverURL, { signal: abortController.signal });
+    signal = probeREST(serverURL, { signal: abortController.signal });
   });
 
   describe('after first poll received', () => {
@@ -155,7 +155,7 @@ describe('with default options', () => {
 
 describe('with minimumInterval=45_000', () => {
   beforeEach(() => {
-    signal = watchREST(serverURL, {
+    signal = probeREST(serverURL, {
       minimumInterval: 45_000,
       signal: abortController.signal
     });
@@ -195,7 +195,7 @@ describe('with minimumInterval=45_000', () => {
 
 describe('with minimumInterval=15_000', () => {
   beforeEach(() => {
-    signal = watchREST(serverURL, {
+    signal = probeREST(serverURL, {
       minimumInterval: 15_000,
       signal: abortController.signal
     });

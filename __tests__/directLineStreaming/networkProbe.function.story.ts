@@ -16,8 +16,8 @@ const TOKEN_URL = 'https://webchat-mockbot3.azurewebsites.net/api/token/directli
 
 jest.setTimeout(10_000);
 
-// GIVEN: A Direct Line Streaming chat adapter with watchdog on REST API.
-describe('Direct Line Streaming chat adapter with watchdog on REST API', () => {
+// GIVEN: A Direct Line Streaming chat adapter with network probe on REST API.
+describe('Direct Line Streaming chat adapter with network probe on REST API', () => {
   let activityObserver: MockObserver<any>;
   let botProxy: ResultOfPromise<ReturnType<typeof setupBotProxy>>;
   let connectionStatusObserver: MockObserver<ConnectionStatus>;
@@ -46,8 +46,8 @@ describe('Direct Line Streaming chat adapter with watchdog on REST API', () => {
     connectionStatusObserver = mockObserver();
     directLine = new DirectLineStreaming({
       domain: botProxy.directLineStreamingURL,
-      token,
-      watchdog: ({ signal }) => createAbortController({ signal }).signal
+      networkProbe: ({ signal }) => createAbortController({ signal }).signal,
+      token
     });
 
     directLine.connectionStatus$.subscribe(connectionStatusObserver);
@@ -75,8 +75,8 @@ describe('Direct Line Streaming chat adapter with watchdog on REST API', () => {
         { timeout: 5_000 }
       ));
 
-    // WHEN: Connection status become "Online" and watchdog is created.
-    describe('after online and watchdog is connected', () => {
+    // WHEN: Connection status become "Online" and network probe is created.
+    describe('after online and network probe is connected', () => {
       beforeEach(() =>
         waitFor(
           () => {
@@ -102,8 +102,8 @@ describe('Direct Line Streaming chat adapter with watchdog on REST API', () => {
           { timeout: 5_000 }
         ));
 
-      // WHEN: Watchdog connection is closed.
-      describe('when watchdog detected a fault', () => {
+      // WHEN: Network probing connection is closed.
+      describe('when the probing connection detected a fault', () => {
         beforeEach(() => {
           const {
             mock: {
@@ -130,14 +130,14 @@ describe('Direct Line Streaming chat adapter with watchdog on REST API', () => {
             { timeout: 5_000 }
           ));
 
-        test('should recreate watchdog', () =>
+        test('should recreate network probe', () =>
           waitFor(() => expect(createAbortController).toBeCalledTimes(2), { timeout: 5_000 }));
       });
 
       describe('when connection is closed', () => {
         beforeEach(() => directLine.end());
 
-        test('should abort the watchdog', () => {
+        test('should abort the network probe', () => {
           expect(createAbortController).toHaveBeenCalledTimes(1);
           expect(createAbortController.mock.calls[0][0]).toHaveProperty('signal.aborted', true);
         });

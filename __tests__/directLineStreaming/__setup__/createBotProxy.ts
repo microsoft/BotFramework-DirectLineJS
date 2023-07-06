@@ -29,14 +29,14 @@ type CreateBotProxyInit = {
 
 type CreateBotProxyReturnValue = {
   cleanUp: () => void;
-  closeAllWatchdogConnections: () => void;
+  closeAllNetworkProbingConnections: () => void;
   closeAllWebSocketConnections: () => void;
   directLineStreamingURL: string;
   directLineURL: string;
-  watchdogURL: string;
+  networkProbeURL: string;
 
-  get numWatchdogConnection(): number;
-  get numOverTheLifetimeWatchdogConnection(): number;
+  get numNetworkProbingConnection(): number;
+  get numOverTheLifetimeNetworkProbingConnection(): number;
 };
 
 const matchDirectLineStreamingProtocol = match('/.bot/', { decode: decodeURIComponent, end: false });
@@ -53,8 +53,8 @@ export default function createBotProxy(init?: CreateBotProxyInit): Promise<Creat
     try {
       const activeSockets: Socket[] = [];
       const app = express();
-      const closeAllWatchdogConnections: (() => void)[] = [];
-      let numOverTheLifetimeWatchdogConnection = 0;
+      const closeAllNetworkProbingConnections: (() => void)[] = [];
+      let numOverTheLifetimeNetworkProbingConnection = 0;
 
       streamingBotURL &&
         app.use('/.bot/', createProxyMiddleware({ changeOrigin: true, logLevel: 'silent', target: streamingBotURL }));
@@ -102,16 +102,16 @@ export default function createBotProxy(init?: CreateBotProxyInit): Promise<Creat
         })
       );
 
-      app.get('/test/watchdog', (req, res) => {
+      app.get('/test/network-probe', (req, res) => {
         const destroyResponse = () => {
           res.destroy();
         };
 
-        closeAllWatchdogConnections.push(destroyResponse);
-        numOverTheLifetimeWatchdogConnection++;
+        closeAllNetworkProbingConnections.push(destroyResponse);
+        numOverTheLifetimeNetworkProbingConnection++;
 
         req.once('error', destroyResponse);
-        res.once('close', () => removeInline(closeAllWatchdogConnections, destroyResponse));
+        res.once('close', () => removeInline(closeAllNetworkProbingConnections, destroyResponse));
 
         res.chunkedEncoding = true;
         res.statusCode = 200;
@@ -206,21 +206,21 @@ export default function createBotProxy(init?: CreateBotProxyInit): Promise<Creat
             // Calling close() and closeAllConnections() will not close all Web Socket connections.
             closeAllWebSocketConnections();
           },
-          closeAllWatchdogConnections: () => {
-            closeAllWatchdogConnections.forEach(close => close());
-            closeAllWatchdogConnections.splice(0);
+          closeAllNetworkProbingConnections: () => {
+            closeAllNetworkProbingConnections.forEach(close => close());
+            closeAllNetworkProbingConnections.splice(0);
           },
           closeAllWebSocketConnections,
           directLineStreamingURL: new URL('/.bot/v3/directline', url).href,
           directLineURL: new URL('/v3/directline', url).href,
-          watchdogURL: new URL('/test/watchdog', url).href,
+          networkProbeURL: new URL('/test/network-probe', url).href,
 
-          get numWatchdogConnection(): number {
-            return closeAllWatchdogConnections.length;
+          get numNetworkProbingConnection(): number {
+            return closeAllNetworkProbingConnections.length;
           },
 
-          get numOverTheLifetimeWatchdogConnection(): number {
-            return numOverTheLifetimeWatchdogConnection;
+          get numOverTheLifetimeNetworkProbingConnection(): number {
+            return numOverTheLifetimeNetworkProbingConnection;
           }
         });
       });

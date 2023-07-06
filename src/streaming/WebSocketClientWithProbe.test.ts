@@ -1,5 +1,5 @@
 import type { WebSocketClient } from 'botframework-streaming';
-import type ActualWebSocketClientWithWatchdog from './WebSocketClientWithWatchdog';
+import type ActualWebSocketClientWithProbe from './WebSocketClientWithProbe';
 
 // Mocked modules are available across the test file. They cannot be unmocked.
 // Thus, they are more-or-less similar to import/require.
@@ -59,20 +59,20 @@ const requestHandler: WebSocketClientInit['requestHandler'] = { processRequest: 
 const url: string = 'wss://dummy/';
 
 let client: WebSocketClient;
-let watchdog: AbortController;
+let probe: AbortController;
 
 beforeEach(() => {
-  watchdog = new AbortController();
+  probe = new AbortController();
 
-  let WebSocketClientWithWatchdog: typeof ActualWebSocketClientWithWatchdog;
+  let WebSocketClientWithProbe: typeof ActualWebSocketClientWithProbe;
 
-  WebSocketClientWithWatchdog = require('./WebSocketClientWithWatchdog').default;
+  WebSocketClientWithProbe = require('./WebSocketClientWithProbe').default;
 
-  client = new WebSocketClientWithWatchdog({
+  client = new WebSocketClientWithProbe({
     disconnectionHandler,
+    probe: probe.signal,
     requestHandler,
-    url,
-    watchdog: watchdog.signal
+    url
   });
 
   // Spy on all `console.warn()`.
@@ -105,8 +105,8 @@ describe('connect()', () => {
       test('should call super.connect() once', () => expect(client['__test__connect']).toBeCalledTimes(1));
     });
 
-    describe('then abort watchdog', () => {
-      beforeEach(() => watchdog.abort());
+    describe('then abort the probe', () => {
+      beforeEach(() => probe.abort());
 
       test('should call disconnect()', () => expect(client['__test__disconnect']).toBeCalledTimes(1));
 
@@ -125,14 +125,14 @@ describe('connect()', () => {
   });
 });
 
-describe('watchdog is aborted then call connect()', () => {
+describe('probe is aborted then call connect()', () => {
   beforeEach(() => {
-    watchdog.abort();
+    probe.abort();
     client.connect();
   });
 
   test('should warn once', () => expect(console.warn).toBeCalledTimes(1));
-  test('should warn "watchdog is aborted before connect()"', () =>
-    expect(console.warn).toHaveBeenNthCalledWith(1, expect.stringContaining('watchdog is aborted before connect()')));
+  test('should warn "probe is aborted before connect()"', () =>
+    expect(console.warn).toHaveBeenNthCalledWith(1, expect.stringContaining('probe is aborted before connect()')));
   test('should not call super.connect()', () => expect(client['__test__connect']).toBeCalledTimes(0));
 });

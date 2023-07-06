@@ -36,13 +36,13 @@ That said, the public API is still subject to change.
 
 On iOS/iPadOS, when network change from Wi-Fi to cellular (and vice versa), the `WebSocket` object will be stalled without any errors. This is not detectable nor workaroundable without any additional assistance. The issue is related to an experimental feature named "NSURLSession WebSocket". The feature is enabled by default on iOS/iPadOS 15 and up.
 
-Web developers can use an option named `watchdog` to assist the library to detect any connection issues.
+Web developers can use an option named `networkProbe` to assist the library to detect any connection issues.
 
-One effective method to detect connection issues is establishing a long-polling HTTP GET call to any service. The service would respond with HTTP 2xx and stream 1 byte of data using [chunked transfer encoding](https://en.wikipedia.org/wiki/Chunked_transfer_encoding). After the first chunk, the streaming connection should be kept on-hold for 30 seconds. Then, the service will send a final chunk and end the call gracefully. If network change did happen during the call, the streaming conection will be aborted prematurely and the watchdog will send a fault signal to the library.
+One effective method to detect connection issues is establishing a long-polling HTTP GET call to any service. The service would respond with HTTP 2xx and stream 1 byte of data using [chunked transfer encoding](https://en.wikipedia.org/wiki/Chunked_transfer_encoding). After the first chunk, the streaming connection should be kept on-hold for 30 seconds. Then, the service will send a final chunk and end the call gracefully. If network change did happen during the call, the streaming conection will be aborted prematurely and the probe will send a fault signal to the library.
 
-If the library is being used in a native iOS/iPadOS app, a less resource-intensive solution would be partially implementing the [Network Information API](https://developer.mozilla.org/en-US/docs/Web/API/Network_Information_API) using [`NWPathMonitor`](https://developer.apple.com/documentation/network/nwpathmonitor). When network change happens, the `NetworkInformation` instance should dispatch a [`change` event](https://developer.mozilla.org/en-US/docs/Web/API/NetworkInformation/change_event). Upon receiving the event, the watchdog will send a fault signal to the library.
+If the library is being used in a native iOS/iPadOS app, a less resource-intensive solution would be partially implementing the [Network Information API](https://developer.mozilla.org/en-US/docs/Web/API/Network_Information_API) using [`NWPathMonitor`](https://developer.apple.com/documentation/network/nwpathmonitor). When network change happens, the `NetworkInformation` instance should dispatch a [`change` event](https://developer.mozilla.org/en-US/docs/Web/API/NetworkInformation/change_event). Upon receiving the event, the probe will send a fault signal to the library.
 
-Lastly, web developers can also implement custom connection detection mechanism using [`AbortSignal`](https://developer.mozilla.org/en-US/docs/Web/API/AbortSignal). When connection issues is detected, the `AbortSignal` will be aborted and the watchdog will signal a fault.
+Lastly, web developers can also implement custom connection detection mechanism using [`AbortSignal`](https://developer.mozilla.org/en-US/docs/Web/API/AbortSignal). When connection issues is detected, the `AbortSignal` will be aborted and the probe will signal a fault.
 
 ## How to build from source
 

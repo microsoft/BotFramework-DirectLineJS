@@ -19,18 +19,18 @@ export default async function setupBotProxy(
   botProxies.push(botProxy);
 
   return {
-    closeAllWatchdogConnections: botProxy.closeAllWatchdogConnections,
+    closeAllNetworkProbingConnections: botProxy.closeAllNetworkProbingConnections,
     closeAllWebSocketConnections: botProxy.closeAllWebSocketConnections,
     directLineURL: botProxy.directLineURL,
     directLineStreamingURL: botProxy.directLineStreamingURL,
-    watchdogURL: botProxy.watchdogURL,
+    networkProbeURL: botProxy.networkProbeURL,
 
-    get numWatchdogConnection() {
-      return botProxy.numWatchdogConnection;
+    get numNetworkProbingConnection() {
+      return botProxy.numNetworkProbingConnection;
     },
 
-    get numOverTheLifetimeWatchdogConnection() {
-      return botProxy.numOverTheLifetimeWatchdogConnection;
+    get numOverTheLifetimeNetworkProbingConnection() {
+      return botProxy.numOverTheLifetimeNetworkProbingConnection;
     }
   };
 }

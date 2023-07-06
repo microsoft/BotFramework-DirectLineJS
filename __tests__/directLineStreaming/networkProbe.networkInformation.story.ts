@@ -16,8 +16,8 @@ const TOKEN_URL = 'https://webchat-mockbot3.azurewebsites.net/api/token/directli
 
 jest.setTimeout(10_000);
 
-// GIVEN: A Direct Line Streaming chat adapter with watchdog on REST API.
-describe('Direct Line Streaming chat adapter with watchdog on REST API', () => {
+// GIVEN: A Direct Line Streaming chat adapter with network probe on Network Information API.
+describe('Direct Line Streaming chat adapter with network probe on Network Information API', () => {
   let activityObserver: MockObserver<any>;
   let botProxy: ResultOfPromise<ReturnType<typeof setupBotProxy>>;
   let connectionStatusObserver: MockObserver<ConnectionStatus>;
@@ -25,6 +25,14 @@ describe('Direct Line Streaming chat adapter with watchdog on REST API', () => {
 
   beforeEach(async () => {
     jest.useFakeTimers({ now: 0 });
+
+    const networkInformation = new EventTarget();
+
+    (global as any).navigator = {
+      get connection() {
+        return networkInformation;
+      }
+    };
 
     let token: string;
 
@@ -37,8 +45,8 @@ describe('Direct Line Streaming chat adapter with watchdog on REST API', () => {
     connectionStatusObserver = mockObserver();
     directLine = new DirectLineStreaming({
       domain: botProxy.directLineStreamingURL,
-      token,
-      watchdog: { url: botProxy.watchdogURL }
+      networkProbe: navigator.connection,
+      token
     });
 
     directLine.connectionStatus$.subscribe(connectionStatusObserver);
@@ -66,20 +74,16 @@ describe('Direct Line Streaming chat adapter with watchdog on REST API', () => {
         { timeout: 5_000 }
       ));
 
-    // WHEN: Connection status become "Online" and watchdog is connected.
-    describe('after online and watchdog is connected', () => {
+    // WHEN: Connection status become "Online".
+    describe('after online', () => {
       beforeEach(() =>
         waitFor(
-          () => {
+          () =>
             expect(connectionStatusObserver.observe).toHaveBeenLastCalledWith([
               expect.any(Number),
               'next',
               ConnectionStatus.Online
-            ]);
-
-            expect(botProxy.numWatchdogConnection).toBe(1);
-            expect(botProxy.numOverTheLifetimeWatchdogConnection).toBe(1);
-          },
+            ]),
           { timeout: 5_000 }
         )
       );
@@ -94,9 +98,9 @@ describe('Direct Line Streaming chat adapter with watchdog on REST API', () => {
           { timeout: 5_000 }
         ));
 
-      // WHEN: Watchdog connection is closed.
-      describe('when watchdog failed', () => {
-        beforeEach(() => botProxy.closeAllWatchdogConnections());
+      // WHEN: "change" event is received.
+      describe('when "change" event is received', () => {
+        beforeEach(() => navigator.connection.dispatchEvent(new Event('change')));
 
         // THEN: Should observe "Connecting" -> "Online" again.
         test('should observe ... -> "Connecting" -> "Online"', () =>
@@ -111,19 +115,6 @@ describe('Direct Line Streaming chat adapter with watchdog on REST API', () => {
               ]),
             { timeout: 5_000 }
           ));
-
-        test('should reconnect watchdog', () =>
-          waitFor(() => expect(botProxy.numOverTheLifetimeWatchdogConnection).toBe(2), { timeout: 5_000 }));
-      });
-
-      describe('when connection is closed', () => {
-        beforeEach(() => directLine.end());
-
-        test('should close the REST connection', () =>
-          waitFor(() => {
-            expect(botProxy.numOverTheLifetimeWatchdogConnection).toBe(1);
-            expect(botProxy.numWatchdogConnection).toBe(0);
-          }));
       });
     });
   });

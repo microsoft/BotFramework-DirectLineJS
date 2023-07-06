@@ -18,7 +18,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
-- Direct Line Streaming: Added `watchdog` option to assist detection of connection issues, by [@compulim](https://github.com/compulim), in PR [#XXX](https://github.com/microsoft/BotFramework-DirectLineJS/pull/XXX)
+- Direct Line Streaming: Added `networkProbe` option to assist detection of connection issues, by [@compulim](https://github.com/compulim), in PR [#XXX](https://github.com/microsoft/BotFramework-DirectLineJS/pull/XXX)
 
 ## [0.15.4] - 2023-06-05
 

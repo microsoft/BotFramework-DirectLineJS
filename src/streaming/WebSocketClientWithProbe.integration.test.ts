@@ -1,5 +1,5 @@
 import type { WebSocketClient } from 'botframework-streaming';
-import type OriginalWebSocketClientWithWatchdog from './WebSocketClientWithWatchdog';
+import type OriginalWebSocketClientWithProbe from './WebSocketClientWithProbe';
 
 // Mocked modules are available across the test file. They cannot be unmocked.
 // Thus, they are more-or-less similar to import/require.
@@ -20,20 +20,20 @@ const requestHandler: WebSocketClientInit['requestHandler'] = { processRequest: 
 const url: string = 'wss://dummy/';
 
 let client: WebSocketClient;
-let watchdog: AbortController;
+let probe: AbortController;
 
 beforeEach(() => {
-  watchdog = new AbortController();
+  probe = new AbortController();
 
-  let WebSocketClientWithWatchdog: typeof OriginalWebSocketClientWithWatchdog;
+  let WebSocketClientWithProbe: typeof OriginalWebSocketClientWithProbe;
 
-  WebSocketClientWithWatchdog = require('./WebSocketClientWithWatchdog').default;
+  WebSocketClientWithProbe = require('./WebSocketClientWithProbe').default;
 
-  client = new WebSocketClientWithWatchdog({
+  client = new WebSocketClientWithProbe({
     disconnectionHandler,
+    probe: probe.signal,
     requestHandler,
-    url,
-    watchdog: watchdog.signal
+    url
   });
 
   // Spy on all `console.warn()`.
@@ -53,16 +53,16 @@ describe('call connect()', () => {
     // Both sender/receiver will call `onConnectionDisconnected`, so it is calling it twice.
     test('should call disconnectHandler() twice', () => expect(disconnectionHandler).toBeCalledTimes(2));
 
-    describe('followed by aborting watchdog', () => {
-      beforeEach(() => watchdog.abort());
+    describe('followed by aborting the probe', () => {
+      beforeEach(() => probe.abort());
 
       // After disconnected() is called, there should be no extra calls for aborting the signal.
       test('should have no extra calls to disconnectHandler()', () => expect(disconnectionHandler).toBeCalledTimes(2));
     });
   });
 
-  describe('abort watchdog', () => {
-    beforeEach(() => watchdog.abort());
+  describe('abort the probe', () => {
+    beforeEach(() => probe.abort());
 
     // Both sender/receiver will call `onConnectionDisconnected`, so it is calling it twice.
     test('should call disconnectHandler() twice', () => expect(disconnectionHandler).toBeCalledTimes(2));
