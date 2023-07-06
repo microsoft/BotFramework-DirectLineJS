@@ -6,23 +6,23 @@
 
 [![Build Status](https://travis-ci.org/Microsoft/BotFramework-DirectLineJS.svg?branch=master)](https://travis-ci.org/Microsoft/BotFramework-DirectLineJS)
 
-Client library for the [Microsoft Bot Framework](http://www.botframework.com) *[Direct Line](https://docs.botframework.com/en-us/restapi/directline3/)* protocol.
+Client library for the [Microsoft Bot Framework](http://www.botframework.com) _[Direct Line](https://docs.botframework.com/en-us/restapi/directline3/)_ protocol.
 
 Used by [WebChat](https://github.com/Microsoft/BotFramework-WebChat) and thus (by extension) [Emulator](https://github.com/Microsoft/BotFramework-Emulator), WebChat channel, and [Azure Bot Service](https://azure.microsoft.com/en-us/services/bot-service/).
 
 ## FAQ
 
-### *Who is this for?*
+### _Who is this for?_
 
 Anyone who is building a Bot Framework JavaScript client who does not want to use [WebChat](https://github.com/Microsoft/BotFramework-WebChat).
 
 If you're currently using WebChat, you don't need to make any changes as it includes this package.
 
-### *What is that funny `subscribe()` method in the samples below?*
+### _What is that funny `subscribe()` method in the samples below?_
 
 Instead of callbacks or Promises, this library handles async operations using Observables. Try it, you'll like it! For more information, check out [RxJS](https://github.com/reactivex/rxjs/).
 
-### *Can I use [TypeScript](http://www.typescriptlang.com)?*
+### _Can I use [TypeScript](http://www.typescriptlang.com)?_
 
 You bet.
 
@@ -31,6 +31,18 @@ You bet.
 This is an official Microsoft-supported library, and is considered largely complete. Future changes (aside from supporting future updates to the Direct Line protocol) will likely be limited to bug fixes, performance improvements, tutorials, and samples. The big missing piece here is unit tests.
 
 That said, the public API is still subject to change.
+
+### Why the library did not detect Web Socket disconnections?
+
+On iOS/iPadOS, when network change from Wi-Fi to cellular (and vice versa), the `WebSocket` object will be stalled without any errors. This is not detectable nor workaroundable without any additional assistance. The issue is related to an experimental feature named "NSURLSession WebSocket". The feature is enabled by default on iOS/iPadOS 15 and up.
+
+Web developers can use an option named `watchdog` to assist the library to detect any connection issues.
+
+One effective method to detect connection issues is establishing a long-polling HTTP GET call to any service. The service would respond with HTTP 2xx and stream 1 byte of data using [chunked transfer encoding](https://en.wikipedia.org/wiki/Chunked_transfer_encoding). After the first chunk, the streaming connection should be kept on-hold for 30 seconds. Then, the service will send a final chunk and end the call gracefully. If network change did happen during the call, the streaming conection will be aborted prematurely and the watchdog will send a fault signal to the library.
+
+If the library is being used in a native iOS/iPadOS app, a less resource-intensive solution would be partially implementing the [Network Information API](https://developer.mozilla.org/en-US/docs/Web/API/Network_Information_API) using [`NWPathMonitor`](https://developer.apple.com/documentation/network/nwpathmonitor). When network change happens, the `NetworkInformation` instance should dispatch a [`change` event](https://developer.mozilla.org/en-US/docs/Web/API/NetworkInformation/change_event). Upon receiving the event, the watchdog will send a fault signal to the library.
+
+Lastly, web developers can also implement custom connection detection mechanism using [`AbortSignal`](https://developer.mozilla.org/en-US/docs/Web/API/AbortSignal). When connection issues is detected, the `AbortSignal` will be aborted and the watchdog will signal a fault.
 
 ## How to build from source
 
@@ -88,14 +100,16 @@ var directLine = new DirectLine({
 ### Post activities to the bot:
 
 ```typescript
-directLine.postActivity({
+directLine
+  .postActivity({
     from: { id: 'myUserId', name: 'myUserName' }, // required (from.name is optional)
     type: 'message',
     text: 'a message for you, Rudy'
-}).subscribe(
-    id => console.log("Posted activity, assigned ID ", id),
-    error => console.log("Error posting activity", error)
-);
+  })
+  .subscribe(
+    id => console.log('Posted activity, assigned ID ', id),
+    error => console.log('Error posting activity', error)
+  );
 ```
 
 You can also post messages with attachments, and non-message activities such as events, by supplying the appropriate fields in the activity.
@@ -103,30 +117,23 @@ You can also post messages with attachments, and non-message activities such as 
 ### Listen to activities sent from the bot:
 
 ```typescript
-directLine.activity$
-.subscribe(
-    activity => console.log("received activity ", activity)
-);
+directLine.activity$.subscribe(activity => console.log('received activity ', activity));
 ```
 
 You can use RxJS operators on incoming activities. To see only message activities:
 
 ```typescript
 directLine.activity$
-.filter(activity => activity.type === 'message')
-.subscribe(
-    message => console.log("received message ", message)
-);
+  .filter(activity => activity.type === 'message')
+  .subscribe(message => console.log('received message ', message));
 ```
 
 Direct Line will helpfully send your client a copy of every sent activity, so a common pattern is to filter incoming messages on `from`:
 
 ```typescript
 directLine.activity$
-.filter(activity => activity.type === 'message' && activity.from.id === 'yourBotHandle')
-.subscribe(
-    message => console.log("received message ", message)
-);
+  .filter(activity => activity.type === 'message' && activity.from.id === 'yourBotHandle')
+  .subscribe(message => console.log('received message ', message));
 ```
 
 ### Monitor connection status
@@ -134,19 +141,17 @@ directLine.activity$
 Subscribing to either `postActivity` or `activity$` will start the process of connecting to the bot. Your app can listen to the connection status and react appropriately :
 
 ```typescript
-
 import { ConnectionStatus } from 'botframework-directlinejs';
 
-directLine.connectionStatus$
-.subscribe(connectionStatus => {
-    switch(connectionStatus) {
-        case ConnectionStatus.Uninitialized:    // the status when the DirectLine object is first created/constructed
-        case ConnectionStatus.Connecting:       // currently trying to connect to the conversation
-        case ConnectionStatus.Online:           // successfully connected to the converstaion. Connection is healthy so far as we know.
-        case ConnectionStatus.ExpiredToken:     // last operation errored out with an expired token. Your app should supply a new one.
-        case ConnectionStatus.FailedToConnect:  // the initial attempt to connect to the conversation failed. No recovery possible.
-        case ConnectionStatus.Ended:            // the bot ended the conversation
-    }
+directLine.connectionStatus$.subscribe(connectionStatus => {
+  switch (connectionStatus) {
+    case ConnectionStatus.Uninitialized: // the status when the DirectLine object is first created/constructed
+    case ConnectionStatus.Connecting: // currently trying to connect to the conversation
+    case ConnectionStatus.Online: // successfully connected to the converstaion. Connection is healthy so far as we know.
+    case ConnectionStatus.ExpiredToken: // last operation errored out with an expired token. Your app should supply a new one.
+    case ConnectionStatus.FailedToConnect: // the initial attempt to connect to the conversation failed. No recovery possible.
+    case ConnectionStatus.Ended: // the bot ended the conversation
+  }
 });
 ```
 
@@ -168,7 +173,8 @@ directLine.reconnect(conversation);
 When using DirectLine with WebChat, closing the current tab or refreshing the page will create a new conversation in most cases. You can resume an existing conversation to keep the user in the same context.
 
 **When using a secret** you can resume a conversation by:
-- Storing the conversationid (in a *permanent* place, like local storage)
+
+- Storing the conversationid (in a _permanent_ place, like local storage)
 - Giving this value back while creating the DirectLine object along with the secret
 
 ```typescript
@@ -181,7 +187,8 @@ const dl = new DirectLine({
 ```
 
 **When using a token** you can resume a conversation by:
-- Storing the conversationid and your token (in a *permanent* place, like local storage)
+
+- Storing the conversationid and your token (in a _permanent_ place, like local storage)
 - Calling the DirectLine reconnect API yourself to get a refreshed token and a streamurl
 - Creating the DirectLine object using the ConversationId, Token, and StreamUrl
 
@@ -196,7 +203,7 @@ const dl = new DirectLine({
 ```
 
 **Getting any history that Direct Line has cached** : you can retrieve history using watermarks:
-You can see the watermark as an *activity 'bookmark'*. The resuming scenario will replay all the conversation activities from the watermark you specify.
+You can see the watermark as an _activity 'bookmark'_. The resuming scenario will replay all the conversation activities from the watermark you specify.
 
 ```typescript
 import { DirectLine } from 'botframework-directlinejs';
@@ -212,7 +219,7 @@ const dl = new DirectLine({
 
 ## Contributing
 
-This project welcomes contributions and suggestions.  Most contributions require you to agree to a
+This project welcomes contributions and suggestions. Most contributions require you to agree to a
 Contributor License Agreement (CLA) declaring that you have the right to, and actually do, grant us
 the rights to use your contribution. For details, visit https://cla.microsoft.com.
 
@@ -228,6 +235,7 @@ For more information see the [Code of Conduct FAQ](https://opensource.microsoft.
 contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments.
 
 ## Reporting Security Issues
+
 Security issues and bugs should be reported privately, via email, to the Microsoft Security Response Center (MSRC) at [secure@microsoft.com](mailto:secure@microsoft.com). You should receive a response within 24 hours. If for some reason you do not, please follow up via email to ensure we received your original message. Further information, including the [MSRC PGP](https://technet.microsoft.com/en-us/security/dn606155) key, can be found in the [Security TechCenter](https://technet.microsoft.com/en-us/security/default).
 
 Copyright (c) Microsoft Corporation. All rights reserved.
