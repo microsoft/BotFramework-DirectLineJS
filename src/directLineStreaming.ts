@@ -30,26 +30,26 @@ interface DirectLineStreamingOptions {
   botAgent?: string;
 
   /**
-   * Sets the connection liveness probe.
+   * Sets the connection liveness probe for assisting detection of connection issues.
    *
    * When the probe detects any connection issues, the bot connection will be closed and treated as an error.
    *
-   * The probe is intended to assist `WebSocket`. Some implementations of `WebSocket` did not emit `error` event timely in case of connection issues.
+   * The probe is intended to assist `WebSocket`. Some implementations of `WebSocket` does not emit `error` event timely in case of connection issues.
    * This probe will help declaring connection outages sooner. For example, on iOS/iPadOS 15 and up, the newer "NSURLSession WebSocket" did not signal error on network change.
    *
-   * There are 3 ways to set the probe: `NetworkInformation` (via [Network Information API](https://developer.mozilla.org/en-US/docs/Web/API/Network_Information_API)), `object` (REST API watchdog), or `function`.
+   * There are 3 ways to set the probe: `NetworkInformation` instance (using [Network Information API](https://developer.mozilla.org/en-US/docs/Web/API/Network_Information_API)), `object` (REST API watchdog), or `function`.
    *
    * When the probe is an instance of `NetworkInformation`:
    *
    * - When `change` event is received on the instance, the watchdog will treat it as a fault.
    *
-   * When the probe is an object, it will watch the liveness of a long-polling REST API:
+   * When the probe is an object, it will watch the liveness of a long-polling service via HTTP GET:
    *
-   * - `url` is the URL of a REST long-polling API. The REST API must keep the connection for a period of time and returns HTTP 2xx when it end.
+   * - `url` is the URL of a HTTP GET long-polling service. The service must keep the connection for a period of time and returns HTTP 2xx when the time has passed.
    *   [RFC6202](https://www.rfc-editor.org/rfc/rfc6202) recommends the connection should be kept for 30 seconds.
-   *    - If a non-2XX status code is received, it will be treated as a fault.
-   * - `minimumInterval` is the time to wait between pings in milliseconds, minimum is 10 seconds, default to 25 seconds.
-   *   It should be shorter than the time the API would keep the connection.
+   *    - If a non-2xx status code is received, it will be treated as a fault.
+   * - `minimumInterval` is the time, in millisecond, to wait between pings. Minimum is 10 seconds, default to 25 seconds.
+   *   The interval should be shorter than the time the long-polling API would keep the connection.
    *
    * When the probe is a function:
    *
@@ -57,7 +57,7 @@ interface DirectLineStreamingOptions {
    * - The returned `AbortSignal` should be aborted as soon as the probe detects any connection issues.
    * - The function should create a new probe on every call and probe should not be reused.
    * - When a probe is no longer needed, the `AbortSignal` passed to the function will signal release of underlying resources.
-   * - At any point of time, there should be no more than 1 probe active. The chat adapter is expected to signal the release of probe before requesting for a new one.
+   * - At any point of time, there should be no more than 1 probe active. The chat adapter will signal the release of probe before requesting for a new one.
    */
   watchdog?:
     | NetworkInformation
