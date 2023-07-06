@@ -28,22 +28,19 @@ type WatchNetworkInformationInit = {
  *
  * When the connection change, watchdog will treat it as a fault.
  */
-export default function watchNetworkInformation({ signal }: WatchNetworkInformationInit): AbortSignal {
+export default function watchNetworkInformation(
+  connection: NetworkInformation,
+  { signal }: WatchNetworkInformationInit
+): AbortSignal {
   const abortController = new AbortController();
   const handleNetworkInformationChange = () => abortController.abort();
 
-  const connection = navigator?.connection;
+  connection.addEventListener('change', handleNetworkInformationChange, { once: true });
 
-  if (connection) {
-    connection.addEventListener('change', handleNetworkInformationChange, { once: true });
-
-    signal?.addEventListener('abort', () => {
-      connection.removeEventListener('change', handleNetworkInformationChange);
-      abortController.abort();
-    });
-  } else {
-    console.warn('botframework-directlinejs: Network Information API is not supported in the current environment, liveness probe will not report fault.');
-  }
+  signal?.addEventListener('abort', () => {
+    connection.removeEventListener('change', handleNetworkInformationChange);
+    abortController.abort();
+  });
 
   return abortController.signal;
 }

@@ -37,15 +37,19 @@ interface DirectLineStreamingOptions {
    * The probe is intended to assist `WebSocket`. Some implementations of `WebSocket` did not emit `error` event timely in case of connection issues.
    * This probe will help declaring connection outages sooner. For example, on iOS/iPadOS 15 and up, the newer "NSURLSession WebSocket" did not signal error on network change.
    *
-   * There are 3 ways to set the probe: `object` (REST API watchdog), `function`, or `"network information"` (via [Network Information API](https://developer.mozilla.org/en-US/docs/Web/API/Network_Information_API)).
+   * There are 3 ways to set the probe: `NetworkInformation` (via [Network Information API](https://developer.mozilla.org/en-US/docs/Web/API/Network_Information_API)), `object` (REST API watchdog), or `function`.
+   *
+   * When the probe is an instance of `NetworkInformation`:
+   *
+   * - When `change` event is received on the instance, the watchdog will treat it as a fault.
    *
    * When the probe is an object, it will watch the liveness of a long-polling REST API:
    *
    * - `url` is the URL of a REST long-polling API. The REST API must keep the connection for a period of time and returns HTTP 2xx when it end.
    *   [RFC6202](https://www.rfc-editor.org/rfc/rfc6202) recommends the connection should be kept for 30 seconds.
-   *    - If non-2XX status code is received, it will be treated as a fault.
-   * - `pingInterval` is the time between pings in milliseconds, minimum is 10 seconds, default to 25 seconds.
-   *   It must be shorter than the time the API would keep the connection.
+   *    - If a non-2XX status code is received, it will be treated as a fault.
+   * - `minimumInterval` is the time to wait between pings in milliseconds, minimum is 10 seconds, default to 25 seconds.
+   *   It should be shorter than the time the API would keep the connection.
    *
    * When the probe is a function:
    *
@@ -54,20 +58,14 @@ interface DirectLineStreamingOptions {
    * - The function should create a new probe on every call and probe should not be reused.
    * - When a probe is no longer needed, the `AbortSignal` passed to the function will signal release of underlying resources.
    * - At any point of time, there should be no more than 1 probe active. The chat adapter is expected to signal the release of probe before requesting for a new one.
-   *
-   * When the probe is `"network information"`:
-   *
-   * - It will use [Network Information API](https://developer.mozilla.org/en-US/docs/Web/API/Network_Information_API).
-   *    - If the environment does not support Network Information API, it will be treated as if no probe is defined.
-   * - When `change` event is received, the watchdog will treat it as a fault.
    */
   watchdog?:
-    | ((init: { signal: AbortSignal }) => AbortSignal)
+    | NetworkInformation
     | {
-        pingInterval?: number;
+        minimumInterval?: number;
         url: string | URL;
       }
-    | 'network information';
+    | ((init: { signal: AbortSignal }) => AbortSignal);
 }
 
 class StreamHandler implements BFSE.RequestHandler {
@@ -158,16 +156,21 @@ export class DirectLineStreaming implements IBotConnection {
 
     if (typeof watchdog === 'function') {
       this.#watchdog = watchdog;
-    } else if (watchdog === 'network information') {
-      this.#watchdog = watchNetworkInformation;
     } else if (typeof watchdog === 'undefined') {
       // Intentionally left blank.
     } else if (
-      (typeof watchdog.pingInterval === 'number' || typeof watchdog.pingInterval === 'undefined') &&
+      watchdog instanceof EventTarget ||
+      // We also accept `EventTargetLike`.
+      (typeof watchdog['addEventListener'] === 'function' && typeof watchdog['removeEventListener'] === 'function')
+    ) {
+      this.#watchdog = ({ signal }: { signal: AbortSignal }) =>
+        watchNetworkInformation(watchdog as NetworkInformation, { signal });
+    } else if (
+      (typeof watchdog.minimumInterval === 'number' || typeof watchdog.minimumInterval === 'undefined') &&
       (typeof watchdog.url === 'string' || watchdog.url instanceof URL)
     ) {
       this.#watchdog = ({ signal }: { signal: AbortSignal }) =>
-        watchREST(watchdog.url, { pingInterval: watchdog.pingInterval, signal });
+        watchREST(watchdog.url, { minimumInterval: watchdog.minimumInterval, signal });
     } else {
       throw new Error(
         'botframework-directlinejs: "watchdog" option must be either a function returning an AbortSignal, an object, or undefined.'

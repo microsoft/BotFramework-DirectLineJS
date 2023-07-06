@@ -153,10 +153,10 @@ describe('with default options', () => {
   });
 });
 
-describe('with pingInterval=45_000', () => {
+describe('with minimumInterval=45_000', () => {
   beforeEach(() => {
     signal = watchREST(serverURL, {
-      pingInterval: 45_000,
+      minimumInterval: 45_000,
       signal: abortController.signal
     });
   });
@@ -178,7 +178,7 @@ describe('with pingInterval=45_000', () => {
         waitFor(() =>
           expect(console.warn).toHaveBeenNthCalledWith(
             1,
-            expect.stringContaining('REST API should not return sooner than the predefined `pingInterval` of 45000 ms.')
+            expect.stringContaining('REST API should not return sooner than the predefined `minimumInterval` of 45000 ms.')
           )
         ));
 
@@ -193,10 +193,10 @@ describe('with pingInterval=45_000', () => {
   });
 });
 
-describe('with pingInterval=15_000', () => {
+describe('with minimumInterval=15_000', () => {
   beforeEach(() => {
     signal = watchREST(serverURL, {
-      pingInterval: 15_000,
+      minimumInterval: 15_000,
       signal: abortController.signal
     });
   });

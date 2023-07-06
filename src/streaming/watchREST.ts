@@ -2,26 +2,29 @@ import sleep from './sleep';
 
 // The watchdog service should respond HTTP 2xx not sooner than 30 seconds.
 // To prevent DoS the watchdog service, we should not send ping the watchdog service sooner than 25 seconds.
-let DEFAULT_PING_INTERVAL = 25_000;
-let MINIMUM_PING_INTERVAL = 10_000;
+let DEFAULT_MINIMUM_INTERVAL = 25_000;
+let MINIMUM_MINIMUM_INTERVAL = 10_000;
 
 type WatchRESTInit = {
   /**
-   * Time between pings in milliseconds, minimum is 10 seconds, default to 25 seconds.
+   * Minimum time between pings in milliseconds, minimum is 10 seconds, default to 25 seconds.
    *
    * The watching REST API endpoint should keep the polling call open for at least 30 seconds, then respond with HTTP 2xx.
    *
-   * If the service return HTTP 2xx sooner than this value (25 seconds), we will wait until the time has passed before
-   * sending the ping again. In the meantime, the watchdog will not able to detect any connection issues.
+   * If the service respond with HTTP 2xx sooner than this interval, the next call will be delayed until the interval has passed.
+   * In the meantime, the watchdog will not be able to detect any connection faults.
    *
-   * If the service return HTTP 2xx later than this value, we will wait until the service return HTTP 2xx.
+   * If the service respond with HTTP 2xx on or later than this interval, the next call will be made immediately.
+   *
+   * For example, assumes the interval is set to 25 seconds. If the service responded after 10 seconds the call is being made,
+   * the watchdog will wait for 15 seconds before making another call.
    */
-  pingInterval?: number;
+  minimumInterval?: number;
 
   /**
    * Signal to abort the watchdog.
    *
-   * When the signal is aborted, the watchdog signal will be aborted.
+   * When this signal is being aborted, the watchdog will treat it as a fault.
    */
   signal?: AbortSignal;
 };
@@ -36,22 +39,22 @@ type WatchRESTInit = {
  *
  * The REST API endpoint should keep the polling call open for 30 seconds, then respond with HTTP 2xx.
  *
- * Upon receiving HTTP 2xx, the watchdog will issue another long polling call immediately and not sooner than `pingInterval`.
+ * Upon receiving HTTP 2xx, the watchdog will issue another long polling call immediately and not sooner than `minimumInterval`.
  *
  * [RFC6202](https://www.rfc-editor.org/rfc/rfc6202) recommends using a timeout value of 30 seconds.
  */
-export default function watchREST(url: string | URL, { pingInterval, signal }: WatchRESTInit = {}): AbortSignal {
+export default function watchREST(url: string | URL, { minimumInterval, signal }: WatchRESTInit = {}): AbortSignal {
   const abortController = new AbortController();
 
   (async () => {
     let warnedReturnTooSoon = false;
 
     try {
-      // Rectifying `pingInterval`.
-      if (typeof pingInterval === 'number') {
-        pingInterval = Math.max(MINIMUM_PING_INTERVAL, pingInterval);
+      // Rectifying `minimumInterval`.
+      if (typeof minimumInterval === 'number') {
+        minimumInterval = Math.max(MINIMUM_MINIMUM_INTERVAL, minimumInterval);
       } else {
-        pingInterval = DEFAULT_PING_INTERVAL;
+        minimumInterval = DEFAULT_MINIMUM_INTERVAL;
       }
 
       // Rectifying `signal`.
@@ -70,13 +73,13 @@ export default function watchREST(url: string | URL, { pingInterval, signal }: W
 
         await res.arrayBuffer();
 
-        // TODO: Warns if the API returns sooner than `pingInterval`.
-        const timeToSleep = pingAt + pingInterval - Date.now();
+        // TODO: Warns if the API returns sooner than `minimumInterval`.
+        const timeToSleep = pingAt + minimumInterval - Date.now();
 
         if (timeToSleep > 0) {
           warnedReturnTooSoon ||
             console.warn(
-              `botframework-directlinejs: REST API should not return sooner than the predefined \`pingInterval\` of ${pingInterval} ms.`
+              `botframework-directlinejs: REST API should not return sooner than the predefined \`minimumInterval\` of ${minimumInterval} ms.`
             );
 
           warnedReturnTooSoon = true;

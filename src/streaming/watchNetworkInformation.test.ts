@@ -1,24 +1,18 @@
 import watchNetworkInformation from './watchNetworkInformation';
 
 let abortController: AbortController;
+let networkInformation: EventTarget;
 
 beforeEach(() => {
-  const networkInformation = new EventTarget();
-
-  (global as any).navigator = {
-    get connection() {
-      return networkInformation;
-    }
-  };
-
   abortController = new AbortController();
+  networkInformation = new EventTarget();
 });
 
 describe('after constructed', () => {
   let watchdog: AbortSignal;
 
   beforeEach(() => {
-    watchdog = watchNetworkInformation({ signal: abortController.signal });
+    watchdog = watchNetworkInformation(networkInformation, { signal: abortController.signal });
   });
 
   test('should not be aborted', () => expect(watchdog.aborted).toBe(false));

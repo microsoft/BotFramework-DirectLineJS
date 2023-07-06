@@ -46,7 +46,7 @@ describe('Direct Line Streaming chat adapter with watchdog on Network Informatio
     directLine = new DirectLineStreaming({
       domain: botProxy.directLineStreamingURL,
       token,
-      watchdog: 'network information'
+      watchdog: navigator.connection
     });
 
     directLine.connectionStatus$.subscribe(connectionStatusObserver);
