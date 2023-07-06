@@ -9,11 +9,10 @@ import setupBotProxy from './__setup__/setupBotProxy';
 import waitFor from './__setup__/external/testing-library/waitFor';
 
 type MockObserver<T> = ReturnType<typeof mockObserver>;
+type ResultOfPromise<T> = T extends PromiseLike<infer P> ? P : never;
 
 const MOCKBOT3_URL = 'https://webchat-mockbot3.azurewebsites.net/';
 const TOKEN_URL = 'https://webchat-mockbot3.azurewebsites.net/api/token/directlinease';
-
-type ResultOfPromise<T> = T extends PromiseLike<infer P> ? P : never;
 
 jest.setTimeout(10_000);
 
