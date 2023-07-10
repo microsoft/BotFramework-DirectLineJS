@@ -128,7 +128,7 @@ export class DirectLineStreaming implements IBotConnection {
       this.#networkInformation = networkInformation;
     } else {
       console.warn(
-        'botframework-directlinejs: "networkInformation" option specified must be a `NetworkInformation`-like instance.'
+        'botframework-directlinejs: "networkInformation" option specified must be a `NetworkInformation`-like instance extending `EventTarget` interface with a `type` property returning a string.'
       );
     }
 
