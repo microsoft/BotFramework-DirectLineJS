@@ -8,12 +8,9 @@ import * as BFSE from 'botframework-streaming';
 import createDeferred from './createDeferred';
 import fetch from 'cross-fetch';
 
-import probeNetworkInformation from './streaming/probeNetworkInformation';
-import probeREST from './streaming/probeREST';
-import WebSocketClientWithProbe from './streaming/WebSocketClientWithProbe';
-
+import { Activity, ConnectionStatus, Conversation, DirectLine, IBotConnection, Media, Message } from './directLine';
+import WebSocketClientWithNetworkInformation from './streaming/WebSocketClientWithNetworkInformation';
 import type { Deferred } from './createDeferred';
-import { Activity, ConnectionStatus, Conversation, IBotConnection, Media, Message } from './directLine';
 
 const DIRECT_LINE_VERSION = 'DirectLine/3.0';
 const MAX_RETRY_COUNT = 3;
@@ -30,42 +27,10 @@ interface DirectLineStreamingOptions {
   botAgent?: string;
 
   /**
-   * Sets the network probe for assisting detection of connection issues.
-   *
-   * When the probe detects any connection issues, the bot connection will be closed and treated as an error.
-   *
-   * The probe is intended to assist `WebSocket`. Some implementations of `WebSocket` does not emit `error` event timely in case of connection issues.
-   * This probe will help declaring connection outages sooner. For example, on iOS/iPadOS 15 and up, the newer "NSURLSession WebSocket" did not signal error on network change.
-   *
-   * There are 3 ways to set the probe: `NetworkInformation` instance (using [Network Information API](https://developer.mozilla.org/en-US/docs/Web/API/Network_Information_API)), `object` (REST API probe), or `function`.
-   *
-   * When the probe is an instance of `NetworkInformation`:
-   *
-   * - When `change` event is received on the instance, the probe will treat it as a fault.
-   *
-   * When the probe is an object, it will probe the liveness of a long-polling service via HTTP GET:
-   *
-   * - `url` is the URL of a HTTP GET long-polling service. The service must keep the connection for a period of time and returns HTTP 2xx when the time has passed.
-   *   [RFC6202](https://www.rfc-editor.org/rfc/rfc6202) recommends the connection should be kept for 30 seconds.
-   *    - If a non-2xx status code is received, it will be treated as a fault.
-   * - `minimumInterval` is the time, in millisecond, to wait between pings. Minimum is 10 seconds, default to 25 seconds.
-   *   The interval should be shorter than the time the long-polling API would keep the connection.
-   *
-   * When the probe is a function:
-   *
-   * - The function will be called when a connection is being established. Thus, a new network probe is needed.
-   * - The returned `AbortSignal` should be aborted as soon as the probe detects any connection issues.
-   * - The function should create a new probe on every call and probe should not be reused.
-   * - When a probe is no longer needed, the `AbortSignal` passed to the function will signal release of underlying resources.
-   * - At any point of time, there should be no more than 1 probe active. The chat adapter will signal the release of probe before requesting for a new one.
+   * Sets the [`NetworkInformation` API](https://developer.mozilla.org/en-US/docs/Web/API/Network_Information_API).
+   * When the `NetworkInformation` detect network changes or offline, it will disconnect the Web Socket and reconnect it.
    */
-  networkProbe?:
-    | NetworkInformation
-    | {
-        minimumInterval?: number;
-        url: string | URL;
-      }
-    | ((init: { signal: AbortSignal }) => AbortSignal);
+  networkInformation?: NetworkInformation;
 }
 
 class StreamHandler implements BFSE.RequestHandler {
@@ -148,32 +113,22 @@ export class DirectLineStreaming implements IBotConnection {
 
   private _botAgent = '';
 
-  #networkProbe: ((init: { signal: AbortSignal }) => AbortSignal) | undefined;
+  #networkInformation: NetworkInformation | undefined;
 
   constructor(options: DirectLineStreamingOptions) {
-    // Rectifies options.probe.
-    const networkProbe = options?.networkProbe;
+    // Rectifies `options.networkInformation`.
+    const networkInformation = options?.networkInformation;
 
-    if (typeof networkProbe === 'function') {
-      this.#networkProbe = networkProbe;
-    } else if (typeof networkProbe === 'undefined') {
-      // Intentionally left blank.
-    } else if (
-      networkProbe instanceof EventTarget ||
-      // We also accept `EventTargetLike`.
-      (typeof networkProbe['addEventListener'] === 'function' && typeof networkProbe['removeEventListener'] === 'function')
+    if (
+      typeof networkInformation === 'undefined' ||
+      (typeof networkInformation.addEventListener === 'function' &&
+        typeof networkInformation.removeEventListener === 'function' &&
+        typeof networkInformation.type === 'string')
     ) {
-      this.#networkProbe = ({ signal }: { signal: AbortSignal }) =>
-        probeNetworkInformation(networkProbe as NetworkInformation, { signal });
-    } else if (
-      (typeof networkProbe.minimumInterval === 'number' || typeof networkProbe.minimumInterval === 'undefined') &&
-      (typeof networkProbe.url === 'string' || networkProbe.url instanceof URL)
-    ) {
-      this.#networkProbe = ({ signal }: { signal: AbortSignal }) =>
-        probeREST(networkProbe.url, { minimumInterval: networkProbe.minimumInterval, signal });
+      this.#networkInformation = networkInformation;
     } else {
-      throw new Error(
-        'botframework-directlinejs: "networkProbe" option must be either a function returning an AbortSignal, an object, or undefined.'
+      console.warn(
+        'botframework-directlinejs: "networkInformation" option specified must be a `NetworkInformation`-like instance.'
       );
     }
 
@@ -399,12 +354,9 @@ export class DirectLineStreaming implements IBotConnection {
     // This promise will resolve when it is disconnected.
     return new Promise(async (resolve, reject) => {
       try {
-        const probe: AbortSignal | undefined =
-          typeof this.#networkProbe === 'function' ? this.#networkProbe({ signal: abortController.signal }) : undefined;
-
-        this.streamConnection = new WebSocketClientWithProbe({
+        this.streamConnection = new WebSocketClientWithNetworkInformation({
           disconnectionHandler: resolve,
-          probe,
+          networkInformation: this.#networkInformation,
           requestHandler: {
             processRequest: streamingRequest => {
               // If `streamConnection` is still current, allow call to `processRequest()`, otherwise, ignore calls to `processRequest()`.
@@ -416,7 +368,7 @@ export class DirectLineStreaming implements IBotConnection {
               return this.theStreamHandler.processRequest(streamingRequest);
             }
           },
-          url: wsUrl,
+          url: wsUrl
         });
 
         this.queueActivities = true;

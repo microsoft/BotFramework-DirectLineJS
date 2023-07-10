@@ -16,16 +16,36 @@ const TOKEN_URL = 'https://webchat-mockbot3.azurewebsites.net/api/token/directli
 
 jest.setTimeout(10_000);
 
-// GIVEN: A Direct Line Streaming chat adapter with network probe on REST API.
-describe('Direct Line Streaming chat adapter with network probe on REST API', () => {
+// GIVEN: A Direct Line Streaming chat adapter with network probe on Network Information API.
+describe('Direct Line Streaming chat adapter with network probe on Network Information API', () => {
   let activityObserver: MockObserver<any>;
   let botProxy: ResultOfPromise<ReturnType<typeof setupBotProxy>>;
   let connectionStatusObserver: MockObserver<ConnectionStatus>;
-  let createAbortController: jest.Mock<AbortController, [{ signal: AbortSignal }]>;
   let directLine: DirectLineStreaming;
 
   beforeEach(async () => {
     jest.useFakeTimers({ now: 0 });
+
+    const networkInformation = new EventTarget();
+    let type: string = 'wifi';
+
+    Object.defineProperty(networkInformation, 'type', {
+      get() {
+        return type;
+      },
+      set(value: string) {
+        if (type !== value) {
+          type = value;
+          networkInformation.dispatchEvent(new Event('change'));
+        }
+      }
+    });
+
+    (global as any).navigator = {
+      get connection() {
+        return networkInformation;
+      }
+    };
 
     let token: string;
 
@@ -34,19 +54,11 @@ describe('Direct Line Streaming chat adapter with network probe on REST API', ()
       fetch(TOKEN_URL, { method: 'POST' }).then(res => res.json())
     ]);
 
-    createAbortController = jest.fn<AbortController, [{ signal: AbortSignal }]>(({ signal }) => {
-      const abortController = new AbortController();
-
-      signal.addEventListener('abort', () => abortController.abort(), { once: true });
-
-      return abortController;
-    });
-
     activityObserver = mockObserver();
     connectionStatusObserver = mockObserver();
     directLine = new DirectLineStreaming({
       domain: botProxy.directLineStreamingURL,
-      networkProbe: ({ signal }) => createAbortController({ signal }).signal,
+      networkInformation: navigator.connection,
       token
     });
 
@@ -75,19 +87,16 @@ describe('Direct Line Streaming chat adapter with network probe on REST API', ()
         { timeout: 5_000 }
       ));
 
-    // WHEN: Connection status become "Online" and network probe is created.
-    describe('after online and network probe is connected', () => {
+    // WHEN: Connection status become "Online".
+    describe('after online', () => {
       beforeEach(() =>
         waitFor(
-          () => {
+          () =>
             expect(connectionStatusObserver.observe).toHaveBeenLastCalledWith([
               expect.any(Number),
               'next',
               ConnectionStatus.Online
-            ]);
-
-            expect(createAbortController).toBeCalledTimes(1);
-          },
+            ]),
           { timeout: 5_000 }
         )
       );
@@ -102,18 +111,10 @@ describe('Direct Line Streaming chat adapter with network probe on REST API', ()
           { timeout: 5_000 }
         ));
 
-      // WHEN: Network probing connection is closed.
-      describe('when the probing connection detected a fault', () => {
+      // WHEN: "change" event is received.
+      describe('when "change" event is received', () => {
         beforeEach(() => {
-          const {
-            mock: {
-              results: [firstResult]
-            }
-          } = createAbortController;
-
-          expect(firstResult).toHaveProperty('type', 'return');
-
-          firstResult.value.abort();
+          (navigator.connection as any).type = 'bluetooth';
         });
 
         // THEN: Should observe "Connecting" -> "Online" again.
@@ -129,18 +130,6 @@ describe('Direct Line Streaming chat adapter with network probe on REST API', ()
               ]),
             { timeout: 5_000 }
           ));
-
-        test('should recreate network probe', () =>
-          waitFor(() => expect(createAbortController).toBeCalledTimes(2), { timeout: 5_000 }));
-      });
-
-      describe('when connection is closed', () => {
-        beforeEach(() => directLine.end());
-
-        test('should abort the network probe', () => {
-          expect(createAbortController).toHaveBeenCalledTimes(1);
-          expect(createAbortController.mock.calls[0][0]).toHaveProperty('signal.aborted', true);
-        });
       });
     });
   });

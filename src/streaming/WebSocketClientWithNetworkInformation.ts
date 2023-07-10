@@ -9,7 +9,7 @@ type WebSocketClientWithNetworkInformationInit = {
    * Note: This function could be called multiple times, the callee is expected to ignore subsequent calls.
    */
   disconnectionHandler: (message: string) => void;
-  networkInformationConnection: NetworkInformation;
+  networkInformation?: NetworkInformation | undefined;
   requestHandler: RequestHandler;
   url: string;
 };
@@ -17,7 +17,7 @@ type WebSocketClientWithNetworkInformationInit = {
 export default class WebSocketClientWithNetworkInformation extends WebSocketClient {
   constructor({
     disconnectionHandler,
-    networkInformationConnection,
+    networkInformation,
     requestHandler,
     url
   }: WebSocketClientWithNetworkInformationInit) {
@@ -27,11 +27,16 @@ export default class WebSocketClientWithNetworkInformation extends WebSocketClie
       url
     });
 
-    this.#networkInformationConnection = networkInformationConnection;
+    this.#networkInformation = networkInformation;
   }
 
   #connectCalled: boolean = false;
-  #networkInformationConnection: NetworkInformation;
+  // According to W3C Network Information API, https://wicg.github.io/netinfo/#handling-changes-to-the-underlying-connection.
+  // NetworkInformation.onChange event will be fired on any changes to: `downlinkMax`, `type`, `downlink`, or `rtt`.
+  #handleNetworkInformationChange = () =>
+    this.#initialNetworkInformationType === this.#networkInformation.type || this.disconnect();
+  #initialNetworkInformationType: NetworkInformation['type'];
+  #networkInformation: NetworkInformation;
 
   // TODO: Better, the `NetworkInformation` instance should be passed to `BrowserWebSocketClient` -> `BrowserWebSocket`.
   //       `BrowserWebSocket` is where it creates `WebSocket` object.
@@ -46,15 +51,25 @@ export default class WebSocketClientWithNetworkInformation extends WebSocketClie
 
     this.#connectCalled = true;
 
-    if (this.#networkInformationConnection.type === 'none') {
-      return Promise.reject(new Error('botframework-directlinejs: Failed to connect while offline.'));
+    if (this.#networkInformation) {
+      const { type: initialType } = this.#networkInformation;
+
+      this.#initialNetworkInformationType = initialType;
+
+      if (initialType === 'none') {
+        console.warn('botframework-directlinejs: Failed to connect while offline.');
+
+        return Promise.reject(new Error('botframework-directlinejs: Failed to connect while offline.'));
+      }
+
+      this.#networkInformation.addEventListener('change', this.#handleNetworkInformationChange);
     }
 
-    this.#networkInformationConnection.addEventListener(
-      'change',
-      () => this.#networkInformationConnection.type === 'none' && this.disconnect()
-    );
-
     return super.connect();
+  }
+
+  disconnect() {
+    this.#networkInformation.removeEventListener('change', this.#handleNetworkInformationChange);
+    super.disconnect();
   }
 }

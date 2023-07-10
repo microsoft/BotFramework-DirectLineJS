@@ -352,13 +352,13 @@ describe('A NetworkInformationObserver', () => {
       test('should not reconnect', () => waitFor(() => expect(processRequest).toBeCalledTimes(2)));
     });
 
-    describe.only('after 10 seconds', () => {
+    describe('after 10 seconds', () => {
       beforeEach(() => jest.advanceTimersByTimeAsync(10_000));
 
       test('should have connected 3 times', () => waitFor(() => expect(processRequest).toBeCalledTimes(3)));
     });
 
-    describe.only('after 20 seconds', () => {
+    describe('after 20 seconds', () => {
       beforeEach(() => jest.advanceTimersByTimeAsync(20_000));
 
       test('should have connected 4 times', () => waitFor(() => expect(processRequest).toBeCalledTimes(4)));

@@ -13,27 +13,22 @@ jest.mock('../../node_modules/botframework-streaming/lib/webSocket/nodeWebSocket
   }
 }));
 
+type NetworkInformationType = 'bluetooth' | 'cellular' | 'ethernet' | 'none' | 'other' | 'unknown' | 'wifi' | 'wimax';
+
 class MockNetworkInformation extends EventTarget {
   constructor() {
     super();
   }
 
-  #type: 'none' | 'unknown' = 'none';
+  #type: NetworkInformationType = 'none';
 
   get type() {
     return this.#type;
   }
 
-  setOffline() {
-    if (this.#type !== 'none') {
-      this.#type = 'none';
-      this.dispatchEvent(new Event('change'));
-    }
-  }
-
-  setOnline() {
-    if (this.#type === 'none') {
-      this.#type = 'unknown';
+  set type(value: NetworkInformationType) {
+    if (this.#type !== value) {
+      this.#type = value;
       this.dispatchEvent(new Event('change'));
     }
   }
@@ -57,7 +52,7 @@ beforeEach(() => {
 
   client = new WebSocketClientWithNetworkInformation({
     disconnectionHandler,
-    networkInformationConnection,
+    networkInformation: networkInformationConnection,
     requestHandler,
     url
   });
@@ -71,7 +66,9 @@ afterEach(() => jest.restoreAllMocks());
 test('should not call disconnectHandler()', () => expect(disconnectionHandler).toBeCalledTimes(0));
 
 describe('initially online', () => {
-  beforeEach(() => networkInformationConnection.setOnline());
+  beforeEach(() => {
+    networkInformationConnection.type = 'wifi';
+  });
 
   describe('when connect() is called', () => {
     beforeEach(() => client.connect());
@@ -83,7 +80,9 @@ describe('initially online', () => {
       test('should call disconnectHandler() twice', () => expect(disconnectionHandler).toBeCalledTimes(2));
 
       describe('when offline', () => {
-        beforeEach(() => networkInformationConnection.setOffline());
+        beforeEach(() => {
+          networkInformationConnection.type = 'none';
+        });
 
         // After disconnected() is called, there should be no extra calls for offline.
         test('should have no extra calls to disconnectHandler()', () =>
@@ -92,7 +91,9 @@ describe('initially online', () => {
     });
 
     describe('when offline', () => {
-      beforeEach(() => networkInformationConnection.setOffline());
+      beforeEach(() => {
+        networkInformationConnection.type = 'none';
+      });
 
       // Both sender/receiver will call `onConnectionDisconnected`, so it is calling it twice.
       test('should call disconnectHandler() twice', () => expect(disconnectionHandler).toBeCalledTimes(2));
