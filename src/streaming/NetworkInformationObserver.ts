@@ -33,11 +33,11 @@ class NetworkInformationPolyfill extends EventTarget implements NetworkInformati
     return this.#type;
   }
 
-  #setOffline() {
+  #goOffline() {
     this.#setType('none');
   }
 
-  #setOnline() {
+  #goOnline() {
     this.#setType('unknown');
   }
 
@@ -69,7 +69,7 @@ class NetworkInformationPolyfill extends EventTarget implements NetworkInformati
         ]);
 
         // Received first chunk.
-        this.#setOnline();
+        this.#goOnline();
         await res.arrayBuffer();
 
         const timeToSleep = Math.max(0, MINIMUM_PING_INTERVAL + startTime - Date.now());
@@ -89,7 +89,7 @@ class NetworkInformationPolyfill extends EventTarget implements NetworkInformati
       } catch (error) {
         currentAbortController.abort();
 
-        this.#setOffline();
+        this.#goOffline();
         shortPing = true;
 
         await sleep(SLEEP_INTERVAL_AFTER_ERROR, { signal: this.#signal });
