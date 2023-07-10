@@ -52,27 +52,22 @@ jest.mock('botframework-streaming', () => ({
   }
 }));
 
+type NetworkInformationType = 'bluetooth' | 'cellular' | 'ethernet' | 'none' | 'other' | 'unknown' | 'wifi' | 'wimax';
+
 class MockNetworkInformation extends EventTarget {
   constructor() {
     super();
   }
 
-  #type: 'none' | 'unknown' = 'none';
+  #type: NetworkInformationType = 'none';
 
   get type() {
     return this.#type;
   }
 
-  setOffline() {
-    if (this.#type !== 'none') {
-      this.#type = 'none';
-      this.dispatchEvent(new Event('change'));
-    }
-  }
-
-  setOnline() {
-    if (this.#type === 'none') {
-      this.#type = 'unknown';
+  set type(value: NetworkInformationType) {
+    if (this.#type !== value) {
+      this.#type = value;
       this.dispatchEvent(new Event('change'));
     }
   }
@@ -96,7 +91,7 @@ beforeEach(() => {
 
   client = new WebSocketClientWithNetworkInformation({
     disconnectionHandler,
-    networkInformationConnection: connection,
+    networkInformation: connection,
     requestHandler,
     url
   });
@@ -115,7 +110,9 @@ describe('constructor', () => {
 });
 
 describe('initially online', () => {
-  beforeEach(() => connection.setOnline());
+  beforeEach(() => {
+    connection.type = 'wifi';
+  });
 
   test('should not call super.connect()', () => expect(client['__test__connect']).toBeCalledTimes(0));
 
@@ -128,7 +125,9 @@ describe('initially online', () => {
       expect(client['__test__disconnectionHandler']).toBeCalledTimes(0));
 
     describe('when offline', () => {
-      beforeEach(() => connection.setOffline());
+      beforeEach(() => {
+        connection.type = 'none';
+      });
 
       test('should call super.disconnect()', () => expect(client['__test__disconnect']).toBeCalledTimes(1));
 
@@ -150,6 +149,15 @@ describe('initially online', () => {
           expect(console.warn).toHaveBeenNthCalledWith(1, expect.stringContaining('connect() can only be called once'));
         });
       });
+    });
+
+    describe('when network type change to "bluetooth"', () => {
+      beforeEach(() => {
+        connection.type = 'bluetooth';
+      });
+
+      test('should call super.disconnect()', () => expect(client['__test__disconnect']).toBeCalledTimes(1));
+      test('should call disconnectionHandler', () => expect(client['__test__disconnectionHandler']).toBeCalledTimes(1));
     });
 
     describe('when connect() is called twice', () => {
@@ -189,59 +197,3 @@ describe('initially offline', () => {
       expect(client['__test__disconnectionHandler']).toBeCalledTimes(0));
   });
 });
-
-// describe('initially online', () => {
-//   beforeEach(() => connection.setOnline());
-
-//   describe('connect()', () => {
-//     test('should not call super.connect() initially', () => expect(client['__test__connect']).toBeCalledTimes(0));
-
-//     describe('when called', () => {
-//       beforeEach(() => client.connect());
-
-//       test('should call super.connect()', () => expect(client['__test__connect']).toBeCalledTimes(1));
-
-//       describe('twice', () => {
-//         beforeEach(() => client.connect());
-
-//         test('should warn once', () => expect(console.warn).toBeCalledTimes(1));
-//         test('should warn "connect() can only be called once"', () =>
-//           expect(console.warn).toHaveBeenNthCalledWith(
-//             1,
-//             expect.stringContaining('connect() can only be called once')
-//           ));
-//         test('should call super.connect() once', () => expect(client['__test__connect']).toBeCalledTimes(1));
-//       });
-
-//       describe('then abort the probe', () => {
-//         beforeEach(() => connection.setOffline());
-
-//         test('should call disconnect()', () => expect(client['__test__disconnect']).toBeCalledTimes(1));
-
-//         describe('when connect() is called again', () => {
-//           beforeEach(() => client.connect());
-
-//           test('should warn once', () => expect(console.warn).toBeCalledTimes(1));
-//           test('should warn "connect() can only be called once"', () =>
-//             expect(console.warn).toHaveBeenNthCalledWith(
-//               1,
-//               expect.stringContaining('connect() can only be called once')
-//             ));
-//           test('should call super.connect() once', () => expect(client['__test__connect']).toBeCalledTimes(1));
-//         });
-//       });
-//     });
-//   });
-// });
-
-// describe('connection is offline then call connect()', () => {
-//   beforeEach(() => {
-//     connection.setOffline();
-//     client.connect();
-//   });
-
-//   test('should warn once', () => expect(console.warn).toBeCalledTimes(1));
-//   test('should warn "connection is offline before connect()"', () =>
-//     expect(console.warn).toHaveBeenNthCalledWith(1, expect.stringContaining('probe is aborted before connect()')));
-//   test('should not call super.connect()', () => expect(client['__test__connect']).toBeCalledTimes(0));
-// });
