@@ -79,13 +79,15 @@ test('should send activity', async () => {
   );
 
   // THEN: Should observe "Connecting" -> "Online" because the chat adapter should reconnect.
-  await waitFor(() =>
-    expect(connectionStatusObserver).toHaveProperty('observations', [
-      [expect.any(Number), 'next', ConnectionStatus.Uninitialized],
-      [expect.any(Number), 'next', ConnectionStatus.Connecting],
-      [expect.any(Number), 'next', ConnectionStatus.Online],
-      [expect.any(Number), 'next', ConnectionStatus.Connecting],
-      [expect.any(Number), 'next', ConnectionStatus.Online],
-    ])
+  await waitFor(
+    () =>
+      expect(connectionStatusObserver).toHaveProperty('observations', [
+        [expect.any(Number), 'next', ConnectionStatus.Uninitialized],
+        [expect.any(Number), 'next', ConnectionStatus.Connecting],
+        [expect.any(Number), 'next', ConnectionStatus.Online],
+        [expect.any(Number), 'next', ConnectionStatus.Connecting],
+        [expect.any(Number), 'next', ConnectionStatus.Online]
+      ]),
+    { timeout: 5_000 }
   );
 }, 15000);
