@@ -29,14 +29,9 @@ type CreateBotProxyInit = {
 
 type CreateBotProxyReturnValue = {
   cleanUp: () => void;
-  closeAllNetworkProbingConnections: () => void;
   closeAllWebSocketConnections: () => void;
   directLineStreamingURL: string;
   directLineURL: string;
-  networkProbeURL: string;
-
-  get numNetworkProbingConnection(): number;
-  get numOverTheLifetimeNetworkProbingConnection(): number;
 };
 
 const matchDirectLineStreamingProtocol = match('/.bot/', { decode: decodeURIComponent, end: false });
@@ -101,30 +96,6 @@ export default function createBotProxy(init?: CreateBotProxyInit): Promise<Creat
           target: 'https://directline.botframework.com/'
         })
       );
-
-      app.get('/test/network-probe', (req, res) => {
-        const destroyResponse = () => {
-          res.destroy();
-        };
-
-        closeAllNetworkProbingConnections.push(destroyResponse);
-        numOverTheLifetimeNetworkProbingConnection++;
-
-        req.once('error', destroyResponse);
-        res.once('close', () => removeInline(closeAllNetworkProbingConnections, destroyResponse));
-
-        res.chunkedEncoding = true;
-        res.statusCode = 200;
-
-        res.setHeader('cache-control', 'no-cache');
-        res.setHeader('content-type', 'text/plain');
-        res.write(' ');
-
-        setTimeout(() => {
-          req.off('error', destroyResponse);
-          res.end();
-        }, 30_000);
-      });
 
       const webSocketProxy = new WebSocketServer({ noServer: true });
 
@@ -206,22 +177,9 @@ export default function createBotProxy(init?: CreateBotProxyInit): Promise<Creat
             // Calling close() and closeAllConnections() will not close all Web Socket connections.
             closeAllWebSocketConnections();
           },
-          closeAllNetworkProbingConnections: () => {
-            closeAllNetworkProbingConnections.forEach(close => close());
-            closeAllNetworkProbingConnections.splice(0);
-          },
           closeAllWebSocketConnections,
           directLineStreamingURL: new URL('/.bot/v3/directline', url).href,
-          directLineURL: new URL('/v3/directline', url).href,
-          networkProbeURL: new URL('/test/network-probe', url).href,
-
-          get numNetworkProbingConnection(): number {
-            return closeAllNetworkProbingConnections.length;
-          },
-
-          get numOverTheLifetimeNetworkProbingConnection(): number {
-            return numOverTheLifetimeNetworkProbingConnection;
-          }
+          directLineURL: new URL('/v3/directline', url).href
         });
       });
     } catch (error) {

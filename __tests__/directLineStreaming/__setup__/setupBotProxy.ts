@@ -19,19 +19,9 @@ export default async function setupBotProxy(
   botProxies.push(botProxy);
 
   return {
-    closeAllNetworkProbingConnections: botProxy.closeAllNetworkProbingConnections,
     closeAllWebSocketConnections: botProxy.closeAllWebSocketConnections,
     directLineURL: botProxy.directLineURL,
-    directLineStreamingURL: botProxy.directLineStreamingURL,
-    networkProbeURL: botProxy.networkProbeURL,
-
-    get numNetworkProbingConnection() {
-      return botProxy.numNetworkProbingConnection;
-    },
-
-    get numOverTheLifetimeNetworkProbingConnection() {
-      return botProxy.numOverTheLifetimeNetworkProbingConnection;
-    }
+    directLineStreamingURL: botProxy.directLineStreamingURL
   };
 }
 
