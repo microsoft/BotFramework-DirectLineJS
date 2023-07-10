@@ -69,7 +69,7 @@ export default class WebSocketClientWithNetworkInformation extends WebSocketClie
   }
 
   disconnect() {
-    this.#networkInformation.removeEventListener('change', this.#handleNetworkInformationChange);
+    this.#networkInformation?.removeEventListener('change', this.#handleNetworkInformationChange);
     super.disconnect();
   }
 }
