@@ -16,8 +16,8 @@ const TOKEN_URL = 'https://webchat-mockbot3.azurewebsites.net/api/token/directli
 
 jest.setTimeout(10_000);
 
-// GIVEN: A Direct Line Streaming chat adapter with network probe on Network Information API.
-describe('Direct Line Streaming chat adapter with network probe on Network Information API', () => {
+// GIVEN: A Direct Line Streaming chat adapter with Network Information API.
+describe('Direct Line Streaming chat adapter with Network Information API', () => {
   let activityObserver: MockObserver<any>;
   let botProxy: ResultOfPromise<ReturnType<typeof setupBotProxy>>;
   let connectionStatusObserver: MockObserver<ConnectionStatus>;
