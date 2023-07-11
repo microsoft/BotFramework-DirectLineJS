@@ -34,15 +34,19 @@ That said, the public API is still subject to change.
 
 ### Why the library did not detect Web Socket disconnections?
 
-On iOS/iPadOS, when network change from Wi-Fi to cellular (and vice versa), the `WebSocket` object will be stalled without any errors. This is not detectable nor workaroundable without any additional assistance. The issue is related to an experimental feature named "NSURLSession WebSocket". The feature is enabled by default on iOS/iPadOS 15 and up.
+On iOS/iPadOS, when network change from Wi-Fi to cellular, the `WebSocket` object will be stalled without any errors. This is not detectable nor workaroundable without any additional assistance. The issue is related to an experimental feature named "NSURLSession WebSocket". The feature is enabled by default on iOS/iPadOS 15 and up.
 
-Web developers can use an option named `networkProbe` to assist the library to detect any connection issues.
+An option named `networkInformation` can be used to assist the library to detect any connection issues. The option is based on [W3C Network Information API](https://developer.mozilla.org/en-US/docs/Web/API/Network_Information_API) and it should implement at least 2 members:
 
-One effective method to detect connection issues is establishing a long-polling HTTP GET call to any service. The service would respond with HTTP 2xx and stream 1 byte of data using [chunked transfer encoding](https://en.wikipedia.org/wiki/Chunked_transfer_encoding). After the first chunk, the streaming connection should be kept on-hold for 30 seconds. Then, the service will send a final chunk and end the call gracefully. If network change did happen during the call, the streaming conection will be aborted prematurely and the probe will send a fault signal to the library.
+- [A `type` property](https://developer.mozilla.org/en-US/docs/Web/API/NetworkInformation/type) to indicate the current network type
+  - When the `type` is `"offline"`, network is not available and no connection will be made
+- [A `change` event](https://developer.mozilla.org/en-US/docs/Web/API/NetworkInformation/change_event) should dispatch when the `type` property change
 
-If the library is being used in a native iOS/iPadOS app, a less resource-intensive solution would be partially implementing the [Network Information API](https://developer.mozilla.org/en-US/docs/Web/API/Network_Information_API) using [`NWPathMonitor`](https://developer.apple.com/documentation/network/nwpathmonitor). When network change happens, the `NetworkInformation` instance should dispatch a [`change` event](https://developer.mozilla.org/en-US/docs/Web/API/NetworkInformation/change_event). Upon receiving the event, the probe will send a fault signal to the library.
+However, Safari on [does not support W3C Network Information API](https://bugs.webkit.org/show_bug.cgi?id=185697). It is up to web developers to implement the `NetworkInformation` polyfill.
 
-Lastly, web developers can also implement custom connection detection mechanism using [`AbortSignal`](https://developer.mozilla.org/en-US/docs/Web/API/AbortSignal). When connection issues is detected, the `AbortSignal` will be aborted and the probe will signal a fault.
+One effective method to detect network type change is to subscribe to a [Server-Sent Events](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events) source. The service would send a message every 30 seconds. If network change did happen, the connection will be closed prematurely and an `error` event will be dispatched to the [`EventSource`](https://developer.mozilla.org/en-US/docs/Web/API/EventSource) instance. Upon receiving the `error` event, the `NetworkInformation.type` should then change to `"offline"`. Browser would automatically retries the Server-Sent Events connection. Upon receiving an `open` event, the polyfill should change the `type` back to `"unknown"`.
+
+If the library is being used in a native iOS/iPadOS app, a less resource-intensive solution would be partially implementing the [Network Information API](https://developer.mozilla.org/en-US/docs/Web/API/Network_Information_API) using [`NWPathMonitor`](https://developer.apple.com/documentation/network/nwpathmonitor). When network change happens, the `NetworkInformation` instance should update the [`type` property](https://developer.mozilla.org/en-US/docs/Web/API/NetworkInformation/type) based on network type and dispatch a [`change` event](https://developer.mozilla.org/en-US/docs/Web/API/NetworkInformation/change_event).
 
 ## How to build from source
 
