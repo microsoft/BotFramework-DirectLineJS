@@ -48,8 +48,6 @@ export default function createBotProxy(init?: CreateBotProxyInit): Promise<Creat
     try {
       const activeSockets: Socket[] = [];
       const app = express();
-      const closeAllNetworkProbingConnections: (() => void)[] = [];
-      let numOverTheLifetimeNetworkProbingConnection = 0;
 
       streamingBotURL &&
         app.use('/.bot/', createProxyMiddleware({ changeOrigin: true, logLevel: 'silent', target: streamingBotURL }));
