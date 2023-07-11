@@ -143,6 +143,7 @@ export default function createBotProxy(init?: CreateBotProxyInit): Promise<Creat
               webSocketProxy.emit('connection', ws, proxySocket, req)
             )
           );
+          proxySocket.addEventListener('error', () => {});
 
           socket.once('close', () => proxySocket.close());
         })

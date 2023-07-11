@@ -12,19 +12,24 @@ type Observation<T> =
  * Mocks an observer and records all observations.
  */
 export default function mockObserver<T>(): Readonly<
-  Required<Observer<T>> & { observations: ReadonlyArray<Observation<T>> }
+  Required<Observer<T>> & {
+    observations: ReadonlyArray<Observation<T>>;
+    observe: (observation: Observation<T>) => void;
+  }
 > {
+  const observe: (observation: Observation<T>) => void = jest.fn(observation => observations.push(observation));
   const observations: Array<Observation<T>> = [];
 
-  const complete = jest.fn(() => observations.push([Date.now(), 'complete']));
-  const error = jest.fn(reason => observations.push([Date.now(), 'error', reason]));
-  const next = jest.fn(value => observations.push([Date.now(), 'next', value]));
-  const start = jest.fn(subscription => observations.push([Date.now(), 'start', subscription]));
+  const complete = jest.fn(() => observe([Date.now(), 'complete']));
+  const error = jest.fn(reason => observe([Date.now(), 'error', reason]));
+  const next = jest.fn(value => observe([Date.now(), 'next', value]));
+  const start = jest.fn(subscription => observe([Date.now(), 'start', subscription]));
 
   return Object.freeze({
     complete,
     error,
     next,
+    observe,
     start,
 
     get observations() {
