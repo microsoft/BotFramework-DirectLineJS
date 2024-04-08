@@ -782,4 +782,56 @@ describe('MockSuite', () => {
             });
         });
     });
+
+    test('refreshTokenLoop propagates error to connectionStatus$ on failure', () => {
+        // Use a shorter maxFrames to accommodate the 15-minute interval
+        scheduler.maxFrames = 20 * 60 * 1000;
+
+        let refreshCallCount = 0;
+        services.ajax = DirectLineMock.mockAjax(server, (urlOrRequest) => {
+            if (typeof urlOrRequest === 'string') {
+                throw new Error();
+            }
+
+            // Start conversation succeeds
+            if (urlOrRequest.url && urlOrRequest.url.indexOf('/conversations') > 0 && !/activities/u.test(urlOrRequest.url)) {
+                const conversation: DirectLineExport.Conversation = {
+                    conversationId: server.conversation.conversationId,
+                    token: server.conversation.token,
+                    streamUrl: 'https://directline.botframework.com/v3/directline/conversations/stream',
+                };
+                const response: Partial<AjaxResponse> = {
+                    response: conversation,
+                    status: 201,
+                    xhr: { getResponseHeader: () => 'n/a' } as unknown as XMLHttpRequest
+                };
+                return response as AjaxResponse;
+            }
+
+            // Token refresh fails with 403
+            if (urlOrRequest.url && urlOrRequest.url.indexOf('/tokens/refresh') > 0) {
+                refreshCallCount++;
+                const response: Partial<AjaxResponse> = {
+                    status: 403,
+                    xhr: { getResponseHeader: () => 'n/a' } as unknown as XMLHttpRequest
+                };
+                const error = new Error('Forbidden');
+                throw Object.assign(error, response);
+            }
+
+            throw new Error();
+        });
+
+        // Create DirectLine with token only (no secret) so refreshTokenLoop is started
+        directline = new DirectLineExport.DirectLine({ ...services, token: 'test-token', secret: undefined });
+
+        const statuses: Array<DirectLineExport.ConnectionStatus> = [];
+        subscriptions.push(directline.connectionStatus$.subscribe(s => statuses.push(s)));
+        subscriptions.push(directline.activity$.subscribe());
+
+        scheduler.flush();
+
+        expect(refreshCallCount).toBeGreaterThan(0);
+        expect(statuses).toContain(DirectLineExport.ConnectionStatus.ExpiredToken);
+    });
 });
