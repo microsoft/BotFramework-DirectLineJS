@@ -17,7 +17,8 @@
     "prepublishOnly": "npm run build:typecheck && npm run build:babel && npm run build:webpack",
     "start": "npm run build && concurrently --names \"babel,typecheck,webpack\" \"npm run build:babel -- --watch\" \"npm run build:typecheck -- --preserveWatchOutput --watch\" \"npm run build:webpack -- --config webpack-watch.config.js --watch\"",
     "test": "jest --silent",
-    "watch": "npm run start"
+    "watch": "npm run start",
+    "release": "release-it"
   },
   "repository": {
     "type": "git",
@@ -33,7 +34,8 @@
     "cross-fetch": "^3.1.5",
     "jwt-decode": "3.1.2",
     "rxjs": "5.5.12",
-    "url-search-params-polyfill": "8.1.1"
+    "url-search-params-polyfill": "8.1.1",
+    "yarn": "^1.22.22"
   },
   "devDependencies": {
     "@babel/cli": "^7.14.8",
@@ -68,6 +70,7 @@
     "node-fetch": "^2.6.7",
     "on-error-resume-next": "^1.1.0",
     "path-to-regexp": "^6.2.1",
+    "release-it": "^17.6.0",
     "restify": "^11.0.0",
     "rimraf": "^3.0.2",
     "simple-update-in": "^2.2.0",
