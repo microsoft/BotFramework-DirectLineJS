@@ -1,6 +1,6 @@
 {
-  "name": "botframework-directlinejs",
-  "version": "0.15.6-0",
+  "name": "@inkblot-therapy/botframework-directlinejs",
+  "version": "0.0.1",
   "description": "Client library for the Microsoft Bot Framework Direct Line 3.0 protocol",
   "files": [
     "dist/**/*",
@@ -76,5 +76,8 @@
     "webpack-cli": "^4.7.2",
     "webpack-stats-plugin": "^1.0.3",
     "ws": "^8.13.0"
+  },
+  "directories": {
+    "example": "example"
   }
 }
