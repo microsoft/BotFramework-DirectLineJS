@@ -44,7 +44,7 @@
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
   },
-  "author": "Microsoft Corporation",
+  "author": "Kenny Chan <kenny.chan@greenshieldlabs.cs> (https://github.com/kennychh)",
   "license": "MIT",
   "dependencies": {
     "@babel/runtime": "7.14.8",
