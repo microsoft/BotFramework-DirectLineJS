@@ -1,6 +1,6 @@
 // In order to keep file size down, only import the parts of rxjs that we use
 
-import 'core-js/features/promise';
+import 'core-js/modules/es.promise.finally';
 import 'url-search-params-polyfill';
 import { AjaxResponse, AjaxCreationMethod, AjaxRequest, AjaxError } from 'rxjs/observable/dom/AjaxObservable';
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
