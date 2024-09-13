@@ -24,7 +24,7 @@
     "type": "git",
     "url": "git+https://github.com/inkblot-therapy/BotFramework-DirectLineJS.git"
   },
-  "author": "Kenny Chan <kenny.chan@greenshieldlabs.ca> (https://github.com/kennychh)",
+  "author": "Kenny Chan <hoiyat0210@gmail.com> (https://github.com/kennychh)",
   "license": "MIT",
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
