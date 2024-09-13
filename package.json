@@ -17,14 +17,18 @@
     "prepublishOnly": "npm run build:typecheck && npm run build:babel && npm run build:webpack",
     "start": "npm run build && concurrently --names \"babel,typecheck,webpack\" \"npm run build:babel -- --watch\" \"npm run build:typecheck -- --preserveWatchOutput --watch\" \"npm run build:webpack -- --config webpack-watch.config.js --watch\"",
     "test": "jest --silent",
-    "watch": "npm run start"
+    "watch": "npm run start",
+    "release": "release-it"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Microsoft/BotFramework-DirectLineJS.git"
+    "url": "git+https://github.com/inkblot-therapy/BotFramework-DirectLineJS.git"
   },
-  "author": "Microsoft Corporation",
+  "author": "Kenny Chan <kenny.chan@greenshieldlabs.ca> (https://github.com/kennychh)",
   "license": "MIT",
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
   "dependencies": {
     "@babel/runtime": "7.14.8",
     "botframework-streaming": "4.20.0",
@@ -75,6 +79,24 @@
     "webpack": "^5.76.2",
     "webpack-cli": "^4.7.2",
     "webpack-stats-plugin": "^1.0.3",
+    "@release-it/conventional-changelog": "^5.0.0",
     "ws": "^8.13.0"
+  },
+  "release-it": {
+    "git": {
+      "commitMessage": "chore: release ${version}",
+      "tagName": "v${version}"
+    },
+    "npm": {
+      "publish": true
+    },
+    "github": {
+      "release": true
+    },
+    "plugins": {
+      "@release-it/conventional-changelog": {
+        "preset": "angular"
+      }
+    }
   }
 }

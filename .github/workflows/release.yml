@@ -1,0 +1,62 @@
+name: Version and Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      newversion:
+        description: 'Semantic Version Bump Type (major minor patch)'
+        required: true
+
+env:
+  node_version: lts/*
+
+concurrency: # prevent concurrent releases
+  group: npm-bump
+  cancel-in-progress: true
+jobs:
+  version_and_release:
+    runs-on: ubuntu-latest
+    outputs:
+      tagName: ${{ steps.release-tag-retreiver.outputs.release_tag }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Use Node.js ${{ env.node_version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.node_version }}
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@inkblot-therapy'
+
+      - name: Install dependencies
+        run: yarn
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure Git user
+        run: |
+          git config --global user.name "${{ github.actor }}"
+          git config --global user.email "${{ github.actor }}@users.noreply.github.com"
+        shell: bash
+
+      - name: Update version
+        run: |
+          npx standard-version --release-as ${{ inputs.newversion }}
+        shell: bash
+
+      - run: echo "release-tag=$(git describe --tags)" >> $GITHUB_OUTPUT
+        id: release-tag-retreiver
+        shell: bash
+
+      - name: Release Process
+        run: |
+          yarn release
+        shell: bash
+        env:
+          GH_RELEASE_GITHUB_API_TOKEN: ${{ inputs.github_token }}
+          GH_TOKEN: ${{ inputs.github_token }}
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
