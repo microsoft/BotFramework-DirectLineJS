@@ -85,6 +85,7 @@
   },
   "release-it": {
     "git": {
+      "requireCleanWorkingDir": false,
       "commitMessage": "chore: release ${version}",
       "tagName": "v${version}"
     },
