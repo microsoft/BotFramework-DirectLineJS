@@ -41,6 +41,7 @@ describe('Direct Line Streaming chat adapter with Network Information API', () =
       }
     });
 
+    // Node.js 22.x has global.navigator, but Node.js 18.x and 20.x don't.
     if (!global.navigator) {
       (global as any).navigator = {};
     }
