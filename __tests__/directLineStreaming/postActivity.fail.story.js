@@ -6,8 +6,7 @@ import mockObserver from './__setup__/mockObserver';
 import setupBotProxy from './__setup__/setupBotProxy';
 import waitFor from './__setup__/external/testing-library/waitFor';
 
-const MOCKBOT3_URL = 'https://webchat-mockbot3.azurewebsites.net/';
-const TOKEN_URL = 'https://webchat-mockbot3.azurewebsites.net/api/token/directlinease';
+const TOKEN_URL = 'https://hawo-mockbot4-token-app.blueriver-ce85e8f0.westus.azurecontainerapps.io/api/token/directlinease?bot=echo%20bot';
 
 afterEach(() => jest.useRealTimers());
 
@@ -18,10 +17,9 @@ test('should send activity', async () => {
 
   onWebSocketSendMessage.mockImplementation((data, socket, req, next) => next(data, socket, req));
 
-  const [{ directLineStreamingURL }, { token }] = await Promise.all([
-    setupBotProxy({ onWebSocketSendMessage, streamingBotURL: MOCKBOT3_URL }),
-    fetch(TOKEN_URL, { method: 'POST' }).then(res => res.json())
-  ]);
+  const { domain, token } = await fetch(TOKEN_URL, { method: 'POST' }).then(res => res.json());
+
+  const { directLineStreamingURL } = await setupBotProxy({ onWebSocketSendMessage, streamingBotURL: new URL('/', domain).href });
 
   // GIVEN: A Direct Line Streaming chat adapter.
   const activityObserver = mockObserver();
