@@ -41,11 +41,7 @@ describe('Direct Line Streaming chat adapter with Network Information API', () =
       }
     });
 
-    (global as any).navigator = {
-      get connection() {
-        return networkInformation;
-      }
-    };
+    (global as any).navigator.connection = networkInformation;
 
     const { domain, token } = await fetch(TOKEN_URL, { method: 'POST' }).then(res => res.json());
 
