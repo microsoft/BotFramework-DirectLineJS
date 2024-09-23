@@ -4,15 +4,15 @@ import fetch from 'node-fetch';
 
 import { ConnectionStatus } from '../../src/directLine';
 import { DirectLineStreaming } from '../../src/directLineStreaming';
+import waitFor from './__setup__/external/testing-library/waitFor';
 import mockObserver from './__setup__/mockObserver';
 import setupBotProxy from './__setup__/setupBotProxy';
-import waitFor from './__setup__/external/testing-library/waitFor';
 
 type MockObserver<T> = ReturnType<typeof mockObserver>;
 type ResultOfPromise<T> = T extends PromiseLike<infer P> ? P : never;
 
-const MOCKBOT3_URL = 'https://webchat-mockbot3.azurewebsites.net/';
-const TOKEN_URL = 'https://webchat-mockbot3.azurewebsites.net/api/token/directlinease';
+const TOKEN_URL =
+  'https://hawo-mockbot4-token-app.blueriver-ce85e8f0.westus.azurecontainerapps.io/api/token/directlinease?bot=echo%20bot';
 
 jest.setTimeout(10_000);
 
@@ -41,24 +41,22 @@ describe('Direct Line Streaming chat adapter with Network Information API', () =
       }
     });
 
-    (global as any).navigator = {
-      get connection() {
-        return networkInformation;
-      }
-    };
+    // Node.js 22.x has global.navigator, but Node.js 18.x and 20.x don't.
+    if (!global.navigator) {
+      (global as any).navigator = {};
+    }
 
-    let token: string;
+    (global as any).navigator.connection = networkInformation;
 
-    [botProxy, { token }] = await Promise.all([
-      setupBotProxy({ streamingBotURL: MOCKBOT3_URL }),
-      fetch(TOKEN_URL, { method: 'POST' }).then(res => res.json())
-    ]);
+    const { domain, token } = await fetch(TOKEN_URL, { method: 'POST' }).then(res => res.json());
+
+    const botProxy = await setupBotProxy({ streamingBotURL: new URL('/', domain).href });
 
     activityObserver = mockObserver();
     connectionStatusObserver = mockObserver();
     directLine = new DirectLineStreaming({
       domain: botProxy.directLineStreamingURL,
-      networkInformation: navigator.connection,
+      networkInformation: (navigator as any).connection,
       token
     });
 
@@ -114,7 +112,7 @@ describe('Direct Line Streaming chat adapter with Network Information API', () =
       // WHEN: "change" event is received.
       describe('when "change" event is received', () => {
         beforeEach(() => {
-          (navigator.connection as any).type = 'bluetooth';
+          (navigator as any).connection.type = 'bluetooth';
         });
 
         // THEN: Should observe "Connecting" -> "Online" again.

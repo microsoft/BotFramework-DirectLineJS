@@ -2,12 +2,12 @@ import fetch from 'node-fetch';
 
 import { ConnectionStatus } from '../../src/directLine';
 import { DirectLineStreaming } from '../../src/directLineStreaming';
+import waitFor from './__setup__/external/testing-library/waitFor';
 import mockObserver from './__setup__/mockObserver';
 import setupBotProxy from './__setup__/setupBotProxy';
-import waitFor from './__setup__/external/testing-library/waitFor';
 
-const MOCKBOT3_URL = 'https://webchat-mockbot3.azurewebsites.net/';
-const TOKEN_URL = 'https://webchat-mockbot3.azurewebsites.net/api/token/directlinease';
+const TOKEN_URL =
+  'https://hawo-mockbot4-token-app.blueriver-ce85e8f0.westus.azurecontainerapps.io/api/token/directlinease?bot=echo%20bot';
 
 jest.setTimeout(15000);
 
@@ -20,10 +20,12 @@ test('reconnect fail should stop', async () => {
 
   onUpgrade.mockImplementation((req, socket, head, next) => next(req, socket, head));
 
-  const [{ closeAllWebSocketConnections, directLineStreamingURL }, { token }] = await Promise.all([
-    setupBotProxy({ onUpgrade, streamingBotURL: MOCKBOT3_URL }),
-    fetch(TOKEN_URL, { method: 'POST' }).then(res => res.json())
-  ]);
+  const { domain, token } = await fetch(TOKEN_URL, { method: 'POST' }).then(res => res.json());
+
+  const { closeAllWebSocketConnections, directLineStreamingURL } = await setupBotProxy({
+    onUpgrade,
+    streamingBotURL: new URL('/', domain).href
+  });
 
   // GIVEN: A Direct Line Streaming chat adapter.
   const activityObserver = mockObserver();
