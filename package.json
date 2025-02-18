@@ -48,7 +48,7 @@
   "license": "MIT",
   "dependencies": {
     "@babel/runtime": "7.14.8",
-    "@release-it/conventional-changelog": "^8.0.2",
+    "@release-it/conventional-changelog": "^10.0.0",
     "botframework-streaming": "4.20.0",
     "buffer": "6.0.3",
     "core-js": "3.15.2",
@@ -91,7 +91,7 @@
     "node-fetch": "^2.6.7",
     "on-error-resume-next": "^1.1.0",
     "path-to-regexp": "^6.2.1",
-    "release-it": "^17.6.0",
+    "release-it": "^18.1.2",
     "restify": "^11.0.0",
     "rimraf": "^3.0.2",
     "simple-update-in": "^2.2.0",
