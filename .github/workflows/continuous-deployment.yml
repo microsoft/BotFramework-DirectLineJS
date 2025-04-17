@@ -29,13 +29,13 @@ jobs:
       - run: npm clean-install
       - run: npm run prepublishOnly
       - name: Upload tarball artifact
-        uses: actions/upload-artifact@v3.1.1
+        uses: actions/upload-artifact@v4.6.2
         with:
           name: bundle
           path: ./dist
       - run: npm pack
       - name: Upload tarball artifact
-        uses: actions/upload-artifact@v3.1.1
+        uses: actions/upload-artifact@v4.6.2
         with:
           name: tarball
           path: ./*.tgz
