@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.15.6] - 2025-04-17
+
 ### Changed
 
 - Bumped dependencies, in PR [#426](https://github.com/microsoft/BotFramework-DirectLineJS/pull/426) and [#438](https://github.com/microsoft/BotFramework-DirectLineJS/pull/438)
