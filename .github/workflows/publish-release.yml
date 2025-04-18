@@ -6,6 +6,8 @@ on:
 
 jobs:
   build-and-draft:
+    permissions:
+      contents: write
     runs-on: ubuntu-latest
 
     steps:
