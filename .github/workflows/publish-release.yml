@@ -6,6 +6,8 @@ on:
 
 jobs:
   build-and-draft:
+    permissions:
+      contents: write
     runs-on: ubuntu-latest
 
     steps:
@@ -70,6 +72,8 @@ jobs:
     needs:
       - build-and-draft
       - publish-package
+    permissions:
+      contents: write
     runs-on: ubuntu-latest
 
     steps:
