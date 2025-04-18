@@ -18,9 +18,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 
-- Bumped dependencies, by [@compulim](https://github.com/compulim), in PR [#426](https://github.com/microsoft/BotFramework-DirectLineJS/pull/426)
+- Bumped dependencies, in PR [#426](https://github.com/microsoft/BotFramework-DirectLineJS/pull/426) and [#438](https://github.com/microsoft/BotFramework-DirectLineJS/pull/438)
    - Production dependencies
       - [`botframework-streaming@4.23.0`](https://npmjs.com/package/botframework-streaming)
+      - [`@babel/runtime@7.26.10`](https://npmjs.com/package/@babel/runtime)
 
 ## [0.15.5] - 2023-10-10
 
