@@ -669,6 +669,9 @@ export class DirectLine implements IBotConnection {
         .subscribe(token => {
             konsole.log("refreshing token", token, "at", new Date());
             this.token = token;
+        },
+        (error: any) => {
+            konsole.log("refresh token failed at", new Date(), "Error:", error);
         });
     }
 
