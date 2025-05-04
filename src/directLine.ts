@@ -363,6 +363,7 @@ export enum ConnectionStatus {
 export interface DirectLineOptions {
     secret?: string,
     token?: string,
+    refreshToken$: Observable<string>,
     conversationId?: string,
     watermark?: string,
     domain?: string,
@@ -462,6 +463,7 @@ export class DirectLine implements IBotConnection {
     private expiredTokenExhaustion: Function;
     private secret: string;
     private token: string;
+    private refreshToken$: Observable<string>;
     private watermark = '';
     private streamUrl: string;
     private _botAgent = '';
@@ -473,6 +475,7 @@ export class DirectLine implements IBotConnection {
 
     private localeOnStartConversation: string;
     private userIdOnStartConversation: string;
+    private siteId: string;
 
     private pollingInterval: number = 1000; //ms
 
@@ -481,13 +484,20 @@ export class DirectLine implements IBotConnection {
     constructor(options: DirectLineOptions & Partial<Services>) {
         this.secret = options.secret;
         this.token = options.secret || options.token;
+        this.refreshToken$ = options.refreshToken$;
         this.webSocket = (options.webSocket === undefined ? true : options.webSocket) && typeof WebSocket !== 'undefined' && WebSocket !== undefined;
 
-        if (options.conversationStartProperties && options.conversationStartProperties.locale) {
-            if (Object.prototype.toString.call(options.conversationStartProperties.locale) === '[object String]') {
-                this.localeOnStartConversation = options.conversationStartProperties.locale;
-            } else {
-                console.warn('DirectLineJS: conversationStartProperties.locale was ignored: the locale name may be a BCP 47 language tag');
+        if (options.conversationStartProperties) {
+            if (options.conversationStartProperties.locale) {
+                if (Object.prototype.toString.call(options.conversationStartProperties.locale) === '[object String]') {
+                    this.localeOnStartConversation = options.conversationStartProperties.locale;
+                } else {
+                    console.warn('DirectLineJS: conversationStartProperties.locale was ignored: the locale name may be a BCP 47 language tag');
+                }
+            }
+
+            if (options.conversationStartProperties.siteId) {
+                this.siteId = options.conversationStartProperties.siteId;
             }
         }
 
@@ -635,7 +645,8 @@ export class DirectLine implements IBotConnection {
                 user: {
                     id: this.userIdOnStartConversation
                 },
-                locale: this.localeOnStartConversation
+                locale: this.localeOnStartConversation,
+                siteId: this.siteId
               };
         return this.services.ajax({
             method,
@@ -665,7 +676,13 @@ export class DirectLine implements IBotConnection {
 
     private refreshTokenLoop() {
         this.tokenRefreshSubscription = Observable.interval(intervalRefreshToken, this.services.scheduler)
-        .flatMap(_ => this.refreshToken())
+        .flatMap(_ =>
+            {
+                if (this.refreshToken$)
+                    return this.refreshToken$;
+                else
+                    return this.refreshToken();
+            })
         .subscribe(token => {
             konsole.log("refreshing token", token, "at", new Date());
             this.token = token;
