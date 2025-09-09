@@ -329,7 +329,8 @@ export interface Message extends IActivity {
     suggestedActions?: { actions: CardAction[], to?: string[] },
     speak?: string,
     inputHint?: string,
-    value?: object
+    value?: object,
+    deliveryMode?: "normal" | "stream" | "expectReplies"
 }
 
 export interface Typing extends IActivity {
