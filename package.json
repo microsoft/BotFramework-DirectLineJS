@@ -46,18 +46,14 @@
   },
   "author": "Kenny Chan <kenny.chan@greenshieldlabs.cs> (https://github.com/kennychh)",
   "license": "MIT",
-  "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
-  },
   "dependencies": {
-    "@babel/runtime": "7.14.8",
-    "@release-it/conventional-changelog": "^10.0.0",
+    "@babel/runtime": "^7.28.4",
+    "@release-it/conventional-changelog": "^10.0.1",
     "botframework-streaming": "4.20.0",
     "buffer": "6.0.3",
     "core-js": "3.15.2",
     "cross-fetch": "^3.1.5",
     "jwt-decode": "3.1.2",
-    "release-it": "^17.6.0",
     "rxjs": "5.5.12",
     "url-search-params-polyfill": "8.1.1",
     "yarn": "^1.22.22"
@@ -95,8 +91,8 @@
     "node-fetch": "^2.6.7",
     "on-error-resume-next": "^1.1.0",
     "path-to-regexp": "^6.2.1",
-    "release-it": "^18.1.2",
-    "restify": "^11.0.0",
+    "release-it": "^19.0.5",
+    "restify": "^8.0.0",
     "rimraf": "^3.0.2",
     "simple-update-in": "^2.2.0",
     "typescript": "^4.9.5",
@@ -104,23 +100,5 @@
     "webpack-cli": "^4.7.2",
     "webpack-stats-plugin": "^1.0.3",
     "ws": "^8.13.0"
-  },
-  "release-it": {
-    "git": {
-      "requireCleanWorkingDir": false,
-      "commitMessage": "chore: release ${version}",
-      "tagName": "v${version}"
-    },
-    "npm": {
-      "publish": true
-    },
-    "github": {
-      "release": true
-    },
-    "plugins": {
-      "@release-it/conventional-changelog": {
-        "preset": "angular"
-      }
-    }
   }
 }
