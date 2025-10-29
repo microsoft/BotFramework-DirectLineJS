@@ -305,6 +305,8 @@ export interface User {
     role?: UserRole
 }
 
+export type DeliveryMode = "normal" | "stream" | "expectReplies";
+
 export interface IActivity {
     type: string,
     channelData?: any,
@@ -313,7 +315,8 @@ export interface IActivity {
     eTag?: string,
     from: User,
     id?: string,
-    timestamp?: string
+    timestamp?: string,
+    deliveryMode?: DeliveryMode
 }
 
 export type AttachmentLayout = "list" | "carousel";
@@ -329,8 +332,7 @@ export interface Message extends IActivity {
     suggestedActions?: { actions: CardAction[], to?: string[] },
     speak?: string,
     inputHint?: string,
-    value?: object,
-    deliveryMode?: "normal" | "stream" | "expectReplies"
+    value?: object
 }
 
 export interface Typing extends IActivity {
@@ -373,7 +375,13 @@ export interface DirectLineOptions {
     timeout?: number,
     // Attached to all requests to identify requesting agent.
     botAgent?: string,
-    conversationStartProperties?: any
+    conversationStartProperties?: any,
+    /**
+     * Per-conversation switch for streaming delivery mode.
+     * If true, every outgoing activity will include deliveryMode: 'stream'.
+     * If false/omitted, deliveryMode is not sent (defaults to 'normal' in ABS).
+     */
+    streaming?: boolean
 }
 
 export interface Services {
@@ -478,11 +486,16 @@ export class DirectLine implements IBotConnection {
     private pollingInterval: number = 1000; //ms
 
     private tokenRefreshSubscription: Subscription;
+    private streaming: boolean;
 
     constructor(options: DirectLineOptions & Partial<Services>) {
         this.secret = options.secret;
         this.token = options.secret || options.token;
         this.webSocket = (options.webSocket === undefined ? true : options.webSocket) && typeof WebSocket !== 'undefined' && WebSocket !== undefined;
+
+        if (options.streaming) {
+            this.streaming = options.streaming;
+        }
 
         if (options.conversationStartProperties && options.conversationStartProperties.locale) {
             if (Object.prototype.toString.call(options.conversationStartProperties.locale) === '[object String]') {
@@ -755,6 +768,12 @@ export class DirectLine implements IBotConnection {
     }
 
     postActivity(activity: Activity) {
+        // If streaming is enabled for this DirectLine instance, always set deliveryMode to 'stream'
+        // default would be 'normal' and not passing anything meaning 'normal' as well on ABS side
+        if (this.streaming) {
+            activity.deliveryMode = 'stream';
+        }
+
         // If user id is set, check if it match activity.from.id and always override it in activity
         if (this.userIdOnStartConversation && activity.from && activity.from.id !== this.userIdOnStartConversation) {
             console.warn('DirectLineJS: Activity.from.id does not match with user id, ignoring activity.from.id');
