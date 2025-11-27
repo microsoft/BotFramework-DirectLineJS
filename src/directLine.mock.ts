@@ -11,6 +11,18 @@ const notImplemented = (): never => { throw new Error('not implemented') };
 
 export const mockActivity = (text: string): DirectLineExport.Activity => ({ type: 'message', from: { id: 'sender' }, text });
 
+export const mockVoiceActivity = (): DirectLineExport.Activity => ({
+    type: 'event',
+    from: { id: 'sender' },
+    name: 'voiceLiveEvent',
+    value: {
+        voiceLiveEvent: {
+            type: 'type',
+            delta: 'base64AudioChunk'
+        }
+    }
+});
+
 // MOCK DirectLine Server (shared state used by Observable.ajax and WebSocket mocks)
 
 interface ActivitySocket {
