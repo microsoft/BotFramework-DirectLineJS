@@ -769,7 +769,7 @@ export class DirectLine implements IBotConnection {
         // if it is voice activity, send it through webSocket as voice over http is not supported in ABS.
         // ABS limitation - client to server push is not being processed over web socket for text.
         // Once it is implemented, we can remove this and send all traffic to the webSocket
-        if (this.isVoiceEventActivity(activity)) {
+        if (DirectLine.isVoiceEventActivity(activity)) {
             if (!this.webSocket) {
                 return Observable.throw(new Error('Voice activities require WebSocket to be enabled'), this.services.scheduler);
             }
@@ -778,8 +778,8 @@ export class DirectLine implements IBotConnection {
                     Observable.create((subscriber: Subscriber<any>) => {
                         const envelope = { activities: [activity] };
                         try {
-                             if (!this.webSocketConnection || this.webSocketConnection.readyState !== WebSocket.OPEN) {
-                                 throw new Error('WebSocket connection not ready for voice activities');
+                            if (!this.webSocketConnection || this.webSocketConnection.readyState !== WebSocket.OPEN) {
+                                throw new Error('WebSocket connection not ready for voice activities');
                             }
                             this.webSocketConnection.send(JSON.stringify(envelope));
                             subscriber.next(envelope);
@@ -818,25 +818,15 @@ export class DirectLine implements IBotConnection {
     // to send voice chunks over activity protocol. The activity structure shown serves as
     // the current solution for transmitting voice data:
     // { "type": "event", "value": { "voiceLiveEvent": { "type": "response.audio.delta", "delta": "<base64 chunk>" } } }
-    private isVoiceEventActivity(activity: Activity) {
-        if (activity.type !== 'event') {
-            return false;
-        }
-
-        if (!activity?.value || typeof activity?.value !== 'object') {
-            return false;
-        }
-
-        const vle = activity?.value?.voiceLiveEvent;
-        if (!vle || typeof vle !== 'object') {
-            return false;
-        }
-
-        if (Object.keys(vle).length === 0) {
-            return false;
-        }
-
-        return true;
+    private static isVoiceEventActivity(activity: Activity) {
+        return (
+            activity.type === 'event' &&
+            activity?.value &&
+            typeof activity?.value === 'object' &&
+            activity?.value?.voiceLiveEvent &&
+            typeof activity?.value?.voiceLiveEvent === 'object' &&
+            Object.keys(activity?.value?.voiceLiveEvent).length > 0
+        );
     }
 
     private postMessageWithAttachments(message: Message) {

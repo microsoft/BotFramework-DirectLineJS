@@ -274,121 +274,110 @@ describe('MockSuite', () => {
     });
 
     test('VoiceActivityWithoutWebSocket', () => {
-    const voiceActivity = DirectLineMock.mockVoiceActivity();
-    directline = new DirectLineExport.DirectLine({ ...services, webSocket: false });
+        const voiceActivity = DirectLineMock.mockVoiceActivity();
+        directline = new DirectLineExport.DirectLine({ ...services, webSocket: false });
 
-    let actualError: any;
+        let actualError: any;
 
-    const scenario = function* (): IterableIterator<Observable<unknown>> {
-        yield Observable.timer(200, scheduler);
-        yield directline.postActivity(voiceActivity).catch(error => {
-            actualError = error;
-            return Observable.empty();
-        });
-    };
+        const scenario = function* (): IterableIterator<Observable<unknown>> {
+            yield Observable.timer(200, scheduler);
+            yield directline.postActivity(voiceActivity).catch(error => {
+                actualError = error;
+                return Observable.empty();
+            });
+        };
 
-    subscriptions.push(lazyConcat(scenario()).observeOn(scheduler).subscribe());
-    scheduler.flush();
+        subscriptions.push(lazyConcat(scenario()).observeOn(scheduler).subscribe());
+        scheduler.flush();
 
-    expect(actualError.message).toContain('Voice activities require WebSocket to be enabled');
+        expect(actualError.message).toContain('Voice activities require WebSocket to be enabled');
     });
 
     test('VoiceVsTextActivityRouting', () => {
-    const voiceActivity = DirectLineMock.mockVoiceActivity();
-    const textActivity = DirectLineMock.mockActivity('hello');
+        const voiceActivity = DirectLineMock.mockVoiceActivity();
+        const textActivity = DirectLineMock.mockActivity('hello');
 
-    directline = new DirectLineExport.DirectLine({ ...services, webSocket: true });
+        directline = new DirectLineExport.DirectLine({ ...services, webSocket: true });
 
-    const actual: Array<DirectLineExport.Activity> = [];
-    subscriptions.push(directline.activity$.subscribe(a => actual.push(a)));
+        const actual: Array<DirectLineExport.Activity> = [];
+        subscriptions.push(directline.activity$.subscribe(a => actual.push(a)));
 
-    let voiceCompleted = false;
-    let textCompleted = false;
-    let voiceError: any;
-    let textError: any;
+        let voiceCompleted = false;
+        let textCompleted = false;
+        let voiceError: any;
+        let textError: any;
 
-    const scenario = function* (): IterableIterator<Observable<unknown>> {
-        yield Observable.timer(200, scheduler);
+        const scenario = function* (): IterableIterator<Observable<unknown>> {
+            yield Observable.timer(200, scheduler);
 
-        // Send text activity (should go through HTTP/Ajax)
-        yield directline.postActivity(textActivity)
-            .do(() => textCompleted = true)
-            .catch(error => {
-                textError = error;
-                return Observable.empty();
-            });
-
-        yield Observable.timer(100, scheduler);
-
-        // Send voice activity (should go through WebSocket)
-        yield directline.postActivity(voiceActivity)
-            .do(() => voiceCompleted = true)
-            .catch(error => {
-                voiceError = error;
-                return Observable.empty();
-            });
-
-        yield Observable.timer(200, scheduler);
-    };
-
-    subscriptions.push(lazyConcat(scenario()).observeOn(scheduler).subscribe());
-    scheduler.flush();
-
-    // Both should complete successfully but through different paths
-    expect(textCompleted).toBe(true);
-    expect(voiceCompleted).toBe(true);
-    expect(textError).toBeUndefined();
-    expect(voiceError).toBeUndefined();
-
-    // Text activity should echo back, voice activity should not
-    expect(actual).toContainEqual(textActivity);
-    expect(actual).not.toContainEqual(voiceActivity);
-    });
-
-    test('InvalidVoiceActivityStructures', () => {
-    const invalidStructures: DirectLineExport.Activity[] = [
-        { type: 'event', from: { id: 'user' }, value: null } as any,
-        { type: 'event', from: { id: 'user' }, value: { voiceLiveEvent: null } } as any,
-        { type: 'event', from: { id: 'user' }, value: { voiceLiveEvent: {} } },
-        { type: 'event', from: { id: 'user' }, value: { notVoice: { data: 'test' } } } as any
-    ];
-
-    directline = new DirectLineExport.DirectLine({ ...services, webSocket: true });
-
-    const actual: Array<DirectLineExport.Activity> = [];
-    subscriptions.push(directline.activity$.subscribe(a => actual.push(a)));
-
-    let completedCount = 0;
-    let errorCount = 0;
-
-    const scenario = function* (): IterableIterator<Observable<unknown>> {
-        yield Observable.timer(200, scheduler);
-
-        // Send each invalid structure - should all go through HTTP path
-        for (const invalidActivity of invalidStructures) {
-            yield directline.postActivity(invalidActivity)
-                .do(() => completedCount++)
+            // Send text activity (should go through HTTP/Ajax)
+            yield directline.postActivity(textActivity)
+                .do(() => textCompleted = true)
                 .catch(error => {
-                    errorCount++;
+                    textError = error;
                     return Observable.empty();
                 });
+
             yield Observable.timer(100, scheduler);
-        }
 
-        yield Observable.timer(200, scheduler);
-    };
+            // Send voice activity (should go through WebSocket)
+            yield directline.postActivity(voiceActivity)
+                .do(() => voiceCompleted = true)
+                .catch(error => {
+                    voiceError = error;
+                    return Observable.empty();
+                });
 
-    subscriptions.push(lazyConcat(scenario()).observeOn(scheduler).subscribe());
-    scheduler.flush();
+            yield Observable.timer(200, scheduler);
+        };
 
-    // All invalid structures should complete successfully through HTTP path
-    expect(completedCount).toBe(invalidStructures.length);
-    expect(errorCount).toBe(0);
+        subscriptions.push(lazyConcat(scenario()).observeOn(scheduler).subscribe());
+        scheduler.flush();
 
-    // All invalid structures should echo back (confirming they went through HTTP, not WebSocket)
-    expect(actual).toHaveLength(invalidStructures.length);
-    invalidStructures.forEach(invalidActivity => {
+        // Both should complete successfully but through different paths
+        expect(textCompleted).toBe(true);
+        expect(voiceCompleted).toBe(true);
+        expect(textError).toBeUndefined();
+        expect(voiceError).toBeUndefined();
+
+        // Text activity should echo back, voice activity should not
+        expect(actual).toContainEqual(textActivity);
+        expect(actual).not.toContainEqual(voiceActivity);
+    });
+
+    test.each([
+        { type: 'event', from: { id: 'user' }, value: null },
+        { type: 'event', from: { id: 'user' }, value: { voiceLiveEvent: null } },
+        { type: 'event', from: { id: 'user' }, value: { voiceLiveEvent: {} } },
+        { type: 'event', from: { id: 'user' }, value: { notVoice: { data: 'test' } } }
+    ] as DirectLineExport.Activity[])('InvalidVoiceActivityStructure: %p', (invalidActivity) => {
+        directline = new DirectLineExport.DirectLine({ ...services, webSocket: true });
+
+        const actual: Array<DirectLineExport.Activity> = [];
+        subscriptions.push(directline.activity$.subscribe(a => actual.push(a)));
+
+        let completed = false;
+        let activityError: any;
+
+        const scenario = function* (): IterableIterator<Observable<unknown>> {
+            yield Observable.timer(200, scheduler);
+            yield directline.postActivity(invalidActivity)
+                .do(() => completed = true)
+                .catch(error => {
+                    activityError = error;
+                    return Observable.empty();
+                });
+            yield Observable.timer(200, scheduler);
+        };
+
+        subscriptions.push(lazyConcat(scenario()).observeOn(scheduler).subscribe());
+        scheduler.flush();
+
+        // Should complete successfully through HTTP path
+        expect(completed).toBe(true);
+        expect(activityError).toBeUndefined();
+
+        // Should echo back (confirming it went through HTTP, not WebSocket)
         expect(actual).toContainEqual(invalidActivity);
-        });
     });
 });
