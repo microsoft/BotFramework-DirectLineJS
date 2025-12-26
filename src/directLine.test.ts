@@ -335,7 +335,10 @@ describe('MockSuite', () => {
             expect(actual[0].deliveryMode).toStrictEqual('normal');
         });
 
-        test('Streaming + 403 post returns retry and keeps deliveryMode=stream on activity', () => {
+        test.each([
+            { streaming: true, expectedDeliveryMode: 'stream', testName: 'Streaming' },
+            { streaming: false, expectedDeliveryMode: undefined, testName: 'Non-streaming' }
+        ])('$testName + 403 post returns retry and preserves deliveryMode', ({ streaming, expectedDeliveryMode }) => {
             services.ajax = DirectLineMock.mockAjax(server, (urlOrRequest) => {
                 if (typeof urlOrRequest === 'string') {
                     throw new Error();
@@ -363,7 +366,10 @@ describe('MockSuite', () => {
                 throw new Error();
             });
 
-            directline = new DirectLineExport.DirectLine({ ...services, streaming: true });
+            directline = new DirectLineExport.DirectLine({
+                ...services,
+                ...(streaming ? { streaming: true } : {})
+            });
 
             const retryActivity = DirectLineMock.mockActivity('will-retry');
             const scenario = function* (): IterableIterator<Observable<unknown>> {
@@ -380,9 +386,8 @@ describe('MockSuite', () => {
 
             scheduler.flush();
 
-            expect(retryActivity.deliveryMode).toStrictEqual('stream');
+            expect(retryActivity.deliveryMode).toStrictEqual(expectedDeliveryMode);
             expect(postResult).toStrictEqual('retry');
         });
-
     });
 });

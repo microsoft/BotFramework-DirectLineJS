@@ -305,7 +305,7 @@ export interface User {
     role?: UserRole
 }
 
-export type DeliveryMode = "normal" | "stream" | "expectReplies";
+export type DeliveryMode = "normal" | "stream";
 
 export interface IActivity {
     type: string,
