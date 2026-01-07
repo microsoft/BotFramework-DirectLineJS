@@ -470,6 +470,7 @@ export class DirectLine implements IBotConnection {
     public referenceGrammarId: string;
     private timeout = 20 * 1000;
     private retries: number;
+    private webSocketConnection: WebSocket | null = null;
 
     private localeOnStartConversation: string;
     private userIdOnStartConversation: string;
@@ -765,6 +766,32 @@ export class DirectLine implements IBotConnection {
         if (activity.type === "message" && activity.attachments && activity.attachments.length > 0)
             return this.postMessageWithAttachments(activity);
 
+        // if it is voice activity, send it through webSocket as voice over http is not supported in ABS.
+        // ABS limitation - client to server push is not being processed over web socket for text.
+        // Once it is implemented, we can remove this and send all traffic to the webSocket
+        if (DirectLine.isVoiceEventActivity(activity)) {
+            if (!this.webSocket) {
+                return Observable.throw(new Error('Voice activities require WebSocket to be enabled'), this.services.scheduler);
+            }
+            return this.checkConnection(true)
+                .flatMap(_ =>
+                    Observable.create((subscriber: Subscriber<any>) => {
+                        const envelope = { activities: [activity] };
+                        try {
+                            if (!this.webSocketConnection || this.webSocketConnection.readyState !== WebSocket.OPEN) {
+                                throw new Error('WebSocket connection not ready for voice activities');
+                            }
+                            this.webSocketConnection.send(JSON.stringify(envelope));
+                            subscriber.next(envelope);
+                            subscriber.complete();
+                        } catch (e) {
+                            subscriber.error(e);
+                        }
+                })
+            )
+            .catch(error => this.catchExpiredToken(error));
+        }
+
         // If we're not connected to the bot, get connected
         // Will throw an error if we are not connected
         konsole.log("postActivity", activity);
@@ -784,6 +811,22 @@ export class DirectLine implements IBotConnection {
             .catch(error => this.catchPostError(error))
         )
         .catch(error => this.catchExpiredToken(error));
+    }
+
+    // Until activity protocol changes for multi-modal output are ratified, this method
+    // identifies voice event activities using the given activity example below as payload
+    // to send voice chunks over activity protocol. The activity structure shown serves as
+    // the current solution for transmitting voice data:
+    // { "type": "event", "value": { "voice": { "contentUrl": "<base64 chunk>" } } }
+    private static isVoiceEventActivity(activity: Activity) {
+        return (
+            activity.type === 'event' &&
+            activity?.value &&
+            typeof activity?.value === 'object' &&
+            activity?.value?.voice &&
+            typeof activity?.value?.voice === 'object' &&
+            Object.keys(activity?.value?.voice).length > 0
+        );
     }
 
     private postMessageWithAttachments(message: Message) {
@@ -938,11 +981,11 @@ export class DirectLine implements IBotConnection {
     private observableWebSocket<T>() {
         return Observable.create((subscriber: Subscriber<T>) => {
             konsole.log("creating WebSocket", this.streamUrl);
-            const ws = new this.services.WebSocket(this.streamUrl);
+            this.webSocketConnection = new this.services.WebSocket(this.streamUrl);
             let sub: Subscription;
             let closed: boolean;
 
-            ws.onopen = open => {
+            this.webSocketConnection.onopen = open => {
                 konsole.log("WebSocket open", open);
                 // Chrome is pretty bad at noticing when a WebSocket connection is broken.
                 // If we periodically ping the server with empty messages, it helps Chrome
@@ -950,14 +993,14 @@ export class DirectLine implements IBotConnection {
                 // error, and that give us the opportunity to attempt to reconnect.
                 sub = Observable.interval(this.timeout, this.services.scheduler).subscribe(_ => {
                     try {
-                        ws.send("")
+                        this.webSocketConnection.send("")
                     } catch(e) {
                         konsole.log("Ping error", e);
                     }
                 });
             }
 
-            ws.onclose = close => {
+            this.webSocketConnection.onclose = close => {
                 konsole.log("WebSocket close", close);
                 if (sub) sub.unsubscribe();
 
@@ -967,7 +1010,7 @@ export class DirectLine implements IBotConnection {
                 closed = true;
             }
 
-            ws.onerror = error => {
+            this.webSocketConnection.onerror = error => {
                 konsole.log("WebSocket error", error);
                 if (sub) sub.unsubscribe();
 
@@ -977,14 +1020,14 @@ export class DirectLine implements IBotConnection {
                 closed = true;
             }
 
-            ws.onmessage = message => message.data && subscriber.next(JSON.parse(message.data));
+            this.webSocketConnection.onmessage = message => message.data && subscriber.next(JSON.parse(message.data));
 
             // This is the 'unsubscribe' method, which is called when this observable is disposed.
             // When the WebSocket closes itself, we throw an error, and this function is eventually called.
             // When the observable is closed first (e.g. when tearing down a WebChat instance) then
             // we need to manually close the WebSocket.
             return () => {
-                if (ws.readyState === 0 || ws.readyState === 1) ws.close();
+                if (this.webSocketConnection.readyState === 0 || this.webSocketConnection.readyState === 1) this.webSocketConnection.close();
             }
         }) as Observable<T>
     }
