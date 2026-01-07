@@ -347,8 +347,8 @@ describe('MockSuite', () => {
 
     test.each([
         { type: 'event', from: { id: 'user' }, value: null },
-        { type: 'event', from: { id: 'user' }, value: { voiceLiveEvent: null } },
-        { type: 'event', from: { id: 'user' }, value: { voiceLiveEvent: {} } },
+        { type: 'event', from: { id: 'user' }, value: { voice: null } },
+        { type: 'event', from: { id: 'user' }, value: { voice: {} } },
         { type: 'event', from: { id: 'user' }, value: { notVoice: { data: 'test' } } }
     ] as DirectLineExport.Activity[])('InvalidVoiceActivityStructure: %p', (invalidActivity) => {
         directline = new DirectLineExport.DirectLine({ ...services, webSocket: true });

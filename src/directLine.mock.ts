@@ -14,11 +14,11 @@ export const mockActivity = (text: string): DirectLineExport.Activity => ({ type
 export const mockVoiceActivity = (): DirectLineExport.Activity => ({
     type: 'event',
     from: { id: 'sender' },
-    name: 'voiceLiveEvent',
+    name: 'voiceEvent',
     value: {
-        voiceLiveEvent: {
-            type: 'type',
-            delta: 'base64AudioChunk'
+        voice: {
+            contentType: 'type',
+            contentUrl: 'base64AudioChunk'
         }
     }
 });

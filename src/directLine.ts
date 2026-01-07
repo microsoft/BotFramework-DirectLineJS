@@ -817,15 +817,15 @@ export class DirectLine implements IBotConnection {
     // identifies voice event activities using the given activity example below as payload
     // to send voice chunks over activity protocol. The activity structure shown serves as
     // the current solution for transmitting voice data:
-    // { "type": "event", "value": { "voiceLiveEvent": { "type": "response.audio.delta", "delta": "<base64 chunk>" } } }
+    // { "type": "event", "value": { "voice": { "contentUrl": "<base64 chunk>" } } }
     private static isVoiceEventActivity(activity: Activity) {
         return (
             activity.type === 'event' &&
             activity?.value &&
             typeof activity?.value === 'object' &&
-            activity?.value?.voiceLiveEvent &&
-            typeof activity?.value?.voiceLiveEvent === 'object' &&
-            Object.keys(activity?.value?.voiceLiveEvent).length > 0
+            activity?.value?.voice &&
+            typeof activity?.value?.voice === 'object' &&
+            Object.keys(activity?.value?.voice).length > 0
         );
     }
 
