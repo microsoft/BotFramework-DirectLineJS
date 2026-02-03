@@ -53,7 +53,7 @@ jobs:
     steps:
       - uses: actions/setup-node@v3
         with:
-          node-version: 18
+          node-version: 24 # Newer Node.js version for OIDC publishing
           registry-url: https://registry.npmjs.org/
       - name: Download tarball artifact
         uses: actions/download-artifact@v4.2.1
@@ -72,3 +72,4 @@ jobs:
       - run: npm publish --access public --tag ${{ github.ref_name }} `ls *.tgz`
       - name: Generate job summary
         run: echo "NPM package has been published to https://npmjs.com/package/${{ steps.get-version.outputs.package-name }}/v/${{ steps.get-version.outputs.version }}." > $GITHUB_STEP_SUMMARY
+
