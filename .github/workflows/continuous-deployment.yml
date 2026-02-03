@@ -43,7 +43,12 @@ jobs:
   publish:
     needs: build
     runs-on: ubuntu-latest
-    environment: prerelease
+    environment:
+      name: npm
+      url: https://npmjs.com/package/${{ steps.get-version.outputs.package-name }}/v/${{ steps.get-version.outputs.version }}
+    permissions:
+      contents: read
+      id-token: write
 
     steps:
       - uses: actions/setup-node@v3
@@ -65,7 +70,5 @@ jobs:
           echo Cannot publish production version
           exit 1
       - run: npm publish --access public --tag ${{ github.ref_name }} `ls *.tgz`
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: Generate job summary
         run: echo "NPM package has been published to https://npmjs.com/package/${{ steps.get-version.outputs.package-name }}/v/${{ steps.get-version.outputs.version }}." > $GITHUB_STEP_SUMMARY
