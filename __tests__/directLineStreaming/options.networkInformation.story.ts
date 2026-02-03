@@ -12,7 +12,7 @@ type MockObserver<T> = ReturnType<typeof mockObserver>;
 type ResultOfPromise<T> = T extends PromiseLike<infer P> ? P : never;
 
 const TOKEN_URL =
-  'https://hawo-mockbot4-token-app.blueriver-ce85e8f0.westus.azurecontainerapps.io/api/token/directlinease?bot=echo%20bot';
+  'https://hawo-mockbot4-token-app.ambitiousflower-67725bfd.westus.azurecontainerapps.io/api/token/directlinease?bot=echo%20bot';
 
 jest.setTimeout(10_000);
 
