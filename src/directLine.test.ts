@@ -243,4 +243,151 @@ describe('MockSuite', () => {
         expect(actualError.status).toStrictEqual(429);
         expect(endTime - startTime).toStrictEqual(10);
     });
+
+    describe('StreamingMode', () => {
+
+        test('Setting streaming adds deliveryMode=stream to outgoing activity', () => {
+            // override directline with streaming enabled
+            directline = new DirectLineExport.DirectLine({ ...services, streaming: true });
+
+            const streamingActivity = DirectLineMock.mockActivity('streaming-test');
+            const scenario = function* (): IterableIterator<Observable<unknown>> {
+                yield Observable.timer(200, scheduler);
+                yield directline.postActivity(streamingActivity);
+            };
+
+            subscriptions.push(lazyConcat(scenario()).observeOn(scheduler).subscribe());
+
+            const actual: Array<DirectLineExport.Activity> = [];
+            subscriptions.push(directline.activity$.subscribe(a => actual.push(a)));
+
+            scheduler.flush();
+
+            expect(streamingActivity.deliveryMode).toStrictEqual('stream');
+            expect(actual[0].deliveryMode).toStrictEqual('stream');
+        });
+
+        test('Not setting streaming does not add deliveryMode at all to outgoing activity', () => {
+            const normalActivity = DirectLineMock.mockActivity('normal-test');
+            const scenario = function* (): IterableIterator<Observable<unknown>> {
+                yield Observable.timer(200, scheduler);
+                yield directline.postActivity(normalActivity);
+            };
+
+            subscriptions.push(lazyConcat(scenario()).observeOn(scheduler).subscribe());
+
+            const actual: Array<DirectLineExport.Activity> = [];
+            subscriptions.push(directline.activity$.subscribe(a => actual.push(a)));
+
+            scheduler.flush();
+
+            expect(normalActivity.deliveryMode).toBeUndefined();
+            expect(actual[0].deliveryMode).toBeUndefined();
+        });
+
+        test('Setting streaming overrides passed deliveryMode "normal" in activity to "stream"', () => {
+            directline = new DirectLineExport.DirectLine({ ...services, streaming: true });
+
+            const presetActivity: DirectLineExport.Message = {
+                type: 'message',
+                from: { id: 'sender' },
+                text: 'preset',
+                deliveryMode: 'normal'
+            };
+
+            const scenario = function* (): IterableIterator<Observable<unknown>> {
+                yield Observable.timer(200, scheduler);
+                yield directline.postActivity(presetActivity);
+            };
+
+            subscriptions.push(lazyConcat(scenario()).observeOn(scheduler).subscribe());
+
+            const actual: Array<DirectLineExport.Activity> = [];
+            subscriptions.push(directline.activity$.subscribe(a => actual.push(a)));
+
+            scheduler.flush();
+
+            expect(presetActivity.deliveryMode).toStrictEqual('stream');
+            expect(actual[0].deliveryMode).toStrictEqual('stream');
+        });
+
+        test('Not setting streaming preserves passed deliveryMode "normal" in activity', () => {
+            const presetActivity: DirectLineExport.Message = {
+                type: 'message',
+                from: { id: 'sender' },
+                text: 'preset-nonstream',
+                deliveryMode: 'normal'
+            };
+
+            const scenario = function* (): IterableIterator<Observable<unknown>> {
+                yield Observable.timer(200, scheduler);
+                yield directline.postActivity(presetActivity);
+            };
+
+            subscriptions.push(lazyConcat(scenario()).observeOn(scheduler).subscribe());
+
+            const actual: Array<DirectLineExport.Activity> = [];
+            subscriptions.push(directline.activity$.subscribe(a => actual.push(a)));
+
+            scheduler.flush();
+
+            expect(presetActivity.deliveryMode).toStrictEqual('normal');
+            expect(actual[0].deliveryMode).toStrictEqual('normal');
+        });
+
+        test.each([
+            { streaming: true, expectedDeliveryMode: 'stream', testName: 'Streaming' },
+            { streaming: false, expectedDeliveryMode: undefined, testName: 'Non-streaming' }
+        ])('$testName + 403 post returns retry and preserves deliveryMode', ({ streaming, expectedDeliveryMode }) => {
+            services.ajax = DirectLineMock.mockAjax(server, (urlOrRequest) => {
+                if (typeof urlOrRequest === 'string') {
+                    throw new Error();
+                }
+
+                if (urlOrRequest.url && urlOrRequest.url.indexOf('/conversations') > 0 && !/activities/u.test(urlOrRequest.url)) {
+                    // start conversation
+                    const response: Partial<AjaxResponse> = {
+                        response: server.conversation,
+                        status: 201,
+                        xhr: { getResponseHeader: () => 'n/a' } as unknown as XMLHttpRequest
+                    };
+                    return response as AjaxResponse;
+                }
+
+                if (urlOrRequest.url && /activities/u.test(urlOrRequest.url)) {
+                    const response: Partial<AjaxResponse> = {
+                        status: 403,
+                        xhr: { getResponseHeader: () => 'n/a' } as unknown as XMLHttpRequest
+                    };
+                    const error = new Error('Forbidden');
+                    throw Object.assign(error, response);
+                }
+
+                throw new Error();
+            });
+
+            directline = new DirectLineExport.DirectLine({
+                ...services,
+                ...(streaming ? { streaming: true } : {})
+            });
+
+            const retryActivity = DirectLineMock.mockActivity('will-retry');
+            const scenario = function* (): IterableIterator<Observable<unknown>> {
+                yield Observable.timer(200, scheduler);
+                yield directline.postActivity(retryActivity);
+            };
+
+            let postResult: string | undefined;
+            subscriptions.push(lazyConcat(scenario()).observeOn(scheduler).subscribe({
+                next: v => { postResult = v as string; },
+                error: () => {},
+                complete: () => {}
+            }));
+
+            scheduler.flush();
+
+            expect(retryActivity.deliveryMode).toStrictEqual(expectedDeliveryMode);
+            expect(postResult).toStrictEqual('retry');
+        });
+    });
 });
