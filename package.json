@@ -1,6 +1,6 @@
 {
   "name": "botframework-directlinejs",
-  "version": "0.15.7-0",
+  "version": "0.15.8",
   "description": "Client library for the Microsoft Bot Framework Direct Line 3.0 protocol",
   "files": [
     "dist/**/*",
