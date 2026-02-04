@@ -45,7 +45,7 @@ jobs:
 
   publish-package:
     environment:
-      name: production
+      name: npm
       url: https://npmjs.com/package/${{ steps.get-version.outputs.package-name }}/v/${{ steps.get-version.outputs.version }}
     needs: build-and-draft
     runs-on: ubuntu-latest
