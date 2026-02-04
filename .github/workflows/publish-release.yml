@@ -44,14 +44,19 @@ jobs:
           GH_TOKEN: ${{ github.token }}
 
   publish-package:
-    environment: production
+    environment:
+      name: npm
+      url: https://npmjs.com/package/${{ steps.get-version.outputs.package-name }}/v/${{ steps.get-version.outputs.version }}
     needs: build-and-draft
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
 
     steps:
       - uses: actions/setup-node@v3
         with:
-          node-version: 18
+          node-version: 24 # Newer Node.js version for OIDC publishing
           registry-url: https://registry.npmjs.org/
       - name: Download tarball artifact
         uses: actions/download-artifact@v4.2.1
@@ -63,8 +68,6 @@ jobs:
           echo package-name=`tar --extract --file=\`ls ./*.tgz\` --to-stdout package/package.json | jq -r .name` >> $GITHUB_OUTPUT
           echo version=`tar --extract --file=\`ls ./*.tgz\` --to-stdout package/package.json | jq -r .version` >> $GITHUB_OUTPUT
       - run: npm publish --access public `ls ./*.tgz`
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: Generate job summary
         run: echo "NPM package has been published to https://npmjs.com/package/${{ steps.get-version.outputs.package-name }}/v/${{ steps.get-version.outputs.version }}." > $GITHUB_STEP_SUMMARY
 
