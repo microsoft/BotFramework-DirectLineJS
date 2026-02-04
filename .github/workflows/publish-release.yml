@@ -67,8 +67,8 @@ jobs:
         run: |
           echo package-name=`tar --extract --file=\`ls ./*.tgz\` --to-stdout package/package.json | jq -r .name` >> $GITHUB_OUTPUT
           echo version=`tar --extract --file=\`ls ./*.tgz\` --to-stdout package/package.json | jq -r .version` >> $GITHUB_OUTPUT
-      - if: ${{ contains(steps.get-version.outputs.version, '-') }}
-        name: Validate version
+      - name: Validate version
+        if: ${{ contains(steps.get-version.outputs.version, '-') }}
         run: |
           echo Version number must not be a prerelease.
           exit 1
