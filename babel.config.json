@@ -17,7 +17,7 @@
     [
       "@babel/preset-env",
       {
-        "forceAllTransforms": true,
+        "targets": "> 1%, not dead",
         "modules": "commonjs"
       }
     ],
