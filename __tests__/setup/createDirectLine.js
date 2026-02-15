@@ -1,5 +1,3 @@
-import fetch from 'node-fetch';
-
 import { userId as DEFAULT_USER_ID } from '../constants.json';
 import { DirectLine, DirectLineStreaming } from '../../dist/directline';
 

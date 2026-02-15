@@ -16,6 +16,9 @@ class JSDOMEnvironmentWithProxy extends JSDOMEnvironment {
       this.global._resourceLoader = resources;
     }
 
+    // Make native fetch available in jsdom environment
+    this.global.fetch = fetch;
+
     return super.setup();
   }
 }
