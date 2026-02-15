@@ -1,6 +1,6 @@
 /// <reference path="get-port.d.ts" />
 
-import { createServer } from 'restify';
+import fastify from 'fastify';
 import createDeferred from 'p-defer';
 import getPort from 'get-port';
 
@@ -32,7 +32,7 @@ export type CreateServerResult = {
 
 export default async function (options: CreateServerOptions): Promise<CreateServerResult> {
   const port = await getPort({ port: 5000 });
-  const server = createServer();
+  const server = fastify();
 
   const orderedPlaybacks: PlaybackWithDeferred[][] = (options.playbacks || []).map(unorderedPlaybacks => {
     if (Array.isArray(unorderedPlaybacks)) {
@@ -50,41 +50,52 @@ export default async function (options: CreateServerOptions): Promise<CreateServ
     }
   });
 
-  server.pre((req, res, next) => {
+  server.all('*', async (req, res) => {
     const firstPlayback = orderedPlaybacks[0];
 
     if (!firstPlayback) {
-      return next();
+      res.code(404).send();
+      return;
     }
 
     const unorderedPlaybacks = Array.isArray(firstPlayback) ? firstPlayback : [firstPlayback];
-    let handled;
+    let handled = false;
+    const requestUrl = req.raw.url || req.url || '/';
+    const requestMethod = req.raw.method || req.method;
 
     unorderedPlaybacks.forEach(({ deferred, req: preq = {}, res: pres = {} }, index) => {
-      if (req.url === (preq.url || '/')) {
-        if (req.method === 'OPTIONS') {
-          res.send(200, '', {
-            'Access-Control-Allow-Origin': req.header('Origin') || '*',
-            'Access-Control-Allow-Methods': req.header('Access-Control-Request-Method') || 'GET',
-            'Access-Control-Allow-Headers': req.header('Access-Control-Request-Headers') || '',
-            'Content-Type': 'text/html; charset=utf-8'
-          });
+      if (requestUrl === (preq.url || '/')) {
+        const origin = (req.headers.origin as string) || '*';
+        const requestedMethod = (req.headers['access-control-request-method'] as string) || 'GET';
+        const requestedHeaders = (req.headers['access-control-request-headers'] as string) || '';
+
+        if (requestMethod === 'OPTIONS') {
+          res
+            .code(200)
+            .header('Access-Control-Allow-Origin', origin)
+            .header('Access-Control-Allow-Methods', requestedMethod)
+            .header('Access-Control-Allow-Headers', requestedHeaders)
+            .header('Content-Type', 'text/html; charset=utf-8')
+            .send('');
 
           handled = true;
-        } else if (req.method === (preq.method || 'GET')) {
-          const headers: any = {};
+        } else if (requestMethod === (preq.method || 'GET')) {
+          const headers: Record<string, string> = {};
 
           if (typeof pres.body === 'string') {
             headers['Content-Type'] = 'text/plain';
           }
 
-          res.send(pres.code || 200, pres.body, {
-            // JSDOM requires all HTTP response, including those already pre-flighted, to have "Access-Control-Allow-Origin".
-            // https://github.com/jsdom/jsdom/issues/2024
-            'Access-Control-Allow-Origin': req.header('Origin') || '*',
-            ...headers,
-            ...pres.headers
-          });
+          // JSDOM requires all HTTP response, including those already pre-flighted, to have "Access-Control-Allow-Origin".
+          // https://github.com/jsdom/jsdom/issues/2024
+          res
+            .code(pres.code || 200)
+            .headers({
+              'Access-Control-Allow-Origin': origin,
+              ...headers,
+              ...pres.headers
+            })
+            .send(pres.body);
 
           handled = true;
           deferred.resolve();
@@ -100,16 +111,14 @@ export default async function (options: CreateServerOptions): Promise<CreateServ
     });
 
     if (!handled) {
-      return next();
+      res.code(404).send();
     }
   });
 
-  server.listen(port);
+  await server.listen({ port, host: '127.0.0.1' });
 
   return {
-    dispose: () => {
-      return new Promise(resolve => server.close(resolve));
-    },
+    dispose: () => server.close(),
     port,
     promises: options.playbacks.map((unorderedPlayback: Playback | Playback[], index) => {
       if (Array.isArray(unorderedPlayback)) {
