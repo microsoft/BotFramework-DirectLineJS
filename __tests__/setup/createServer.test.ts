@@ -1,4 +1,3 @@
-import fetch from 'node-fetch';
 
 import createServer from './createServer';
 import hasResolved from 'has-resolved';
