@@ -5,7 +5,7 @@ import 'global-agent/bootstrap';
 
 import { EventTarget, getEventAttributeValue, setEventAttributeValue } from 'event-target-shim';
 import nock from 'nock';
-import onErrorResumeNext from 'on-error-resume-next';
+import { onErrorResumeNext } from 'on-error-resume-next/async';
 
 import { DirectLine } from '../src/directLine';
 

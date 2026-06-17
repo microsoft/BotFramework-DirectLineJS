@@ -64,7 +64,7 @@
     "jsdom": "^29.1.1",
     "nock": "^13.5.6",
     "node-fetch": "^2.6.7",
-    "on-error-resume-next": "^1.1.0",
+    "on-error-resume-next": "^2.0.3",
     "path-to-regexp": "^6.2.1",
     "rimraf": "^3.0.2",
     "simple-update-in": "^2.2.0",
