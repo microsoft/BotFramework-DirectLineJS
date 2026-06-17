@@ -18,10 +18,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 
-- Dependencies maintenance, by [@compulim](https://github.com/compulim), in PR [#XXX](https://github.com/microsoft/BotFramework-DirectLineJS/pull/XXX)
+- Dependencies maintenance, by [@compulim](https://github.com/compulim), in PR [#457](https://github.com/microsoft/BotFramework-DirectLineJS/pull/457)
    - Migrated from `restify` to `express`
    - Migrated from `p-defer` to `Promise.withResolvers()`
-- Bumped dependencies, by [@compulim](https://github.com/compulim), in PR [#XXX](https://github.com/microsoft/BotFramework-DirectLineJS/pull/XXX)
+- Bumped dependencies, by [@compulim](https://github.com/compulim), in PR [#457](https://github.com/microsoft/BotFramework-DirectLineJS/pull/457)
    - Production dependencies
       - [`botframework-streaming@4.23.3`](https://npmjs.com/package/botframework-streaming/v/4.23.3)
 
