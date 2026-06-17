@@ -18,13 +18,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 
-- Dependencies maintenance, by [@compulim](https://github.com/compulim), in PR [#457](https://github.com/microsoft/BotFramework-DirectLineJS/pull/457)
+- Migrated from obsoleted dependencies, by [@compulim](https://github.com/compulim), in PR [#457](https://github.com/microsoft/BotFramework-DirectLineJS/pull/457)
    - Migrated from `restify` to `express`
    - Migrated from `p-defer` to `Promise.withResolvers()`
 - Bumped dependencies, by [@compulim](https://github.com/compulim), in PR [#457](https://github.com/microsoft/BotFramework-DirectLineJS/pull/457)
    - Production dependencies
       - [`@babel/runtime@7.29.7`](https://npmjs.com/package/@babel/runtime/v/7.29.7)
       - [`botframework-streaming@4.23.3`](https://npmjs.com/package/botframework-streaming/v/4.23.3)
+      - [`url-search-params-polyfill@8.2.5`](https://npmjs.com/package/url-search-params-polyfill/v/8.2.5)
    - Development dependencies
       - [`core-js@3.49.0`](https://npmjs.com/package/core-js/v/3.49.0)
 
