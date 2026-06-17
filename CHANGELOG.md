@@ -16,6 +16,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Changed
+
+- Dependencies maintenance, by [@compulim](https://github.com/compulim), in PR [#XXX](https://github.com/microsoft/BotFramework-DirectLineJS/pull/XXX)
+   - Migrated from `restify` to `express`
+   - Migrated from `p-defer` to `Promise.withResolvers()`
+
 ## [0.15.6] - 2025-04-17
 
 ### Changed
