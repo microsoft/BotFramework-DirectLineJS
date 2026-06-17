@@ -48,7 +48,7 @@
     "@types/ws": "^8.18.1",
     "babel-jest": "^29.5.0",
     "babel-loader": "^10.1.1",
-    "babel-plugin-istanbul": "^6.0.0",
+    "babel-plugin-istanbul": "^8.0.0",
     "babel-plugin-transform-inline-environment-variables": "^0.4.3",
     "concurrently": "^10.0.3",
     "dotenv": "^17.4.2",
