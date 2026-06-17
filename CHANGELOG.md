@@ -21,6 +21,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Dependencies maintenance, by [@compulim](https://github.com/compulim), in PR [#XXX](https://github.com/microsoft/BotFramework-DirectLineJS/pull/XXX)
    - Migrated from `restify` to `express`
    - Migrated from `p-defer` to `Promise.withResolvers()`
+- Bumped dependencies, by [@compulim](https://github.com/compulim), in PR [#XXX](https://github.com/microsoft/BotFramework-DirectLineJS/pull/XXX)
+   - Production dependencies
+      - [`botframework-streaming@4.23.3`](https://npmjs.com/package/botframework-streaming/v/4.23.3)
 
 ## [0.15.6] - 2025-04-17
 
