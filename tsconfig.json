@@ -23,7 +23,6 @@
     "types": [
       "express",
       "jest",
-      "jsonwebtoken",
       "node",
       "ws"
     ]
