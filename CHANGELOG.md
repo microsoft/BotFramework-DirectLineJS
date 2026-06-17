@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
    - Migrated from `p-defer` to `Promise.withResolvers()`
 - Bumped dependencies, by [@compulim](https://github.com/compulim), in PR [#457](https://github.com/microsoft/BotFramework-DirectLineJS/pull/457)
    - Production dependencies
+      - [`@babel/runtime@7.29.7`](https://npmjs.com/package/@babel/runtime/v/7.29.7)
       - [`botframework-streaming@4.23.3`](https://npmjs.com/package/botframework-streaming/v/4.23.3)
 
 ## [0.15.6] - 2025-04-17
