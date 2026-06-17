@@ -25,6 +25,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
    - Production dependencies
       - [`@babel/runtime@7.29.7`](https://npmjs.com/package/@babel/runtime/v/7.29.7)
       - [`botframework-streaming@4.23.3`](https://npmjs.com/package/botframework-streaming/v/4.23.3)
+   - Development dependencies
+      - [`core-js@3.49.0`](https://npmjs.com/package/core-js/v/3.49.0)
 
 ## [0.15.6] - 2025-04-17
 
