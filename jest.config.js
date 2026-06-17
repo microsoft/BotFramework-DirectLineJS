@@ -1,4 +1,5 @@
 module.exports = {
+  setupFiles: ['core-js/actual/promise/with-resolvers'],
   setupFilesAfterEnv: ['./__tests__/directLineStreaming/__setup__/expect/activityContaining.ts'],
   testMatch: ['**/__tests__/**/*.[jt]s?(x)', '**/?(*.)(spec|test).[jt]s?(x)'],
   testPathIgnorePatterns: ['<rootDir>/__tests__/setup/', '<rootDir>/__tests__/directLineStreaming/__setup__/'],
