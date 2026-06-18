@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.15.9] - 2026-06-17
+
 ### Changed
 
 - Migrated from obsoleted dependencies, by [@compulim](https://github.com/compulim), in PR [#457](https://github.com/microsoft/BotFramework-DirectLineJS/pull/457)
@@ -54,6 +56,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
       - [`webpack-cli@5.1.4`](https://npmjs.com/package/webpack-cli/v/5.1.4)
       - [`webpack-stats-plugin@1.1.3`](https://npmjs.com/package/webpack-stats-plugin/v/1.1.3)
       - [`ws@8.21.0`](https://npmjs.com/package/ws/v/8.21.0)
+
+## [0.15.8] - 2026-02-03
+
+- Added `DirectLineOptions.streaming: boolean` for enabling per-conversation streaming delivery mode, by [@pranavjoshi001](https://github.com/pranavjoshi001), in PR [#443](https://github.com/microsoft/BotFramework-DirectLineJS/pull/443)
 
 ## [0.15.6] - 2025-04-17
 
