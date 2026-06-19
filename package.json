@@ -15,7 +15,7 @@
     "build:webpack": "webpack",
     "clean": "rimraf dist lib",
     "prepublishOnly": "npm run build:typecheck && npm run build:babel && npm run build:webpack",
-    "start": "npm run build && concurrently --names \"babel,typecheck,webpack\" \"npm run build:babel -- --watch\" \"npm run build:typecheck -- --preserveWatchOutput --watch\" \"npm run build:webpack -- --config webpack-watch.config.js --watch\"",
+    "start": "npm run build && concurrently --names \"babel,typecheck,webpack\" \"npm run build:babel -- --watch\" \"npm run build:typecheck -- --preserveWatchOutput --watch\" \"npm run build:webpack -- --config webpack-development.config.js --watch\"",
     "test": "jest --silent",
     "watch": "npm run start"
   },
@@ -70,7 +70,6 @@
     "typescript": "^4.9.5",
     "webpack": "^5.107.2",
     "webpack-cli": "^5.1.4",
-    "webpack-stats-plugin": "^1.1.3",
     "ws": "^8.21.0"
   }
 }

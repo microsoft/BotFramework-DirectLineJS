@@ -1,5 +1,3 @@
-const { StatsWriterPlugin } = require('webpack-stats-plugin');
-
 module.exports = {
   entry: {
     directline: './lib/directLine.js'
@@ -31,11 +29,5 @@ module.exports = {
     library: 'DirectLine',
     libraryTarget: 'umd'
   },
-  plugins: [
-    new StatsWriterPlugin({
-      filename: 'stats.json',
-      transform: (_, opts) => JSON.stringify(opts.compiler.getStats().toJson({ chunkModules: true }), null, 2)
-    })
-  ],
   target: ['web', 'es5']
 };
