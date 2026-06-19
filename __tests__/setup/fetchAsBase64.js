@@ -1,5 +1,3 @@
-import fetch from 'node-fetch';
-
 export default async function fetchAsBase64(url) {
   const res = await fetch(url);
 
