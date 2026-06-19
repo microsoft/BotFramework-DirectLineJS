@@ -21,6 +21,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.16.0] - 2026-06-18
+
 ### Changed
 
 - 👷🏻 Bumped GitHub Actions in CI/CD workflows, by [@orgads](https://github.com/orgads), in PR [#453](https://github.com/microsoft/BotFramework-DirectLineJS/pull/453)
