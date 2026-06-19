@@ -6,7 +6,6 @@ import { Observable } from 'rxjs/Observable';
 import { Subscriber } from 'rxjs/Subscriber';
 import * as BFSE from 'botframework-streaming';
 import createDeferred from './createDeferred';
-import fetch from 'cross-fetch';
 
 import { Activity, ConnectionStatus, Conversation, DirectLine, IBotConnection, Media, Message } from './directLine';
 import WebSocketClientWithNetworkInformation from './streaming/WebSocketClientWithNetworkInformation';

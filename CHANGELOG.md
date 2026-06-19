@@ -14,7 +14,20 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Fix [#XXX](https://github.com/microsoft/BotFramework-DirectLineJS/issues/XXX). Patched something, by [@johndoe](https://github.com/johndoe) in PR [#XXX](https://github.com/microsoft/BotFramework-DirectLineJS/pull/XXX)
 -->
 
+| Icon | Description                                       |
+| ---- | ------------------------------------------------- |
+| 💢   | Breaking changes                                  |
+| 👷🏻   | Development experience (non-production impacting) |
+
 ## [Unreleased]
+
+### Changed
+
+- 👷🏻 Bumped GitHub Actions in CI/CD workflows, by [@orgads](https://github.com/orgads), in PR [#453](https://github.com/microsoft/BotFramework-DirectLineJS/pull/453)
+
+### Removed
+
+- 💢 Removed `fetch` polyfill `cross-fetch`, by [@orgads](https://github.com/orgads) and [@compulim](https://github.com/compulim), in PR [#456](https://github.com/microsoft/BotFramework-DirectLineJS/pull/456) and [#XXX](https://github.com/microsoft/BotFramework-DirectLineJS/pull/XXX)
 
 ### Fixed
 
