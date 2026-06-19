@@ -2,7 +2,7 @@ name: Publish release on push tag
 
 on:
   push:
-    tags: 'v*'
+    tags: ['v*']
 
 jobs:
   build-and-draft:
@@ -11,9 +11,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
       - name: Use Node.js 18
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v6
         with:
           node-version: 18
           cache: 'npm'
@@ -28,13 +28,13 @@ jobs:
       - run: npm clean-install
       - run: npm run prepublishOnly
       - name: Upload tarball artifact
-        uses: actions/upload-artifact@v4.6.2
+        uses: actions/upload-artifact@v6
         with:
           name: bundle
           path: ./dist
       - run: npm pack
       - name: Upload tarball artifact
-        uses: actions/upload-artifact@v4.6.2
+        uses: actions/upload-artifact@v6
         with:
           name: tarball
           path: ./*.tgz
@@ -54,12 +54,12 @@ jobs:
       id-token: write
 
     steps:
-      - uses: actions/setup-node@v3
+      - uses: actions/setup-node@v6
         with:
           node-version: 24 # Newer Node.js version for OIDC publishing
           registry-url: https://registry.npmjs.org/
       - name: Download tarball artifact
-        uses: actions/download-artifact@v4.2.1
+        uses: actions/download-artifact@v7
         with:
           name: tarball
       - id: get-version
