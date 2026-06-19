@@ -14,7 +14,20 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Fix [#XXX](https://github.com/microsoft/BotFramework-DirectLineJS/issues/XXX). Patched something, by [@johndoe](https://github.com/johndoe) in PR [#XXX](https://github.com/microsoft/BotFramework-DirectLineJS/pull/XXX)
 -->
 
+| Icon | Description                                       |
+| ---- | ------------------------------------------------- |
+| 💢   | Breaking changes                                  |
+| 👷🏻   | Development experience (non-production impacting) |
+
 ## [Unreleased]
+
+### Changed
+
+- 👷🏻 Bumped GitHub Actions in CI/CD workflows, by [@orgads](https://github.com/orgads), in PR [#453](https://github.com/microsoft/BotFramework-DirectLineJS/pull/453)
+
+### Removed
+
+- 💢 Removed `fetch` polyfill `cross-fetch`, by [@orgads](https://github.com/orgads) and [@compulim](https://github.com/compulim), in PR [#456](https://github.com/microsoft/BotFramework-DirectLineJS/pull/456) and [#460](https://github.com/microsoft/BotFramework-DirectLineJS/pull/460)
 
 ### Fixed
 
@@ -26,7 +39,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - Migrated from obsoleted dependencies, by [@compulim](https://github.com/compulim), in PR [#457](https://github.com/microsoft/BotFramework-DirectLineJS/pull/457)
    - Migrated from `restify` to `express`
+      - Credits to [@orgads](https://github.com/orgads) in PR [#454](https://github.com/microsoft/BotFramework-DirectLineJS/pull/454)
    - Migrated from `p-defer` to `Promise.withResolvers()`
+      - Credits to [@orgads](https://github.com/orgads) in PR [#455](https://github.com/microsoft/BotFramework-DirectLineJS/pull/455)
 - Bumped dependencies, by [@compulim](https://github.com/compulim), in PR [#457](https://github.com/microsoft/BotFramework-DirectLineJS/pull/457)
    - Production dependencies
       - [`@babel/runtime@7.29.7`](https://npmjs.com/package/@babel/runtime/v/7.29.7)

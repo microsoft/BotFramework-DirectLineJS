@@ -30,7 +30,6 @@
     "botframework-streaming": "^4.23.3",
     "buffer": "6.0.3",
     "core-js": "^3.49.0",
-    "cross-fetch": "^3.1.5",
     "jwt-decode": "3.1.2",
     "rxjs": "5.5.12",
     "url-search-params-polyfill": "^8.2.5"
