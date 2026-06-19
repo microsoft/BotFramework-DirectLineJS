@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed resource leaks in DirectLineStreaming after end() is called, by [@orgads](https://github.com/orgads), in PR [#452](https://github.com/microsoft/BotFramework-DirectLineJS/pull/452)
+
 ## [0.15.9] - 2026-06-17
 
 ### Changed
