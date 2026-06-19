@@ -27,7 +27,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Removed
 
-- 💢 Removed `fetch` polyfill `cross-fetch`, by [@orgads](https://github.com/orgads) and [@compulim](https://github.com/compulim), in PR [#456](https://github.com/microsoft/BotFramework-DirectLineJS/pull/456) and [#XXX](https://github.com/microsoft/BotFramework-DirectLineJS/pull/XXX)
+- 💢 Removed `fetch` polyfill `cross-fetch`, by [@orgads](https://github.com/orgads) and [@compulim](https://github.com/compulim), in PR [#456](https://github.com/microsoft/BotFramework-DirectLineJS/pull/456) and [#460](https://github.com/microsoft/BotFramework-DirectLineJS/pull/460)
 
 ### Fixed
 
