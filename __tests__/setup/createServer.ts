@@ -1,11 +1,10 @@
 /// <reference path="get-port.d.ts" />
 
-import { createServer } from 'restify';
-import createDeferred from 'p-defer';
+import express from 'express';
 import getPort from 'get-port';
 
 export type PlaybackWithDeferred = {
-  deferred: createDeferred.DeferredPromise<{}>;
+  deferred: PromiseWithResolvers<{}>;
 } & Playback;
 
 export type Playback = {
@@ -32,25 +31,25 @@ export type CreateServerResult = {
 
 export default async function (options: CreateServerOptions): Promise<CreateServerResult> {
   const port = await getPort({ port: 5000 });
-  const server = createServer();
+  const app = express();
 
   const orderedPlaybacks: PlaybackWithDeferred[][] = (options.playbacks || []).map(unorderedPlaybacks => {
     if (Array.isArray(unorderedPlaybacks)) {
       return unorderedPlaybacks.map(playback => ({
         ...playback,
-        deferred: createDeferred()
+        deferred: Promise.withResolvers<{}>()
       }));
     } else {
       return [
         {
           ...unorderedPlaybacks,
-          deferred: createDeferred()
+          deferred: Promise.withResolvers<{}>()
         }
       ];
     }
   });
 
-  server.pre((req, res, next) => {
+  app.use((req, res, next) => {
     const firstPlayback = orderedPlaybacks[0];
 
     if (!firstPlayback) {
@@ -63,12 +62,15 @@ export default async function (options: CreateServerOptions): Promise<CreateServ
     unorderedPlaybacks.forEach(({ deferred, req: preq = {}, res: pres = {} }, index) => {
       if (req.url === (preq.url || '/')) {
         if (req.method === 'OPTIONS') {
-          res.send(200, '', {
-            'Access-Control-Allow-Origin': req.header('Origin') || '*',
-            'Access-Control-Allow-Methods': req.header('Access-Control-Request-Method') || 'GET',
-            'Access-Control-Allow-Headers': req.header('Access-Control-Request-Headers') || '',
-            'Content-Type': 'text/html; charset=utf-8'
-          });
+          res
+            .status(200)
+            .set({
+              'Access-Control-Allow-Origin': req.header('Origin') || '*',
+              'Access-Control-Allow-Methods': req.header('Access-Control-Request-Method') || 'GET',
+              'Access-Control-Allow-Headers': req.header('Access-Control-Request-Headers') || '',
+              'Content-Type': 'text/html; charset=utf-8'
+            })
+            .send('');
 
           handled = true;
         } else if (req.method === (preq.method || 'GET')) {
@@ -78,16 +80,19 @@ export default async function (options: CreateServerOptions): Promise<CreateServ
             headers['Content-Type'] = 'text/plain';
           }
 
-          res.send(pres.code || 200, pres.body, {
-            // JSDOM requires all HTTP response, including those already pre-flighted, to have "Access-Control-Allow-Origin".
-            // https://github.com/jsdom/jsdom/issues/2024
-            'Access-Control-Allow-Origin': req.header('Origin') || '*',
-            ...headers,
-            ...pres.headers
-          });
+          res
+            .status(pres.code || 200)
+            .set({
+              // JSDOM requires all HTTP response, including those already pre-flighted, to have "Access-Control-Allow-Origin".
+              // https://github.com/jsdom/jsdom/issues/2024
+              'Access-Control-Allow-Origin': req.header('Origin') || '*',
+              ...headers,
+              ...pres.headers
+            })
+            .send(pres.body);
 
           handled = true;
-          deferred.resolve();
+          deferred.resolve({});
           unorderedPlaybacks.splice(index, 1);
 
           if (!unorderedPlaybacks.length) {
@@ -104,11 +109,11 @@ export default async function (options: CreateServerOptions): Promise<CreateServ
     }
   });
 
-  server.listen(port);
+  const server = app.listen(port);
 
   return {
     dispose: () => {
-      return new Promise(resolve => server.close(resolve));
+      return new Promise(resolve => server.close(() => resolve()));
     },
     port,
     promises: options.playbacks.map((unorderedPlayback: Playback | Playback[], index) => {
