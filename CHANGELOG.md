@@ -39,7 +39,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - Migrated from obsoleted dependencies, by [@compulim](https://github.com/compulim), in PR [#457](https://github.com/microsoft/BotFramework-DirectLineJS/pull/457)
    - Migrated from `restify` to `express`
+      - Credits to [@orgads](https://github.com/orgads) in PR [#454](https://github.com/microsoft/BotFramework-DirectLineJS/pull/454)
    - Migrated from `p-defer` to `Promise.withResolvers()`
+      - Credits to [@orgads](https://github.com/orgads) in PR [#455](https://github.com/microsoft/BotFramework-DirectLineJS/pull/455)
 - Bumped dependencies, by [@compulim](https://github.com/compulim), in PR [#457](https://github.com/microsoft/BotFramework-DirectLineJS/pull/457)
    - Production dependencies
       - [`@babel/runtime@7.29.7`](https://npmjs.com/package/@babel/runtime/v/7.29.7)
