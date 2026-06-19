@@ -6,7 +6,6 @@ import { Observable } from 'rxjs/Observable';
 import { Subscriber } from 'rxjs/Subscriber';
 import * as BFSE from 'botframework-streaming';
 import createDeferred from './createDeferred';
-import fetch from 'cross-fetch';
 
 import { Activity, ConnectionStatus, Conversation, DirectLine, IBotConnection, Media, Message } from './directLine';
 import WebSocketClientWithNetworkInformation from './streaming/WebSocketClientWithNetworkInformation';
@@ -86,7 +85,6 @@ class StreamHandler implements BFSE.RequestHandler {
   }
 
   public flush() {
-    this.connectionStatus$.subscribe(() => {});
     this.activityQueue.forEach(a => this.subscriber.next(a));
     this.activityQueue = [];
   }
@@ -112,6 +110,7 @@ export class DirectLineStreaming implements IBotConnection {
   private queueActivities: boolean;
 
   private _botAgent = '';
+  private _endAbortController = new AbortController();
 
   #networkInformation: NetworkInformation | undefined;
 
@@ -172,6 +171,8 @@ export class DirectLineStreaming implements IBotConnection {
 
   end() {
     // Once end() is called, no reconnection can be made.
+    this._endAbortController.abort();
+
     this.activitySubscriber.complete();
 
     this.connectionStatus$.next(ConnectionStatus.Ended);
@@ -202,8 +203,17 @@ export class DirectLineStreaming implements IBotConnection {
 
     let numberOfAttempts = 0;
     while (numberOfAttempts < MAX_RETRY_COUNT) {
+      if (this._endAbortController.signal.aborted) {
+        return;
+      }
+
       numberOfAttempts++;
-      await new Promise(r => setTimeout(r, refreshTokenInterval));
+      await this.sleep(refreshTokenInterval);
+
+      if (this._endAbortController.signal.aborted) {
+        return;
+      }
+
       try {
         const res = await fetch(`${this.domain}/tokens/refresh`, { method: 'POST', headers: this.commonHeaders() });
         if (res.ok) {
@@ -214,6 +224,7 @@ export class DirectLineStreaming implements IBotConnection {
           if (res.status === 403 || res.status === 403) {
             console.error(`Fatal error while refreshing the token: ${res.status} ${res.statusText}`);
             this.streamConnection.disconnect();
+            return;
           } else {
             console.warn(`Refresh attempt #${numberOfAttempts} failed: ${res.status} ${res.statusText}`);
           }
@@ -225,6 +236,20 @@ export class DirectLineStreaming implements IBotConnection {
 
     console.error('Retries exhausted');
     this.streamConnection.disconnect();
+  }
+
+  private sleep(ms: number): Promise<void> {
+    if (this._endAbortController.signal.aborted) {
+      return Promise.resolve();
+    }
+
+    return new Promise(resolve => {
+      const timer = setTimeout(resolve, ms);
+      this._endAbortController.signal.addEventListener('abort', () => {
+        clearTimeout(timer);
+        resolve();
+      }, { once: true });
+    });
   }
 
   postActivity(activity: Activity) {
@@ -323,18 +348,33 @@ export class DirectLineStreaming implements IBotConnection {
 
   private async waitUntilOnline() {
     return new Promise<void>((resolve, reject) => {
-      this.connectionStatus$.subscribe(
+      let done = false;
+      let subscription: { unsubscribe(): void };
+      subscription = this.connectionStatus$.subscribe(
         cs => {
           if (cs === ConnectionStatus.Online) {
+            done = true;
+            subscription?.unsubscribe();
             return resolve();
           }
         },
-        e => reject(e)
+        e => {
+          done = true;
+          subscription?.unsubscribe();
+          reject(e);
+        }
       );
+      if (done) {
+        subscription.unsubscribe();
+      }
     });
   }
 
   private async connectAsync() {
+    if (this._endAbortController.signal.aborted) {
+      throw new Error('Connection has ended.');
+    }
+
     const re = new RegExp('^http(s?)');
 
     if (!re.test(this.domain)) {
@@ -354,6 +394,10 @@ export class DirectLineStreaming implements IBotConnection {
     // This promise will resolve when it is disconnected.
     return new Promise(async (resolve, reject) => {
       try {
+        if (this._endAbortController.signal.aborted) {
+          return reject(new Error('Connection has ended.'));
+        }
+
         this.streamConnection = new WebSocketClientWithNetworkInformation({
           disconnectionHandler: resolve,
           networkInformation: this.#networkInformation,
@@ -420,12 +464,19 @@ export class DirectLineStreaming implements IBotConnection {
       while (numRetries > 0) {
         numRetries--;
 
+        if (this._endAbortController.signal.aborted) {
+          return;
+        }
+
         const start = Date.now();
 
         try {
           // This promise will reject/resolve when disconnected.
           await this.connectAsync();
         } catch (err) {
+          if (this._endAbortController.signal.aborted) {
+            return;
+          }
           console.error(err);
         }
 
@@ -448,7 +499,11 @@ export class DirectLineStreaming implements IBotConnection {
           numRetries = MAX_RETRY_COUNT;
         } else if (numRetries > 0) {
           // Sleep only if we are doing retry. Otherwise, we are going to break the loop and signal FailedToConnect.
-          await new Promise(r => setTimeout(r, this.getRetryDelay()));
+          await this.sleep(this.getRetryDelay());
+
+          if (this._endAbortController.signal.aborted) {
+            return;
+          }
         }
       }
 
