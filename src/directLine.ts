@@ -36,6 +36,8 @@ import { objectExpression } from '@babel/types';
 import { DirectLineStreaming } from './directLineStreaming';
 export { DirectLineStreaming };
 
+import { hasIframeMicrophonePermission, isInIframe } from './iframeMicrophone';
+
 const DIRECT_LINE_VERSION = 'DirectLine/3.0';
 
 declare var process: {
@@ -381,7 +383,14 @@ export interface DirectLineOptions {
      * If true, every outgoing activity will include deliveryMode: 'stream'.
      * If false/omitted, deliveryMode is not sent (defaults to 'normal' in ABS).
      */
-    streaming?: boolean
+    streaming?: boolean,
+    /**
+     * Enable voice mode for audio streaming.
+     * - If true: voice mode enabled, uses /stream/multimodal endpoint, all traffic sent via WebSocket
+     * - If false: voice mode disabled, uses existing flow as is (/stream endpoint with http post)
+     * - If undefined: auto-detect for iframes with allow="microphone" attribute
+     */
+    enableVoiceMode?: boolean
 }
 
 export interface Services {
@@ -479,6 +488,7 @@ export class DirectLine implements IBotConnection {
     public referenceGrammarId: string;
     private timeout = 20 * 1000;
     private retries: number;
+    private webSocketConnection: WebSocket | null = null;
 
     private localeOnStartConversation: string;
     private userIdOnStartConversation: string;
@@ -488,6 +498,19 @@ export class DirectLine implements IBotConnection {
     private tokenRefreshSubscription: Subscription;
     private streaming: boolean;
 
+    // Voice mode: when true, use multimodal stream endpoint and send all traffic via WebSocket
+    private voiceModeEnabled: boolean = false;
+
+    // Voice configuration default constants
+    private static readonly VOICE_SAMPLE_RATE = 24000;
+    private static readonly VOICE_CHUNK_INTERVAL_MS = 100;
+
+    // Voice configuration: set when server supports audio modality, undefined otherwise
+    private voiceConfiguration: { sampleRate: number; chunkIntervalMs: number } | undefined;
+
+    // EventTarget for dispatching capability change events
+    private eventTarget = new EventTarget();
+
     constructor(options: DirectLineOptions & Partial<Services>) {
         this.secret = options.secret;
         this.token = options.secret || options.token;
@@ -496,6 +519,9 @@ export class DirectLine implements IBotConnection {
         if (options.streaming) {
             this.streaming = options.streaming;
         }
+
+        // Initialize voice mode detection (sets voiceModeEnabled synchronously for non-iframe cases)
+        this.initializeVoiceMode(options.enableVoiceMode);
 
         if (options.conversationStartProperties && options.conversationStartProperties.locale) {
             if (Object.prototype.toString.call(options.conversationStartProperties.locale) === '[object String]') {
@@ -785,6 +811,29 @@ export class DirectLine implements IBotConnection {
         if (activity.type === "message" && activity.attachments && activity.attachments.length > 0)
             return this.postMessageWithAttachments(activity);
 
+        // When voice mode is enabled, send ALL traffic (text + voice) via WebSocket
+        if (this.voiceModeEnabled) {
+            if (!this.webSocket) {
+                return Observable.throw(new Error('Voice mode requires WebSocket to be enabled'), this.services.scheduler);
+            }
+            return this.checkConnection(true)
+                .flatMap(_ =>
+                    Observable.create((subscriber: Subscriber<any>) => {
+                        try {
+                            if (!this.webSocketConnection || this.webSocketConnection.readyState !== WebSocket.OPEN) {
+                                throw new Error('WebSocket connection not ready for voice activities');
+                            }
+                            this.webSocketConnection.send(JSON.stringify(activity));
+                            subscriber.next(activity);
+                            subscriber.complete();
+                        } catch (e) {
+                            subscriber.error(e);
+                        }
+                })
+            )
+            .catch(error => this.catchExpiredToken(error));
+        }
+
         // If we're not connected to the bot, get connected
         // Will throw an error if we are not connected
         konsole.log("postActivity", activity);
@@ -957,12 +1006,15 @@ export class DirectLine implements IBotConnection {
     // implementation, I decided roll the below, where the logic is more purposeful. - @billba
     private observableWebSocket<T>() {
         return Observable.create((subscriber: Subscriber<T>) => {
-            konsole.log("creating WebSocket", this.streamUrl);
-            const ws = new this.services.WebSocket(this.streamUrl);
+            // Apply multimodal stream URL if voice mode is enabled
+            const streamUrl = this.getMultimodalStreamUrl(this.streamUrl);
+
+            konsole.log("creating WebSocket", streamUrl);
+            this.webSocketConnection = new this.services.WebSocket(streamUrl);
             let sub: Subscription;
             let closed: boolean;
 
-            ws.onopen = open => {
+            this.webSocketConnection.onopen = open => {
                 konsole.log("WebSocket open", open);
                 // Chrome is pretty bad at noticing when a WebSocket connection is broken.
                 // If we periodically ping the server with empty messages, it helps Chrome
@@ -970,14 +1022,14 @@ export class DirectLine implements IBotConnection {
                 // error, and that give us the opportunity to attempt to reconnect.
                 sub = Observable.interval(this.timeout, this.services.scheduler).subscribe(_ => {
                     try {
-                        ws.send("")
+                        this.webSocketConnection.send("")
                     } catch(e) {
                         konsole.log("Ping error", e);
                     }
                 });
             }
 
-            ws.onclose = close => {
+            this.webSocketConnection.onclose = close => {
                 konsole.log("WebSocket close", close);
                 if (sub) sub.unsubscribe();
 
@@ -987,7 +1039,7 @@ export class DirectLine implements IBotConnection {
                 closed = true;
             }
 
-            ws.onerror = error => {
+            this.webSocketConnection.onerror = error => {
                 konsole.log("WebSocket error", error);
                 if (sub) sub.unsubscribe();
 
@@ -997,14 +1049,20 @@ export class DirectLine implements IBotConnection {
                 closed = true;
             }
 
-            ws.onmessage = message => message.data && subscriber.next(JSON.parse(message.data));
+            this.webSocketConnection.onmessage = message => {
+                if (message.data) {
+                    const data = JSON.parse(message.data);
+                    this.handleIncomingActivity(data);
+                    subscriber.next(data);
+                }
+            };
 
             // This is the 'unsubscribe' method, which is called when this observable is disposed.
             // When the WebSocket closes itself, we throw an error, and this function is eventually called.
             // When the observable is closed first (e.g. when tearing down a WebChat instance) then
             // we need to manually close the WebSocket.
             return () => {
-                if (ws.readyState === 0 || ws.readyState === 1) ws.close();
+                if (this.webSocketConnection.readyState === 0 || this.webSocketConnection.readyState === 1) this.webSocketConnection.close();
             }
         }) as Observable<T>
     }
@@ -1079,6 +1137,38 @@ export class DirectLine implements IBotConnection {
         this.userIdOnStartConversation = userId;
     }
 
+    /**
+     * Returns voice configuration from server's agent.capabilities event, or undefined if server doesn't support audio.
+     * Use this to configure microphone settings. Only available after server confirms audio support.
+     */
+    getVoiceConfiguration() {
+        return this.voiceConfiguration;
+    }
+
+    /**
+     * Returns true if multimodal experience is requested (client-side), false otherwise.
+     * Does NOT guarantee server supports voice - use getVoiceConfiguration() for that.
+     * Use this to determine if activities are sent via WebSocket (no echo-back wait needed).
+     */
+    getIsVoiceModeEnabled(): boolean {
+        return !!this.voiceModeEnabled;
+    }
+
+     /**
+     * Adds an event listener for adapter events (e.g., 'capabilitieschanged').
+     * Used by consumer to subscribe to capability updates.
+     */
+    addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void {
+        this.eventTarget.addEventListener(type, listener, options);
+    }
+
+    /**
+     * Removes an event listener for adapter events.
+     */
+    removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void {
+        this.eventTarget.removeEventListener(type, listener, options);
+    }
+
     private parseToken(token: string) {
         try {
             const { user } = jwtDecode<JwtPayload>(token) as { [key: string]: any; };
@@ -1087,6 +1177,85 @@ export class DirectLine implements IBotConnection {
             if (e instanceof InvalidTokenError) {
                 return undefined;
             }
+        }
+    }
+
+    /**
+     * Initialize voice mode.
+     * - Explicit true/false: set synchronously (no race condition)
+     * - Undefined: auto-detect for iframes with microphone permission (async, best effort)
+     */
+    private initializeVoiceMode(enableVoiceMode?: boolean): void {
+        // Explicit true: enable synchronously
+        if (enableVoiceMode === true) {
+            this.voiceModeEnabled = true;
+            this.eventTarget.dispatchEvent(new Event('capabilitieschanged'));
+            return;
+        }
+
+        // Explicit false: already false by default, nothing to do
+        if (enableVoiceMode === false) {
+            return;
+        }
+
+        // Undefined: auto-detect for iframe with microphone permission (async)
+        if (isInIframe()) {
+            hasIframeMicrophonePermission().then(hasMic => {
+                if (hasMic) {
+                    this.voiceModeEnabled = true;
+                    this.eventTarget.dispatchEvent(new Event('capabilitieschanged'));
+                }
+            });
+        }
+    }
+
+    /**
+     * Handles incoming activity group to check for agent.capabilities event.
+     * Sets voice configuration if server supports audio modality.
+     */
+    private handleIncomingActivity(data: any): void {
+        const activities = data?.activities;
+        if (!Array.isArray(activities)) {
+            return;
+        }
+
+        for (const activity of activities) {
+            if (activity?.type === 'event' && activity?.name === 'agent.capabilities') {
+                const modalities = activity?.value?.modalities;
+                const hasAudio = modalities?.audio &&
+                    typeof modalities.audio === 'object';
+
+                if (hasAudio) {
+                    this.voiceConfiguration = {
+                        sampleRate: DirectLine.VOICE_SAMPLE_RATE,
+                        chunkIntervalMs: DirectLine.VOICE_CHUNK_INTERVAL_MS
+                    };
+                    this.eventTarget.dispatchEvent(new Event('capabilitieschanged'));
+                }
+            }
+        }
+    }
+
+    /**
+     * Modifies stream URL for voice mode: appends /multimodal to the /stream path
+     * while preserving query string, hash, and other URL parts.
+     */
+    private getMultimodalStreamUrl(url: string): string {
+        if (!this.voiceModeEnabled || !url) {
+            return url;
+        }
+
+        try {
+            const parsed = new URL(url);
+
+            if (parsed.pathname.endsWith('/stream')) {
+                parsed.pathname += '/multimodal';
+            }
+
+            return parsed.toString();
+        } catch {
+            // If URL parsing fails (malformed URL), return as-is
+            return url;
         }
     }
 

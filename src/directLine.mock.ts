@@ -29,6 +29,7 @@ export interface Conversation {
 export interface Server {
   scheduler: TestScheduler;
   conversation: Conversation;
+  webSocketUrl?: string;
 }
 
 const tokenPrefix = 'token';
@@ -211,6 +212,7 @@ type EventHandler<E extends Event> = (this: WebSocket, ev: E) => any;
 export const mockWebSocket = (server: Server): WebSocketConstructor =>
   class MockWebSocket implements WebSocket, ActivitySocket {
     constructor(url: string, protocols?: string | string[]) {
+      server.webSocketUrl = url;
 
       server.scheduler.schedule(() => {
         this.readyState = WebSocket.CONNECTING;
@@ -285,3 +287,36 @@ export const mockServices = (server: Server, scheduler: TestScheduler): DirectLi
   ajax: mockAjax(server),
   random: () => 0,
 });
+
+// Helper to inject agent.capabilities event with audio support
+export const mockAgentCapabilitiesEvent = (): DirectLineExport.Activity => ({
+  type: 'event',
+  from: { id: 'bot' },
+  name: 'agent.capabilities',
+  value: {
+    modalities: {
+      text: {},
+      audio: {
+        fonts: [],
+        tools: [],
+        instructions: []
+      }
+    }
+  }
+});
+
+// Helper to inject agent.capabilities event into WebSocket
+export const injectAgentCapabilities = (server: Server): void => {
+  const capabilitiesEvent = mockAgentCapabilitiesEvent();
+  const activityGroup: DirectLineExport.ActivityGroup = {
+    activities: [capabilitiesEvent],
+    watermark: server.conversation.history.length.toString(),
+  };
+  const message = new MessageEvent('type', { data: JSON.stringify(activityGroup) });
+  server.conversation.sockets.forEach(s => s.onmessage(message));
+};
+
+// Helper to check if WebSocket URL contains multimodal path
+export const hasMultimodalUrl = (server: Server): boolean => {
+  return !!server.webSocketUrl?.includes('/stream/multimodal');
+};

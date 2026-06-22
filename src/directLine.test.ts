@@ -390,4 +390,396 @@ describe('MockSuite', () => {
             expect(postResult).toStrictEqual('retry');
         });
     });
+
+    describe('VoiceMode', () => {
+
+        describe('enableVoiceMode: true (explicit)', () => {
+
+            test('voice mode enabled and uses /stream/multimodal URL', () => {
+                directline = new DirectLineExport.DirectLine({ ...services, enableVoiceMode: true });
+
+                // Verify voice mode is enabled synchronously
+                expect(directline.getIsVoiceModeEnabled()).toBe(true);
+
+                const scenario = function* (): IterableIterator<Observable<unknown>> {
+                    yield Observable.timer(200, scheduler);
+                };
+
+                subscriptions.push(lazyConcat(scenario()).observeOn(scheduler).subscribe());
+                subscriptions.push(directline.activity$.subscribe());
+
+                scheduler.flush();
+
+                // Verify WebSocket URL contains /stream/multimodal
+                expect(DirectLineMock.hasMultimodalUrl(server)).toBe(true);
+            });
+
+            test('postActivity sends via WebSocket (does not echo back)', () => {
+                directline = new DirectLineExport.DirectLine({ ...services, enableVoiceMode: true });
+
+                const textActivity = DirectLineMock.mockActivity('hello-voice-mode');
+
+                let postCompleted = false;
+                const actual: Array<DirectLineExport.Activity> = [];
+
+                const scenario = function* (): IterableIterator<Observable<unknown>> {
+                    yield Observable.timer(200, scheduler);
+                    yield directline.postActivity(textActivity).do(() => postCompleted = true);
+                    yield Observable.timer(100, scheduler);
+                };
+
+                subscriptions.push(lazyConcat(scenario()).observeOn(scheduler).subscribe());
+                subscriptions.push(directline.activity$.subscribe(a => actual.push(a)));
+
+                scheduler.flush();
+
+                expect(postCompleted).toBe(true);
+                // WebSocket path: activity does NOT echo back (server doesn't broadcast WS-sent activities)
+                expect(actual).not.toContainEqual(textActivity);
+            });
+
+            test('reconnect after WebSocket close still uses /stream/multimodal URL', () => {
+                directline = new DirectLineExport.DirectLine({ ...services, enableVoiceMode: true });
+
+                // First verify initial connection uses multimodal URL
+                const scenario = function* (): IterableIterator<Observable<unknown>> {
+                    yield Observable.timer(200, scheduler);
+                };
+
+                subscriptions.push(lazyConcat(scenario()).observeOn(scheduler).subscribe());
+                subscriptions.push(directline.activity$.subscribe());
+
+                scheduler.flush();
+
+                // Verify initial connection uses multimodal
+                expect(DirectLineMock.hasMultimodalUrl(server)).toBe(true);
+
+                // Simulate WebSocket close (triggers reconnect)
+                DirectLineMock.injectClose(server);
+
+                // Continue scheduler to allow reconnect
+                const reconnectScenario = function* (): IterableIterator<Observable<unknown>> {
+                    yield Observable.timer(200, scheduler);
+                };
+
+                subscriptions.push(lazyConcat(reconnectScenario()).observeOn(scheduler).subscribe());
+
+                scheduler.flush();
+
+                // After reconnect, should still use /stream/multimodal URL
+                expect(DirectLineMock.hasMultimodalUrl(server)).toBe(true);
+                expect(directline.getIsVoiceModeEnabled()).toBe(true);
+            });
+        });
+
+        describe('enableVoiceMode: false (explicit)', () => {
+
+            test('voice mode disabled and uses standard /stream URL', () => {
+                directline = new DirectLineExport.DirectLine({ ...services, enableVoiceMode: false });
+
+                // Verify voice mode is disabled
+                expect(directline.getIsVoiceModeEnabled()).toBe(false);
+
+                const scenario = function* (): IterableIterator<Observable<unknown>> {
+                    yield Observable.timer(200, scheduler);
+                };
+
+                subscriptions.push(lazyConcat(scenario()).observeOn(scheduler).subscribe());
+                subscriptions.push(directline.activity$.subscribe());
+
+                scheduler.flush();
+
+                // Verify WebSocket URL does NOT contain /stream/multimodal
+                expect(DirectLineMock.hasMultimodalUrl(server)).toBe(false);
+            });
+
+            test('postActivity sends via HTTP (echoes back)', () => {
+                directline = new DirectLineExport.DirectLine({ ...services, enableVoiceMode: false });
+
+                const textActivity = DirectLineMock.mockActivity('hello-http');
+
+                const actual: Array<DirectLineExport.Activity> = [];
+                subscriptions.push(directline.activity$.subscribe(a => actual.push(a)));
+
+                const scenario = function* (): IterableIterator<Observable<unknown>> {
+                    yield Observable.timer(200, scheduler);
+                    yield directline.postActivity(textActivity);
+                    yield Observable.timer(100, scheduler);
+                };
+
+                subscriptions.push(lazyConcat(scenario()).observeOn(scheduler).subscribe());
+
+                scheduler.flush();
+
+                // HTTP path: activity echoes back via activity$ (server broadcasts HTTP-posted activities)
+                expect(actual).toContainEqual(textActivity);
+            });
+
+            test('403 post returns retry and still uses standard /stream URL', () => {
+                services.ajax = DirectLineMock.mockAjax(server, (urlOrRequest) => {
+                    if (typeof urlOrRequest === 'string') {
+                        throw new Error();
+                    }
+
+                    if (urlOrRequest.url && urlOrRequest.url.indexOf('/conversations') > 0 && !/activities/u.test(urlOrRequest.url)) {
+                        const response: Partial<AjaxResponse> = {
+                            response: server.conversation,
+                            status: 201,
+                            xhr: { getResponseHeader: () => 'n/a' } as unknown as XMLHttpRequest
+                        };
+                        return response as AjaxResponse;
+                    }
+
+                    if (urlOrRequest.url && /activities/u.test(urlOrRequest.url)) {
+                        const response: Partial<AjaxResponse> = {
+                            status: 403,
+                            xhr: { getResponseHeader: () => 'n/a' } as unknown as XMLHttpRequest
+                        };
+                        const error = new Error('Forbidden');
+                        throw Object.assign(error, response);
+                    }
+
+                    throw new Error();
+                });
+
+                directline = new DirectLineExport.DirectLine({ ...services, enableVoiceMode: false });
+
+                const retryActivity = DirectLineMock.mockActivity('will-retry-false');
+                const scenario = function* (): IterableIterator<Observable<unknown>> {
+                    yield Observable.timer(200, scheduler);
+                    yield directline.postActivity(retryActivity);
+                };
+
+                let postResult: string | undefined;
+                subscriptions.push(lazyConcat(scenario()).observeOn(scheduler).subscribe({
+                    next: v => { postResult = v as string; },
+                    error: () => {},
+                    complete: () => {}
+                }));
+
+                scheduler.flush();
+
+                expect(postResult).toStrictEqual('retry');
+                expect(DirectLineMock.hasMultimodalUrl(server)).toBe(false);
+            });
+        });
+
+        describe('enableVoiceMode: undefined (auto-detect)', () => {
+
+            test('non-iframe: voice mode disabled and uses standard /stream URL', () => {
+                // Default test environment is not an iframe (window.self === window.top)
+                directline = new DirectLineExport.DirectLine({ ...services });
+
+                // Verify voice mode is disabled (synchronous - no iframe check needed)
+                expect(directline.getIsVoiceModeEnabled()).toBe(false);
+
+                const scenario = function* (): IterableIterator<Observable<unknown>> {
+                    yield Observable.timer(200, scheduler);
+                };
+
+                subscriptions.push(lazyConcat(scenario()).observeOn(scheduler).subscribe());
+                subscriptions.push(directline.activity$.subscribe());
+
+                scheduler.flush();
+
+                // Verify standard /stream URL (not multimodal)
+                expect(DirectLineMock.hasMultimodalUrl(server)).toBe(false);
+            });
+
+            test('non-iframe: 403 post returns retry and still uses standard /stream URL', () => {
+                services.ajax = DirectLineMock.mockAjax(server, (urlOrRequest) => {
+                    if (typeof urlOrRequest === 'string') {
+                        throw new Error();
+                    }
+
+                    if (urlOrRequest.url && urlOrRequest.url.indexOf('/conversations') > 0 && !/activities/u.test(urlOrRequest.url)) {
+                        const response: Partial<AjaxResponse> = {
+                            response: server.conversation,
+                            status: 201,
+                            xhr: { getResponseHeader: () => 'n/a' } as unknown as XMLHttpRequest
+                        };
+                        return response as AjaxResponse;
+                    }
+
+                    if (urlOrRequest.url && /activities/u.test(urlOrRequest.url)) {
+                        const response: Partial<AjaxResponse> = {
+                            status: 403,
+                            xhr: { getResponseHeader: () => 'n/a' } as unknown as XMLHttpRequest
+                        };
+                        const error = new Error('Forbidden');
+                        throw Object.assign(error, response);
+                    }
+
+                    throw new Error();
+                });
+
+                directline = new DirectLineExport.DirectLine({ ...services });
+
+                const retryActivity = DirectLineMock.mockActivity('will-retry-undefined');
+                const scenario = function* (): IterableIterator<Observable<unknown>> {
+                    yield Observable.timer(200, scheduler);
+                    yield directline.postActivity(retryActivity);
+                };
+
+                let postResult: string | undefined;
+                subscriptions.push(lazyConcat(scenario()).observeOn(scheduler).subscribe({
+                    next: v => { postResult = v as string; },
+                    error: () => {},
+                    complete: () => {}
+                }));
+
+                scheduler.flush();
+
+                expect(postResult).toStrictEqual('retry');
+                expect(DirectLineMock.hasMultimodalUrl(server)).toBe(false);
+            });
+
+            test('iframe WITH microphone permission: voice mode enabled and uses /stream/multimodal URL', async () => {
+                // Mock iframe detection: window.self !== window.top
+                const originalSelf = window.self;
+                Object.defineProperty(window, 'self', {
+                    value: { notTop: true },
+                    writable: true,
+                    configurable: true
+                });
+
+                // Mock permissionsPolicy.allowsFeature('microphone') to return true
+                const originalPermissionsPolicy = (document as any).permissionsPolicy;
+                (document as any).permissionsPolicy = {
+                    allowsFeature: (feature: string) => feature === 'microphone'
+                };
+
+                try {
+                    directline = new DirectLineExport.DirectLine({ ...services });
+                    await Promise.resolve();
+
+                    const textActivity = DirectLineMock.mockActivity('iframe-with-mic');
+                    let postCompleted = false;
+                    const actual: Array<DirectLineExport.Activity> = [];
+
+                    const scenario = function* (): IterableIterator<Observable<unknown>> {
+                        yield Observable.timer(200, scheduler);
+                        yield directline.postActivity(textActivity).do(() => postCompleted = true);
+                        yield Observable.timer(100, scheduler);
+                    };
+
+                    subscriptions.push(lazyConcat(scenario()).observeOn(scheduler).subscribe());
+                    subscriptions.push(directline.activity$.subscribe(a => actual.push(a)));
+
+                    scheduler.flush();
+
+                    expect(directline.getIsVoiceModeEnabled()).toBe(true);
+
+                    // Verify /stream/multimodal URL
+                    expect(DirectLineMock.hasMultimodalUrl(server)).toBe(true);
+                    // Verify WebSocket routing: activity does NOT echo back
+                    expect(postCompleted).toBe(true);
+                    expect(actual).not.toContainEqual(textActivity);
+                } finally {
+                    Object.defineProperty(window, 'self', {
+                        value: originalSelf,
+                        writable: true,
+                        configurable: true
+                    });
+                    if (originalPermissionsPolicy) {
+                        (document as any).permissionsPolicy = originalPermissionsPolicy;
+                    } else {
+                        delete (document as any).permissionsPolicy;
+                    }
+                }
+            });
+
+            test('iframe WITHOUT microphone permission: voice mode disabled', async () => {
+                // Mock iframe detection: window.self !== window.top
+                const originalSelf = window.self;
+                Object.defineProperty(window, 'self', {
+                    value: { notTop: true },
+                    writable: true,
+                    configurable: true
+                });
+
+                // Mock permissionsPolicy.allowsFeature('microphone') to return false
+                const originalPermissionsPolicy = (document as any).permissionsPolicy;
+                (document as any).permissionsPolicy = {
+                    allowsFeature: (feature: string) => false
+                };
+
+                try {
+                    directline = new DirectLineExport.DirectLine({ ...services });
+
+                    expect(directline.getIsVoiceModeEnabled()).toBe(false);
+
+                    const textActivity = DirectLineMock.mockActivity('iframe-no-mic');
+                    const actual: Array<DirectLineExport.Activity> = [];
+
+                    const scenario = function* (): IterableIterator<Observable<unknown>> {
+                        yield Observable.timer(200, scheduler);
+                        yield directline.postActivity(textActivity);
+                        yield Observable.timer(100, scheduler);
+                    };
+
+                    subscriptions.push(lazyConcat(scenario()).observeOn(scheduler).subscribe());
+                    subscriptions.push(directline.activity$.subscribe(a => actual.push(a)));
+
+                    scheduler.flush();
+
+                    // Verify standard /stream URL (not multimodal)
+                    expect(DirectLineMock.hasMultimodalUrl(server)).toBe(false);
+                    // Verify HTTP routing: activity echoes back
+                    expect(actual).toContainEqual(textActivity);
+                } finally {
+                    Object.defineProperty(window, 'self', {
+                        value: originalSelf,
+                        writable: true,
+                        configurable: true
+                    });
+                    if (originalPermissionsPolicy) {
+                        (document as any).permissionsPolicy = originalPermissionsPolicy;
+                    } else {
+                        delete (document as any).permissionsPolicy;
+                    }
+                }
+            });
+        });
+
+        describe('Voice Configuration & Events', () => {
+
+            test('getVoiceConfiguration returns undefined initially', () => {
+                directline = new DirectLineExport.DirectLine({ ...services });
+
+                expect(directline.getVoiceConfiguration()).toBeUndefined();
+            });
+
+            test('agent.capabilities event sets voiceConfiguration and fires capabilitieschanged', () => {
+                directline = new DirectLineExport.DirectLine({ ...services });
+
+                let eventFired = false;
+                directline.addEventListener('capabilitieschanged', () => {
+                    eventFired = true;
+                });
+
+                subscriptions.push(directline.activity$.subscribe());
+
+                const scenario = function* (): IterableIterator<Observable<unknown>> {
+                    yield Observable.timer(200, scheduler);
+                };
+
+                subscriptions.push(lazyConcat(scenario()).observeOn(scheduler).subscribe());
+
+                scheduler.flush();
+
+                // Inject agent.capabilities event
+                DirectLineMock.injectAgentCapabilities(server);
+
+                // Verify voiceConfiguration is set
+                const config = directline.getVoiceConfiguration();
+                expect(config).toBeDefined();
+                expect(config?.sampleRate).toBe(24000);
+                expect(config?.chunkIntervalMs).toBe(100);
+
+                // Verify capabilitieschanged event fired
+                expect(eventFired).toBe(true);
+            });
+        });
+    });
 });
