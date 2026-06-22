@@ -314,6 +314,7 @@ export interface IActivity {
     eTag?: string,
     from: User,
     id?: string,
+    replyToId?: string,
     timestamp?: string,
     deliveryMode?: DeliveryMode
 }
