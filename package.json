@@ -59,7 +59,7 @@
     "global-agent": "^2.2.0",
     "has-resolved": "^2.0.0",
     "http-proxy": "^1.18.1",
-    "http-proxy-middleware": "^2.0.9",
+    "http-proxy-middleware": "^3.0.7",
     "jest": "^29.5.0",
     "jest-environment-jsdom": "^29.5.0",
     "jsdom": "^29.1.1",
