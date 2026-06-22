@@ -16,7 +16,25 @@ class JSDOMEnvironmentWithProxy extends JSDOMEnvironment {
       this.global._resourceLoader = resources;
     }
 
+    // Make native fetch and Fetch API globals available in jsdom environment
+    // Required for nock v14+ which uses @mswjs/interceptors
     this.global.fetch = fetch;
+    this.global.Headers = Headers;
+    this.global.Request = Request;
+    this.global.Response = Response;
+    this.global.TextEncoder = TextEncoder;
+    this.global.TextDecoder = TextDecoder;
+
+    // Streams API globals
+    if (typeof ReadableStream !== 'undefined') {
+      this.global.ReadableStream = ReadableStream;
+    }
+    if (typeof WritableStream !== 'undefined') {
+      this.global.WritableStream = WritableStream;
+    }
+    if (typeof TransformStream !== 'undefined') {
+      this.global.TransformStream = TransformStream;
+    }
 
     return super.setup();
   }
