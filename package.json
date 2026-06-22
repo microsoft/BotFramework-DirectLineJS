@@ -8,6 +8,9 @@
   ],
   "main": "lib/directLine.js",
   "types": "lib/directLine.d.ts",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "build": "npm run build:typecheck && npm run build:babel -- --env-name test && npm run build:webpack -- --config webpack-development.config.js",
     "build:babel": "babel --extensions .js,.ts --ignore src/**/*.spec.js,src/**/*.spec.ts,src/**/*.test.js,src/**/*.test.ts --out-dir lib src",
