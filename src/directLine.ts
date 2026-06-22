@@ -1,6 +1,5 @@
 // In order to keep file size down, only import the parts of rxjs that we use
 
-import 'core-js/features/promise';
 import 'url-search-params-polyfill';
 import { AjaxResponse, AjaxCreationMethod, AjaxRequest, AjaxError } from 'rxjs/observable/dom/AjaxObservable';
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
@@ -315,6 +314,7 @@ export interface IActivity {
     eTag?: string,
     from: User,
     id?: string,
+    replyToId?: string,
     timestamp?: string,
     deliveryMode?: DeliveryMode
 }

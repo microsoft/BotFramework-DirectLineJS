@@ -16,6 +16,8 @@ class JSDOMEnvironmentWithProxy extends JSDOMEnvironment {
       this.global._resourceLoader = resources;
     }
 
+    this.global.fetch = fetch;
+
     return super.setup();
   }
 }

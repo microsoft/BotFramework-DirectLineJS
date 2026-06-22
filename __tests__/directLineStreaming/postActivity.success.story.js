@@ -1,5 +1,3 @@
-import fetch from 'node-fetch';
-
 import { ConnectionStatus } from '../../src/directLine';
 import { DirectLineStreaming } from '../../src/directLineStreaming';
 import activityTimestampComparer from './__setup__/activityTimestampComparer';
