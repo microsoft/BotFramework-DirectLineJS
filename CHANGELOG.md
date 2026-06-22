@@ -33,6 +33,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - 👷🏻 Removed `node-fetch` in test, by [@orgads](https://github.com/orgads), in PR [#465](https://github.com/microsoft/BotFramework-DirectLineJS/pull/465)
 - Removed `Promise` polyfill, by [@orgads](https://github.com/orgads), in PR [#466](https://github.com/microsoft/BotFramework-DirectLineJS/pull/466)
 - 👷🏻 Removed Webpack stats file from build, by [@orgads](https://github.com/orgads), in PR [#467](https://github.com/microsoft/BotFramework-DirectLineJS/pull/467)
+- Bumped dependencies, by [@orgads](https://github.com/orgads), in PR [#469](https://github.com/microsoft/BotFramework-DirectLineJS/pull/469)
+   - Development dependencies
+      - [`jwt-decode@4.0.0`](https://npmjs.com/package/jwt-decode/v/4.0.0)
 
 ## [0.16.0] - 2026-06-18
 
