@@ -6,7 +6,8 @@
     "target": "esnext",
 
     // Search under node_modules for non-relative imports.
-    "moduleResolution": "node",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
 
     // Enable strictest settings like strictNullChecks & noImplicitAny.
     // TODO: [P1] Re-enable strictest when code is clean
@@ -16,6 +17,7 @@
 
     "declaration": true,
     "declarationDir": "lib",
+    "rootDir": "src",
     "emitDeclarationOnly": true,
     "sourceMap": true,
 
