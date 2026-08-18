@@ -15,9 +15,9 @@ jobs:
         node-version: [20]
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
       - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
@@ -29,13 +29,13 @@ jobs:
       - run: npm clean-install
       - run: npm run prepublishOnly
       - name: Upload tarball artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: bundle
           path: ./dist
       - run: npm pack
       - name: Upload tarball artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: tarball
           path: ./*.tgz
@@ -51,12 +51,12 @@ jobs:
       id-token: write
 
     steps:
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
           node-version: 24 # Newer Node.js version for OIDC publishing
           registry-url: https://registry.npmjs.org/
       - name: Download tarball artifact
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
         with:
           name: tarball
       - id: get-version
